@@ -11,3 +11,114 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Producer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  document  String? @unique
+  createdAt DateTime @default(now())
+
+  farms Farm[]
+}
+
+model Farm {
+  id        String   @id @default(uuid())
+  name      String
+  city      String
+  state     String
+  latitude  Float
+  longitude Float
+  carNumber String?
+  status    FarmStatus @default(PENDING)
+  createdAt DateTime @default(now())
+
+  producerId String
+  producer   Producer @relation(fields: [producerId], references: [id])
+
+  batches Batch[]
+}
+
+model Batch {
+  id          String      @id @default(uuid())
+  code        String      @unique
+  productType ProductType
+  quantity    Int
+  unit        String
+  harvestDate DateTime?
+  status      BatchStatus @default(CREATED)
+
+  cnftAddress String?
+  metadataUri String?
+  qrCodeUrl   String?
+
+  createdAt DateTime @default(now())
+
+  farmId String
+  farm   Farm @relation(fields: [farmId], references: [id])
+
+  documents   Document[]
+  traceEvents TraceEvent[]
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  type      DocumentType
+  fileUrl   String
+  fileHash  String
+  createdAt DateTime @default(now())
+
+  batchId String?
+  batch   Batch? @relation(fields: [batchId], references: [id])
+}
+
+model TraceEvent {
+  id        String   @id @default(uuid())
+  type      TraceEventType
+  actorName String
+  location  String?
+  latitude  Float?
+  longitude Float?
+  txHash    String?
+  createdAt DateTime @default(now())
+
+  batchId String
+  batch   Batch @relation(fields: [batchId], references: [id])
+}
+
+enum ProductType {
+  COFFEE
+  SOY
+  CATTLE
+}
+
+enum FarmStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BatchStatus {
+  CREATED
+  VERIFIED
+  MINTED
+  IN_TRANSIT
+  EXPORTED
+}
+
+enum DocumentType {
+  CAR
+  INVOICE
+  CERTIFICATE
+  PHOTO
+}
+
+enum TraceEventType {
+  CREATED
+  HARVESTED
+  RECEIVED_BY_COOPERATIVE
+  TRANSPORTED
+  PROCESSED
+  EXPORTED
+  MINTED_ONCHAIN
+}
