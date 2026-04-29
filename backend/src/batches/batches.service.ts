@@ -1,57 +1,64 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductType } from '../../generated/prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BatchCodeService } from './batch-code.service';
 import { BatchDto } from './dto/batch.dto';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { ListBatchesResponseDto } from './dto/list-batches-response.dto';
 import { UpdateBatchStatusDto } from './dto/update-batch-status.dto';
 
-const CODE_PREFIX: Record<string, string> = {
-  COFFEE: 'CAF',
-  SOY: 'SOY',
-  CATTLE: 'CAT',
-};
+const MAX_CODE_GENERATION_ATTEMPTS = 3;
 
 @Injectable()
 export class BatchesService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async generateCode(productType: ProductType, harvestDate?: Date): Promise<string> {
-    const prefix = CODE_PREFIX[productType];
-    const year = (harvestDate ?? new Date()).getFullYear();
-    const codePrefix = `${prefix}-${year}-`;
-
-    const lastBatch = await this.prisma.batch.findFirst({
-      where: { code: { startsWith: codePrefix } },
-      orderBy: { code: 'desc' },
-    });
-
-    const sequence = lastBatch ? parseInt(lastBatch.code.split('-')[2], 10) + 1 : 1;
-    return `${codePrefix}${String(sequence).padStart(4, '0')}`;
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly batchCodeService: BatchCodeService,
+  ) {}
 
   async create(dto: CreateBatchDto): Promise<BatchDto> {
-    const farm = await this.prisma.farm.findUnique({ where: { id: dto.farmId } });
-    if (!farm) {
-      throw new NotFoundException('Fazenda não encontrada.');
-    }
+    await this.findFarmOrThrow(dto.farmId);
 
     const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : undefined;
-    const code = await this.generateCode(dto.productType, harvestDate);
 
-    const batch = await this.prisma.batch.create({
-      data: {
-        code,
-        productType: dto.productType,
-        quantity: dto.quantity,
-        unit: dto.unit.trim(),
-        harvestDate: harvestDate ?? null,
-        farmId: dto.farmId,
-      },
-      include: { farm: true },
-    });
+    for (let attempt = 1; attempt <= MAX_CODE_GENERATION_ATTEMPTS; attempt++) {
+      const code = await this.batchCodeService.generate(
+        dto.productType,
+        harvestDate,
+      );
 
-    return BatchDto.fromModel(batch);
+      try {
+        const batch = await this.prisma.batch.create({
+          data: {
+            code,
+            productType: dto.productType,
+            quantity: dto.quantity,
+            unit: dto.unit.trim(),
+            harvestDate: harvestDate ?? null,
+            farmId: dto.farmId,
+          },
+          include: { farm: true },
+        });
+
+        return BatchDto.fromModel(batch);
+      } catch (error) {
+        if (
+          attempt < MAX_CODE_GENERATION_ATTEMPTS &&
+          this.isUniqueConstraintError(error)
+        ) {
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw new ConflictException(
+      'Nao foi possivel gerar um codigo unico para o lote.',
+    );
   }
 
   async findAll(page: number, limit: number): Promise<ListBatchesResponseDto> {
@@ -85,17 +92,14 @@ export class BatchesService {
     });
 
     if (!batch) {
-      throw new NotFoundException('Lote não encontrado.');
+      throw new NotFoundException('Lote nao encontrado.');
     }
 
     return BatchDto.fromModel(batch);
   }
 
   async updateStatus(id: string, dto: UpdateBatchStatusDto): Promise<BatchDto> {
-    const batch = await this.prisma.batch.findUnique({ where: { id } });
-    if (!batch) {
-      throw new NotFoundException('Lote não encontrado.');
-    }
+    await this.findBatchOrThrow(id);
 
     const updated = await this.prisma.batch.update({
       where: { id },
@@ -107,11 +111,38 @@ export class BatchesService {
   }
 
   async remove(id: string): Promise<void> {
-    const batch = await this.prisma.batch.findUnique({ where: { id } });
-    if (!batch) {
-      throw new NotFoundException('Lote não encontrado.');
-    }
-
+    await this.findBatchOrThrow(id);
     await this.prisma.batch.delete({ where: { id } });
+  }
+
+  private async findFarmOrThrow(farmId: string): Promise<void> {
+    const farm = await this.prisma.farm.findUnique({
+      where: { id: farmId },
+      select: { id: true },
+    });
+
+    if (!farm) {
+      throw new NotFoundException('Fazenda nao encontrada.');
+    }
+  }
+
+  private async findBatchOrThrow(id: string): Promise<void> {
+    const batch = await this.prisma.batch.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!batch) {
+      throw new NotFoundException('Lote nao encontrado.');
+    }
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002'
+    );
   }
 }
