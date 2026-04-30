@@ -9,7 +9,7 @@ import {
   IsUUID,
   MaxLength,
 } from 'class-validator';
-import { TraceEventType } from '../../../generated/prisma/client';
+import { TraceEventType } from '../../../generated/prisma/enums';
 
 export class CreateTraceEventDto {
   @IsEnum(TraceEventType)

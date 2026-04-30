@@ -1,4 +1,5 @@
-import { TraceEvent, TraceEventType } from '../../../generated/prisma/client';
+import type { TraceEvent } from '../../../generated/prisma/client';
+import type { TraceEventType } from '../../../generated/prisma/enums';
 
 export class TraceEventDto {
   id!: string;

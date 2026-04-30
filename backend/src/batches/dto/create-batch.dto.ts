@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
-import { ProductType } from '../../../generated/prisma/client';
+import { ProductType } from '../../../generated/prisma/enums';
 
 export class CreateBatchDto {
   @IsUUID()

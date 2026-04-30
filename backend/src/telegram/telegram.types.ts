@@ -1,5 +1,5 @@
 import { Context, Scenes } from 'telegraf';
-import { ProductType } from '../../generated/prisma/client';
+import type { ProductType } from '../../generated/prisma/enums';
 
 export interface WizardState {
   productType?: ProductType;

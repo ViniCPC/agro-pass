@@ -1,5 +1,5 @@
 import { Markup } from 'telegraf';
-import { Farm } from '../../../generated/prisma/client';
+import type { Farm } from '../../../generated/prisma/client';
 
 export const PRODUCT_KEYBOARD = Markup.inlineKeyboard([
   [

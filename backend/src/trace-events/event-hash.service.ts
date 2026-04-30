@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
-import { TraceEventType } from '../../generated/prisma/client';
+import type { TraceEventType } from '../../generated/prisma/enums';
 
 interface EventHashInput {
   batchId: string;

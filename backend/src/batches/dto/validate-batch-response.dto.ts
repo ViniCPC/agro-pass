@@ -1,4 +1,4 @@
-import { BatchStatus } from '../../../generated/prisma/client';
+import type { BatchStatus } from '../../../generated/prisma/enums';
 
 export class ValidateBatchResponseDto {
   batchId!: string;

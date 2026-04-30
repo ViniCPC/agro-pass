@@ -1,4 +1,5 @@
-import { Biome, Farm } from '../../../generated/prisma/client';
+import type { Farm } from '../../../generated/prisma/client';
+import type { Biome } from '../../../generated/prisma/enums';
 
 export class FarmDto {
   id!: string;

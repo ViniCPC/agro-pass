@@ -1,7 +1,5 @@
-import {
-  Document as DocumentModel,
-  DocumentType,
-} from '../../../generated/prisma/client';
+import type { Document as DocumentModel } from '../../../generated/prisma/client';
+import type { DocumentType } from '../../../generated/prisma/enums';
 
 export class DocumentDto {
   id!: string;

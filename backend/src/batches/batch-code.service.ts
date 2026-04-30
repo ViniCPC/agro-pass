@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ProductType } from '../../generated/prisma/client';
+import type { ProductType } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 
 const CODE_PREFIX: Record<ProductType, string> = {

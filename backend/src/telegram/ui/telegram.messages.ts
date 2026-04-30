@@ -1,4 +1,4 @@
-import { ProductType } from '../../../generated/prisma/client';
+import type { ProductType } from '../../../generated/prisma/enums';
 
 export const PRODUCT_LABELS: Record<ProductType, string> = {
   COFFEE: 'Café',

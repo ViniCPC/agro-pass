@@ -1,4 +1,4 @@
-import { Batch, Farm } from '../../../generated/prisma/client';
+import type { Batch, Farm } from '../../../generated/prisma/client';
 
 class FarmSummaryDto {
   name!: string;

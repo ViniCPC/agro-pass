@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ProductType } from '../../../generated/prisma/client';
+import type { ProductType } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchesService } from '../../batches/batches.service';
 import { UNIT_BY_PRODUCT } from '../ui/telegram.messages';

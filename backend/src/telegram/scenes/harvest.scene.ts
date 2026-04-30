@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Scenes } from 'telegraf';
-import { ProductType } from '../../../generated/prisma/client';
+import { ProductType } from '../../../generated/prisma/enums';
 import {
   BotContext,
   extractCallbackData,
