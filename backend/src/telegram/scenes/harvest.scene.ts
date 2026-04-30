@@ -155,9 +155,10 @@ export class HarvestScene {
 
         try {
           const batch = await this.harvestService.createBatch({ productType, farmId, quantity });
+          const publicBatchUrl = this.harvestService.buildPublicBatchUrl(batch.code);
           await ctx.reply(
             Msg.harvest.success(batch.code, productType, batch.quantity),
-            buildQrKeyboard(batch.id),
+            buildQrKeyboard(publicBatchUrl),
           );
         } catch (error) {
           this.logger.error('Erro ao criar lote pelo Telegram', error);

@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Scenes, session, Telegraf } from 'telegraf';
-import { BotContext, extractTelegramId } from './telegram.types';
+import { BotContext, extractCallbackData, extractTelegramId } from './telegram.types';
 import { LinkAccountScene } from './scenes/link-account.scene';
 import { HarvestScene } from './scenes/harvest.scene';
 import { TelegramAccountService } from './services/telegram-account.service';
+import { TelegramHarvestService } from './services/telegram-harvest.service';
 import { Msg } from './ui/telegram.messages';
+import { buildQrKeyboard } from './ui/telegram.keyboards';
 
 @Injectable()
 export class TelegramRouter {
@@ -14,6 +16,7 @@ export class TelegramRouter {
     private readonly linkAccountScene: LinkAccountScene,
     private readonly harvestScene: HarvestScene,
     private readonly accountService: TelegramAccountService,
+    private readonly harvestService: TelegramHarvestService,
   ) {}
 
   register(bot: Telegraf<BotContext>): void {
@@ -55,7 +58,29 @@ export class TelegramRouter {
 
     bot.action(/^qr:/, async (ctx) => {
       await ctx.answerCbQuery();
-      await ctx.reply(Msg.qrSoon);
+
+      const callbackData = extractCallbackData(ctx);
+      const token = callbackData?.slice(3).trim();
+
+      if (!token) {
+        await ctx.reply(Msg.qrNotFound);
+        return;
+      }
+
+      let publicBatchUrl: string | null = null;
+
+      if (this.isUuid(token)) {
+        publicBatchUrl = await this.harvestService.buildPublicBatchUrlById(token);
+      } else {
+        publicBatchUrl = this.harvestService.buildPublicBatchUrl(token);
+      }
+
+      if (!publicBatchUrl) {
+        await ctx.reply(Msg.qrNotFound);
+        return;
+      }
+
+      await ctx.reply(Msg.qrReady(publicBatchUrl), buildQrKeyboard(publicBatchUrl));
     });
 
     bot.catch(async (error, ctx) => {
@@ -66,5 +91,9 @@ export class TelegramRouter {
         this.logger.error('Falha ao responder ao usuário após erro', replyError);
       }
     });
+  }
+
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   }
 }

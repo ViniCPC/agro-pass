@@ -30,8 +30,8 @@ export function buildFarmKeyboard(farms: Farm[]) {
   );
 }
 
-export function buildQrKeyboard(batchId: string) {
+export function buildQrKeyboard(publicBatchUrl: string) {
   return Markup.inlineKeyboard([
-    [Markup.button.callback('Ver QR Code', `qr:${batchId}`)],
+    [Markup.button.url('Ver QR Code', publicBatchUrl)],
   ]);
 }

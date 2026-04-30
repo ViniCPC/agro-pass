@@ -39,7 +39,10 @@ export const Msg = {
 
   cancelled: 'Operação cancelada. Use /ajuda para ver os comandos disponíveis.',
   notLinked: 'Conta não vinculada. Use /linkar primeiro.',
-  qrSoon: 'QR Code estará disponível em breve.',
+  qrReady: (publicBatchUrl: string) =>
+    'Acesse o lote público por este link:\n' + publicBatchUrl,
+  qrNotFound:
+    'Não consegui localizar o lote desse botão. Gere um novo lote com /colheita.',
   globalError: 'Ops, algo deu errado. Tente novamente ou use /cancelar.',
 
   // ── Cena: linkAccount ────────────────────────────

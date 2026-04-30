@@ -1,6 +1,8 @@
+import { PrismaPg } from '@prisma/adapter-pg';
 import { Biome, FarmStatus, PrismaClient } from '../generated/prisma/client';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const producer = await prisma.producer.upsert({

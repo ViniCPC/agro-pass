@@ -48,4 +48,32 @@ export class TelegramHarvestService {
   getUnit(productType: ProductType): string {
     return UNIT_BY_PRODUCT[productType];
   }
+
+  buildPublicBatchUrl(batchCode: string): string {
+    const baseUrl = this.resolvePublicBaseUrl();
+    return `${baseUrl}/public/batches/${encodeURIComponent(batchCode)}`;
+  }
+
+  async buildPublicBatchUrlById(batchId: string): Promise<string | null> {
+    const batch = await this.prisma.batch.findUnique({
+      where: { id: batchId },
+      select: { code: true },
+    });
+
+    if (!batch) {
+      return null;
+    }
+
+    return this.buildPublicBatchUrl(batch.code);
+  }
+
+  private resolvePublicBaseUrl(): string {
+    const configured =
+      process.env.PUBLIC_BATCHES_URL ||
+      process.env.PUBLIC_BACKEND_URL ||
+      process.env.PUBLIC_APP_URL;
+
+    const fallback = `http://localhost:${process.env.PORT ?? '3000'}`;
+    return (configured || fallback).replace(/\/+$/, '');
+  }
 }

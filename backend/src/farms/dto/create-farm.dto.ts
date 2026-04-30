@@ -11,7 +11,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Biome } from '../../../../generated/prisma/client';
+import { Biome } from '../../../generated/prisma/client';
 
 export class CreateFarmDto {
   @IsString()
