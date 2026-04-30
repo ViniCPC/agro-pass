@@ -5,10 +5,19 @@ import { BatchesModule } from './batches/batches.module';
 import { FarmsModule } from './farms/farms.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProducersModule } from './producers/producers.module';
+import { TraceEventsModule } from './trace-events/trace-events.module';
+import { TelegramModule } from './telegram/telegram.module';
+import { PublicBatchesModule } from './public-batches/public-batches.module';
 
 @Module({
-  imports: [PrismaModule, ProducersModule, FarmsModule, BatchesModule],
+  imports: [PrismaModule,
+    ProducersModule,
+    FarmsModule,
+    BatchesModule,
+    TraceEventsModule,
+    TelegramModule,
+    PublicBatchesModule],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

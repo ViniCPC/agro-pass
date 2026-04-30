@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BatchStatus, DocumentType } from '../../generated/prisma/client';
+import { BatchStatus, DocumentType } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValidateBatchResponseDto } from './dto/validate-batch-response.dto';
 

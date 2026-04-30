@@ -18,6 +18,12 @@ export class FarmsService {
         latitude: createFarmDto.latitude,
         longitude: createFarmDto.longitude,
         carNumber: createFarmDto.carNumber?.trim() || null,
+        totalAreaHa: createFarmDto.totalAreaHa ?? null,
+        legalReserveAreaHa: createFarmDto.legalReserveAreaHa ?? null,
+        appAreaHa: createFarmDto.appAreaHa ?? null,
+        consolidatedAreaHa: createFarmDto.consolidatedAreaHa ?? null,
+        biome: createFarmDto.biome ?? null,
+        isAmazonLegal: createFarmDto.isAmazonLegal ?? false,
         producerId: createFarmDto.producerId,
       },
     });

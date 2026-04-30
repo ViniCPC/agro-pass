@@ -1,4 +1,4 @@
-import { Producer } from '../../../generated/prisma/client';
+import type { Producer } from '../../../generated/prisma/client';
 
 export class ProducerDto {
   id!: string;
