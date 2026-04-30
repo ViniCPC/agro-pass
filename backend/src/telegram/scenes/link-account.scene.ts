@@ -11,7 +11,7 @@ export class LinkAccountScene {
   constructor(private readonly accountService: TelegramAccountService) {}
 
   create(): Scenes.WizardScene<BotContext> {
-    return new Scenes.WizardScene<BotContext>(
+    const scene = new Scenes.WizardScene<BotContext>(
       'linkAccount',
 
       // Passo 0: solicitar telefone
@@ -71,5 +71,12 @@ export class LinkAccountScene {
         return ctx.scene.leave();
       },
     );
+
+    scene.command('cancelar', async (ctx) => {
+      await ctx.scene.leave();
+      await ctx.reply(Msg.cancelled);
+    });
+
+    return scene;
   }
 }

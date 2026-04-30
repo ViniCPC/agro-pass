@@ -28,7 +28,7 @@ export class HarvestScene {
   ) {}
 
   create(): Scenes.WizardScene<BotContext> {
-    return new Scenes.WizardScene<BotContext>(
+    const scene = new Scenes.WizardScene<BotContext>(
       'harvest',
 
       // Passo 0: escolher cultura
@@ -97,6 +97,7 @@ export class HarvestScene {
         }
 
         wizardState(ctx).farmId = farm.id;
+        wizardState(ctx).farmName = farm.name;
         await ctx.answerCbQuery();
 
         const productType = wizardState(ctx).productType!;
@@ -117,8 +118,7 @@ export class HarvestScene {
         wizardState(ctx).quantity = quantity;
 
         const productType = wizardState(ctx).productType!;
-        const farmId = wizardState(ctx).farmId!;
-        const farmName = (await this.harvestService.getFarmName(farmId)) ?? 'não encontrada';
+        const farmName = wizardState(ctx).farmName ?? 'não encontrada';
 
         await ctx.reply(
           Msg.harvest.confirmPrompt(productType, farmName, quantity),
@@ -168,5 +168,12 @@ export class HarvestScene {
         return ctx.scene.leave();
       },
     );
+
+    scene.command('cancelar', async (ctx) => {
+      await ctx.scene.leave();
+      await ctx.reply(Msg.cancelled);
+    });
+
+    return scene;
   }
 }

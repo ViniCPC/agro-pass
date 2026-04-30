@@ -5,6 +5,7 @@ export interface WizardState {
   productType?: ProductType;
   producerId?: string;
   farmId?: string;
+  farmName?: string;
   quantity?: number;
 }
 

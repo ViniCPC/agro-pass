@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ProductType } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchesService } from '../../batches/batches.service';
@@ -6,6 +6,8 @@ import { UNIT_BY_PRODUCT } from '../ui/telegram.messages';
 
 @Injectable()
 export class TelegramHarvestService {
+  private readonly logger = new Logger(TelegramHarvestService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly batchesService: BatchesService,
@@ -72,6 +74,13 @@ export class TelegramHarvestService {
       process.env.PUBLIC_BATCHES_URL ||
       process.env.PUBLIC_BACKEND_URL ||
       process.env.PUBLIC_APP_URL;
+
+    if (!configured) {
+      this.logger.warn(
+        'Nenhuma env var de URL pública configurada (PUBLIC_BATCHES_URL, PUBLIC_BACKEND_URL, PUBLIC_APP_URL). ' +
+        'Links de QR apontando para localhost.',
+      );
+    }
 
     const fallback = `http://localhost:${process.env.PORT ?? '3000'}`;
     return (configured || fallback).replace(/\/+$/, '');
