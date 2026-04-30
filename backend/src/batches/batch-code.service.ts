@@ -4,8 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const CODE_PREFIX: Record<ProductType, string> = {
   COFFEE: 'CAF',
-  SOY: 'SOY',
-  CATTLE: 'CAT',
+  SOY: 'SOJ',
+  CATTLE: 'GAD',
+  COCOA: 'CAC',
+  PALM_OIL: 'PAL',
+  RUBBER: 'BOR',
+  WOOD: 'MAD',
 };
 
 @Injectable()

@@ -15,5 +15,6 @@ import { BatchesService } from './batches.service';
     BatchDocumentsService,
     BatchValidationService,
   ],
+  exports: [BatchesService]
 })
 export class BatchesModule {}

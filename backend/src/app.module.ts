@@ -6,9 +6,10 @@ import { FarmsModule } from './farms/farms.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProducersModule } from './producers/producers.module';
 import { TraceEventsModule } from './trace-events/trace-events.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
-  imports: [PrismaModule, ProducersModule, FarmsModule, BatchesModule, TraceEventsModule],
+  imports: [PrismaModule, ProducersModule, FarmsModule, BatchesModule, TraceEventsModule, TelegramModule],
   controllers: [AppController],
   providers: [AppService],
 })
