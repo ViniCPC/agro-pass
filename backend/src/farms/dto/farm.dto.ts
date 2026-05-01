@@ -9,16 +9,14 @@ export class FarmDto {
   latitude!: number;
   longitude!: number;
   carNumber!: string | null;
+  polygonGeoJson!: object | null;
   totalAreaHa!: number | null;
   legalReserveAreaHa!: number | null;
   appAreaHa!: number | null;
   consolidatedAreaHa!: number | null;
   biome!: Biome | null;
   isAmazonLegal!: boolean;
-  isEudrCompliant!: boolean;
-  eudrEvidenceUrl!: string | null;
-  validatedAt!: Date | null;
-  preservedSurplusHa!: number | null;
+  lastValidationId!: string | null;
   status!: string;
   producerId!: string;
   createdAt!: Date;
@@ -32,16 +30,14 @@ export class FarmDto {
       latitude: farm.latitude,
       longitude: farm.longitude,
       carNumber: farm.carNumber,
+      polygonGeoJson: farm.polygonGeoJson as object | null,
       totalAreaHa: farm.totalAreaHa,
       legalReserveAreaHa: farm.legalReserveAreaHa,
       appAreaHa: farm.appAreaHa,
       consolidatedAreaHa: farm.consolidatedAreaHa,
       biome: farm.biome,
       isAmazonLegal: farm.isAmazonLegal,
-      isEudrCompliant: farm.isEudrCompliant,
-      eudrEvidenceUrl: farm.eudrEvidenceUrl,
-      validatedAt: farm.validatedAt,
-      preservedSurplusHa: farm.preservedSurplusHa,
+      lastValidationId: farm.lastValidationId,
       status: farm.status,
       producerId: farm.producerId,
       createdAt: farm.createdAt,

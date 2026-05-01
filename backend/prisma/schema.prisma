@@ -20,123 +20,168 @@ datasource db {
 model Producer {
   id              String   @id @default(uuid())
   name            String
-  phone           String
-  document        String?  @unique // CPF
-  telegramUserId  String?  @unique // ID no Telegram pra linkar com bot
-  walletAddress   String?  @unique // Carteira Solana custodial
-  reputationScore Int      @default(0) 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  phone           String   @unique
+  document        String   @unique 
+  telegramUserId  String?  @unique 
+  walletAddress   String?  @unique
+  reputationScore Int      @default(0)
 
-  farms          Farm[]
-  carbonCredits  CarbonCredit[]
+  cooperativeId String?
+  cooperative   Cooperative? @relation(fields: [cooperativeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farms Farm[]
 
   @@index([telegramUserId])
+  @@index([cooperativeId])
+  @@index([document])
 }
 
 model Cooperative {
-  id              String   @id @default(uuid())
-  name            String
-  document        String   @unique // CNPJ
-  city            String
-  state           String
-  walletAddress   String?  @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String          @id @default(uuid())
+  name          String
+  document      String          @unique 
+  city          String
+  state         String
+  walletAddress String?         @unique
+  slug          String          @unique // pra deep links: t.me/AgroPassBot?start=coop_cooxupe
+  plan          CooperativePlan @default(BASIC)
+  monthlyFee    Float?
+  contractedAt  DateTime?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  producers   Producer[]
   traceEvents TraceEvent[]
 }
 
 model Exporter {
-  id              String   @id @default(uuid())
-  name            String
-  document        String   @unique // CNPJ
-  email           String   @unique
-  walletAddress   String?  @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  document      String   @unique
+  email         String   @unique
+  walletAddress String?  @unique
 
-  sales       Sale[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   traceEvents TraceEvent[]
 }
 
 // ============================================
-// FAZENDA E ÁREA
+// FAZENDA
 // ============================================
 
 model Farm {
-  id                String     @id @default(uuid())
-  name              String
-  city              String
-  state             String
-  latitude          Float
-  longitude         Float
-  carNumber         String?    @unique  // CAR é único nacional
-  
-  // Dados pro cálculo EUDR + Carbono
-  totalAreaHa       Float?     // hectares totais
-  legalReserveAreaHa Float?    // RL declarada no CAR
-  appAreaHa         Float?     // APP declarada
-  consolidatedAreaHa Float?    // área de uso (lavoura, pasto)
-  biome             Biome?     // Cerrado, Amazônia, etc.
-  isAmazonLegal     Boolean    @default(false)
-  
-  // Validação ambiental
-  isEudrCompliant   Boolean    @default(false)
-  eudrEvidenceUrl   String?    // link pra evidência (satélite, MapBiomas)
-  validatedAt       DateTime?
-  
-  // Excedente preservado (gera crédito de carbono)
-  preservedSurplusHa Float?    @default(0)
-  
-  status            FarmStatus @default(PENDING)
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  id String @id @default(uuid())
+
+  name      String
+  city      String
+  state     String
+  latitude  Float
+  longitude Float
+  carNumber String? @unique
+
+  // Polígono real da propriedade (do SICAR)
+  polygonGeoJson Json?
+
+  totalAreaHa        Float?
+  legalReserveAreaHa Float?
+  appAreaHa          Float?
+  consolidatedAreaHa Float?
+  biome              Biome?
+  isAmazonLegal      Boolean @default(false)
+
+  status FarmStatus @default(PENDING)
+
+  // Última validação EUDR
+  lastValidationId String?          @unique
+  lastValidation   EudrValidation?  @relation("FarmLastValidation", fields: [lastValidationId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   producerId String
   producer   Producer @relation(fields: [producerId], references: [id])
 
-  batches        Batch[]
-  carbonCredits  CarbonCredit[]
-  documents      Document[]
+  batches     Batch[]
+  documents   Document[]
+  validations EudrValidation[] @relation("FarmValidations")
 
   @@index([producerId])
   @@index([state])
 }
 
 // ============================================
-// LOTE (CORAÇÃO DO SISTEMA)
+// VALIDAÇÃO EUDR (NOVO — coração do produto)
+// ============================================
+
+model EudrValidation {
+  id     String           @id @default(uuid())
+  status ValidationStatus
+
+  cutoffDate         DateTime @default("2020-12-31T00:00:00Z")
+  hectaresDeforested Float    @default(0)
+
+  // Resultado por fonte (JSON cru pra debug e auditoria)
+  mapBiomasResult Json?
+  prodesResult    Json?
+  hansenResult    Json?
+
+  // Evidências visuais
+  satelliteImageBeforeUrl String? // Sentinel-2 ~Dez/2020
+  satelliteImageAfterUrl  String? // Sentinel-2 atual
+  ndviBefore              Float?
+  ndviAfter               Float?
+
+  // Auditoria
+  evidenceHash String   // sha256 de tudo combinado
+  validatedAt  DateTime @default(now())
+  validUntil   DateTime // 6 meses
+
+  farmId String
+  farm   Farm   @relation("FarmValidations", fields: [farmId], references: [id])
+
+  // Backref pra Farm.lastValidation
+  farmAsLast Farm? @relation("FarmLastValidation")
+
+  @@index([farmId])
+  @@index([status])
+}
+
+// ============================================
+// LOTES
 // ============================================
 
 model Batch {
   id          String      @id @default(uuid())
-  code        String      @unique // CAF-2026-0001
+  code        String      @unique
   productType ProductType
   quantity    Int
   unit        String
   harvestDate DateTime?
   status      BatchStatus @default(CREATED)
 
-  // Solana / cNFT
-  cnftAddress String?     @unique
-  merkleTree  String?     // tree onde o cNFT vive
-  metadataUri String?     // link Arweave/IPFS
+  cnftAddress String? @unique
+  merkleTree  String?
+  metadataUri String?
   qrCodeUrl   String?
-  mintTxHash  String?     // tx de mint
+  mintTxHash  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   farmId String
-  farm   Farm @relation(fields: [farmId], references: [id])
+  farm   Farm   @relation(fields: [farmId], references: [id])
 
-  documents      Document[]
-  traceEvents    TraceEvent[]
-  saleItems      SaleItem[]
+  documents   Document[]
+  traceEvents TraceEvent[]
 
   @@index([farmId])
   @@index([status])
-  @@index([productType])
 }
 
 // ============================================
@@ -147,131 +192,46 @@ model Document {
   id        String       @id @default(uuid())
   type      DocumentType
   fileUrl   String
-  fileHash  String       @unique // SHA-256
+  fileHash  String       @unique
   createdAt DateTime     @default(now())
 
-  // Pode pertencer a Farm OU a Batch
-  farmId    String?
-  farm      Farm?  @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  
-  batchId   String?
-  batch     Batch? @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  farmId  String?
+  farm    Farm?   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  batchId String?
+  batch   Batch?  @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([farmId])
   @@index([batchId])
 }
 
 // ============================================
-// EVENTOS DE RASTREABILIDADE
+// EVENTOS
 // ============================================
 
 model TraceEvent {
-  id        String         @id @default(uuid())
-  type      TraceEventType
-  
-  // Quem registrou (um dos três, dependendo do evento)
-  actorName     String     // Sempre preenchido pra display
+  id   String         @id @default(uuid())
+  type TraceEventType
+
+  actorName     String
   cooperativeId String?
   cooperative   Cooperative? @relation(fields: [cooperativeId], references: [id])
   exporterId    String?
   exporter      Exporter?    @relation(fields: [exporterId], references: [id])
-  
+
   location  String?
   latitude  Float?
   longitude Float?
-  
-  // Prova on-chain
-  eventHash String?        // hash do evento (sha256 dos campos)
-  txHash    String?        // tx Solana se on-chain
-  
+
+  eventHash String? // sha256 dos campos
+  txHash    String? // tx Solana
+
   createdAt DateTime @default(now())
 
   batchId String
-  batch   Batch @relation(fields: [batchId], references: [id])
+  batch   Batch  @relation(fields: [batchId], references: [id])
 
   @@index([batchId])
   @@index([type])
-}
-
-// ============================================
-// CRÉDITO DE CARBONO (FEATURE NOVA)
-// ============================================
-
-model CarbonCredit {
-  id              String              @id @default(uuid())
-  
-  hectares        Float               // hectares preservados que geram este crédito
-  tonnesCo2e      Float               // toneladas de CO2 equivalente
-  factor          Float               // tCO2/ha/ano usado no cálculo
-  vintage         Int                 // ano de referência (2026)
-  
-  // Solana
-  tokenMint       String?  @unique    // SPL token mint address
-  amountMinted    BigInt   @default(0) // quantidade total de tokens emitidos
-  
-  status          CarbonCreditStatus  @default(ISSUED)
-  pricePerTonneUsd Float?  @default(15)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  farmId    String
-  farm      Farm     @relation(fields: [farmId], references: [id])
-  producerId String
-  producer  Producer @relation(fields: [producerId], references: [id])
-  
-  saleItems SaleItem[]
-
-  @@index([farmId])
-  @@index([status])
-}
-
-// ============================================
-// VENDAS (importador comprando)
-// ============================================
-
-model Sale {
-  id              String     @id @default(uuid())
-  
-  totalUsd        Float
-  paymentTxHash   String?    @unique // tx Solana Pay
-  paymentTokenMint String?   // USDC mint, normalmente
-  status          SaleStatus @default(PENDING)
-  
-  buyerWallet     String     // wallet do importador
-  buyerEmail      String?
-  buyerCountry    String?    // pra rastreabilidade EUDR
-  
-  createdAt       DateTime   @default(now())
-  paidAt          DateTime?
-  
-  exporterId      String
-  exporter        Exporter   @relation(fields: [exporterId], references: [id])
-  
-  items           SaleItem[]
-
-  @@index([exporterId])
-  @@index([status])
-}
-
-model SaleItem {
-  id          String  @id @default(uuid())
-  
-  saleId      String
-  sale        Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  
-  // Pode ser um lote ou um crédito de carbono
-  batchId     String?
-  batch       Batch?  @relation(fields: [batchId], references: [id])
-  
-  carbonCreditId String?
-  carbonCredit   CarbonCredit? @relation(fields: [carbonCreditId], references: [id])
-  
-  quantity    Float   // sacas/ha de carbono
-  unitPriceUsd Float
-  totalUsd    Float
-
-  @@index([saleId])
 }
 
 // ============================================
@@ -300,7 +260,6 @@ enum BatchStatus {
   MINTED
   IN_TRANSIT
   EXPORTED
-  SOLD
 }
 
 enum DocumentType {
@@ -320,7 +279,7 @@ enum TraceEventType {
   PROCESSED
   EXPORTED
   MINTED_ONCHAIN
-  SOLD
+  EUDR_VALIDATED
 }
 
 enum Biome {
@@ -332,20 +291,18 @@ enum Biome {
   PANTANAL
 }
 
-enum CarbonCreditStatus {
-  ISSUED
-  AVAILABLE
-  RESERVED
-  SOLD
-  RETIRED
+enum ValidationStatus {
+  PENDING
+  COMPLIANT
+  NON_COMPLIANT
+  NEEDS_REVIEW
+  EXPIRED
 }
 
-enum SaleStatus {
-  PENDING
-  PAID
-  DELIVERED
-  CANCELLED
-  REFUNDED
+enum CooperativePlan {
+  BASIC
+  PRO
+  ENTERPRISE
 }
 
 // ============================================
