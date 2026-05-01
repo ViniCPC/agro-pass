@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFarmDto } from './dto/create-farm.dto';
 import { FarmDto } from './dto/farm.dto';
@@ -18,7 +19,7 @@ export class FarmsService {
         latitude: createFarmDto.latitude,
         longitude: createFarmDto.longitude,
         carNumber: createFarmDto.carNumber?.trim() || null,
-        polygonGeoJson: createFarmDto.polygonGeoJson ?? null,
+        polygonGeoJson: this.toNullableJsonInput(createFarmDto.polygonGeoJson),
         totalAreaHa: createFarmDto.totalAreaHa ?? null,
         legalReserveAreaHa: createFarmDto.legalReserveAreaHa ?? null,
         appAreaHa: createFarmDto.appAreaHa ?? null,
@@ -77,5 +78,15 @@ export class FarmsService {
     });
 
     return FarmDto.fromModel(updated);
+  }
+
+  private toNullableJsonInput(value: object | null | undefined) {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    return value === null
+      ? Prisma.DbNull
+      : (value as Prisma.InputJsonValue);
   }
 }
