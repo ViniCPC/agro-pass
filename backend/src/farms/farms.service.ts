@@ -18,6 +18,7 @@ export class FarmsService {
         latitude: createFarmDto.latitude,
         longitude: createFarmDto.longitude,
         carNumber: createFarmDto.carNumber?.trim() || null,
+        polygonGeoJson: createFarmDto.polygonGeoJson ?? null,
         totalAreaHa: createFarmDto.totalAreaHa ?? null,
         legalReserveAreaHa: createFarmDto.legalReserveAreaHa ?? null,
         appAreaHa: createFarmDto.appAreaHa ?? null,

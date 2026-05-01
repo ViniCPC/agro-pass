@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -44,6 +45,10 @@ export class CreateFarmDto {
   @IsString()
   @IsOptional()
   carNumber?: string;
+
+  @IsObject()
+  @IsOptional()
+  polygonGeoJson?: object;
 
   @IsNumber()
   @IsOptional()

@@ -8,6 +8,7 @@ import { ProducersModule } from './producers/producers.module';
 import { TraceEventsModule } from './trace-events/trace-events.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { PublicBatchesModule } from './public-batches/public-batches.module';
+import { EudrModule } from './eudr/eudr.module';
 
 @Module({
   imports: [PrismaModule,
@@ -16,7 +17,8 @@ import { PublicBatchesModule } from './public-batches/public-batches.module';
     BatchesModule,
     TraceEventsModule,
     TelegramModule,
-    PublicBatchesModule],
+    PublicBatchesModule,
+    EudrModule],
   controllers: [AppController],
   providers: [AppService],
 })

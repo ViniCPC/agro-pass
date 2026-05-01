@@ -45,9 +45,21 @@ export class PublicBatchesService {
             biome: true,
             isAmazonLegal: true,
 
-            isEudrCompliant: true,
-            eudrEvidenceUrl: true,
-            validatedAt: true,
+            lastValidation: {
+              select: {
+                id: true,
+                status: true,
+                cutoffDate: true,
+                hectaresDeforested: true,
+                satelliteImageBeforeUrl: true,
+                satelliteImageAfterUrl: true,
+                ndviBefore: true,
+                ndviAfter: true,
+                evidenceHash: true,
+                validatedAt: true,
+                validUntil: true,
+              },
+            },
 
             producer: {
               select: {
