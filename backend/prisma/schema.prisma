@@ -347,3 +347,23 @@ enum SaleStatus {
   CANCELLED
   REFUNDED
 }
+
+// ============================================
+// HISTÓRICO DE CONVERSAÇÃO (Gemini)
+// ============================================
+
+model ConversationMessage {
+  id             String      @id @default(uuid())
+  telegramUserId String
+  role           MessageRole
+  content        String
+
+  createdAt      DateTime    @default(now())
+
+  @@index([telegramUserId, createdAt])
+}
+
+enum MessageRole {
+  USER
+  MODEL
+}

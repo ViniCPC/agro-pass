@@ -80,6 +80,14 @@ export const Msg = {
     error: 'Erro ao processar vínculo. Tente novamente ou use /cancelar.',
   },
 
+  // ── Conversa Gemini ──────────────────────────────
+  gemini: {
+    notLinked:
+      'Você precisa vincular sua conta antes de conversar comigo.\n' +
+      'Use /linkar para fazer isso.',
+    error: 'Não consegui processar sua mensagem agora. Tente novamente ou use /ajuda.',
+  },
+
   // ── Cena: harvest ────────────────────────────────
   harvest: {
     askProduct: 'Qual é a cultura do lote?\n\nUse /cancelar para sair.',

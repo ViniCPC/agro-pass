@@ -24,6 +24,7 @@
     "seed": "tsx --require dotenv/config prisma/seed.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.1.19",
