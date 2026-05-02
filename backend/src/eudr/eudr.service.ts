@@ -13,6 +13,7 @@ import { EudrValidationMode, ValidateFarmDto } from './dto/validate-farm.dto';
 import { HansenService } from './sources/hansen.service';
 import { MapBiomasService } from './sources/mapbiomas.service';
 import { ProdesService } from './sources/prodes.service';
+import { SentinelService } from './sources/sentinel.service';
 import { AnalyzeFarmInput } from './sources/source-input.types';
 import { createSha256Hash } from './utils/hash.util';
 
@@ -23,6 +24,7 @@ export class EudrService {
     private readonly mapBiomasService: MapBiomasService,
     private readonly prodesService: ProdesService,
     private readonly hansenService: HansenService,
+    private readonly sentinelService: SentinelService,
   ) {}
 
   async validateFarm(farmId: string, dto: ValidateFarmDto) {
@@ -66,10 +68,11 @@ export class EudrService {
       mockHectaresDeforested: dto.mockHectaresDeforested,
     };
 
-    const [mapBiomasResult, prodesResult, hansenResult] = await Promise.all([
+    const [mapBiomasResult, prodesResult, hansenResult, sentinelResult] = await Promise.all([
       this.mapBiomasService.analyzeFarm(sourceInput),
       this.prodesService.analyzeFarm(sourceInput),
       this.hansenService.analyzeFarm(sourceInput),
+      this.sentinelService.analyzeFarm(sourceInput),
     ]);
 
     const hectaresDeforested = this.calculateHectaresDeforested([
@@ -108,6 +111,7 @@ export class EudrService {
         mapBiomasResult,
         prodesResult,
         hansenResult,
+        sentinelResult,
         notes: dto.notes,
       },
       generatedAt: new Date().toISOString(),
@@ -125,6 +129,10 @@ export class EudrService {
           mapBiomasResult,
           prodesResult,
           hansenResult,
+          satelliteImageBeforeUrl: sentinelResult.satelliteImageBeforeUrl,
+          satelliteImageAfterUrl: sentinelResult.satelliteImageAfterUrl,
+          ndviBefore: sentinelResult.ndviBefore,
+          ndviAfter: sentinelResult.ndviAfter,
           evidenceHash,
           validUntil,
         },
@@ -157,6 +165,10 @@ export class EudrService {
       mapBiomasResult,
       prodesResult,
       hansenResult,
+      satelliteImageBeforeUrl: sentinelResult.satelliteImageBeforeUrl,
+      satelliteImageAfterUrl: sentinelResult.satelliteImageAfterUrl,
+      ndviBefore: sentinelResult.ndviBefore,
+      ndviAfter: sentinelResult.ndviAfter,
     };
   }
 
