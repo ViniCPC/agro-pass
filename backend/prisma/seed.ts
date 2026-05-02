@@ -32,7 +32,6 @@ async function main() {
       consolidatedAreaHa: 380,
       biome: Biome.CERRADO,
       isAmazonLegal: false,
-      preservedSurplusHa: 80,
       status: FarmStatus.APPROVED,
       producerId: producer.id,
     },
@@ -41,10 +40,11 @@ async function main() {
 
   const cooperative = await prisma.cooperative.upsert({
     where: { document: '12345678000199' },
-    update: {},
+    update: { slug: 'agro-centro-oeste' },
     create: {
       name: 'Cooperativa Agro Centro-Oeste',
       document: '12345678000199',
+      slug: 'agro-centro-oeste',
       city: 'Rio Verde',
       state: 'GO',
     },

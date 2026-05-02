@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, Matches, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, Matches, MaxLength } from 'class-validator';
 
 export class CreateProducerDto {
   @IsString()
@@ -12,7 +12,7 @@ export class CreateProducerDto {
   phone!: string;
 
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   @Matches(/^(\d{11}|\d{14})$/, { message: 'O documento deve ser um CPF (11 dígitos) ou CNPJ (14 dígitos)' })
-  document?: string;
+  document!: string;
 }

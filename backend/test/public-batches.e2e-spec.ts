@@ -33,7 +33,7 @@ describe('PublicBatches (e2e)', () => {
     // Criar produtor
     const producerRes = await request(app.getHttpServer())
       .post('/producers')
-      .send({ name: 'João E2E', phone: '31999990001' })
+      .send({ name: 'João E2E', phone: '31999990001', document: '31999990001' })
       .expect(201);
     producerId = producerRes.body.id;
 

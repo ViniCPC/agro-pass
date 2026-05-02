@@ -11,7 +11,7 @@ export class ProducersService {
   async create(createProducerDto: CreateProducerDto): Promise<ProducerDto> {
     const name = createProducerDto.name.trim();
     const phone = createProducerDto.phone.trim();
-    const document = createProducerDto.document?.trim() || null;
+    const document = createProducerDto.document.trim();
 
     try {
       const producer = await this.prisma.producer.create({
