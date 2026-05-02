@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BatchDocumentsService } from './batch-documents.service';
+import { BatchQrCodeService } from './batch-qrcode.service';
 import { BatchValidationService } from './batch-validation.service';
 import { BatchesService } from './batches.service';
 import { BatchDto } from './dto/batch.dto';
@@ -32,6 +33,7 @@ export class BatchesController {
     private readonly batchesService: BatchesService,
     private readonly batchDocumentsService: BatchDocumentsService,
     private readonly batchValidationService: BatchValidationService,
+    private readonly batchQrCodeService: BatchQrCodeService,
   ) {}
 
   @Post()
@@ -64,6 +66,11 @@ export class BatchesController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<DocumentDto[]> {
     return this.batchDocumentsService.findDocuments(id);
+  }
+
+  @Post(':id/qrcode')
+  generateQrCode(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.batchQrCodeService.generateQrCode(id);
   }
 
   @Patch(':id/validate')
