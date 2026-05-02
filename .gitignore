@@ -62,3 +62,6 @@ pids
 
 # reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ai-tools
+.claude
