@@ -72,6 +72,21 @@ model Exporter {
 }
 
 // ============================================
+// CONVERSAS TELEGRAM / GEMINI
+// ============================================
+
+model ConversationMessage {
+  id             String      @id @default(uuid())
+  telegramUserId String
+  role           MessageRole
+  content        String
+
+  createdAt DateTime @default(now())
+
+  @@index([telegramUserId, createdAt])
+}
+
+// ============================================
 // FAZENDA
 // ============================================
 
@@ -303,4 +318,9 @@ enum CooperativePlan {
   BASIC
   PRO
   ENTERPRISE
+}
+
+enum MessageRole {
+  USER
+  MODEL
 }
