@@ -39,6 +39,7 @@ export const Msg = {
 
   cancelled: 'Operação cancelada. Use /ajuda para ver os comandos disponíveis.',
   notLinked: 'Conta não vinculada. Use /linkar primeiro.',
+  unknownCommand: 'Comando não reconhecido. Use /ajuda para ver os comandos disponíveis.',
   qrReady: (publicBatchUrl: string) =>
     'Acesse o lote público por este link:\n' + publicBatchUrl,
   qrNotFound:
@@ -78,6 +79,16 @@ export const Msg = {
       `Conta de ${name} vinculada com sucesso!\n\nUse /colheita para cadastrar um novo lote.`,
 
     error: 'Erro ao processar vínculo. Tente novamente ou use /cancelar.',
+  },
+
+  // ── Conversa Gemini ──────────────────────────────
+  gemini: {
+    notLinked:
+      'Você precisa vincular sua conta antes de conversar comigo.\n' +
+      'Use /linkar para fazer isso.',
+    notConfigured:
+      'A conversa inteligente ainda não está configurada. Use /colheita para cadastrar um lote.',
+    error: 'Não consegui processar sua mensagem agora. Tente novamente ou use /ajuda.',
   },
 
   // ── Cena: harvest ────────────────────────────────

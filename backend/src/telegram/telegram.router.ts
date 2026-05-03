@@ -4,6 +4,7 @@ import { BotContext, extractTelegramId } from './telegram.types';
 import { LinkAccountScene } from './scenes/link-account.scene';
 import { HarvestScene } from './scenes/harvest.scene';
 import { TelegramAccountService } from './services/telegram-account.service';
+import { GeminiService } from './gemini/gemini.service';
 import { Msg } from './ui/telegram.messages';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class TelegramRouter {
     private readonly linkAccountScene: LinkAccountScene,
     private readonly harvestScene: HarvestScene,
     private readonly accountService: TelegramAccountService,
+    private readonly geminiService: GeminiService,
   ) {}
 
   register(bot: Telegraf<BotContext>): void {
@@ -39,7 +41,7 @@ export class TelegramRouter {
       await ctx.reply(Msg.cancelled);
     });
 
-    bot.command('colheita', async (ctx) => {
+    bot.command(['colheita', 'colher'], async (ctx) => {
       const telegramUserId = extractTelegramId(ctx);
       if (!telegramUserId) {
         await ctx.reply(Msg.notLinked);
@@ -53,6 +55,41 @@ export class TelegramRouter {
       return ctx.scene.enter('harvest');
     });
 
+    // Mensagens de texto livre fora de qualquer cena vão para o Gemini
+    bot.on('text', async (ctx) => {
+      if (ctx.message.text.startsWith('/')) {
+        await ctx.reply(Msg.unknownCommand);
+        return;
+      }
+
+      const telegramUserId = extractTelegramId(ctx);
+      if (!telegramUserId) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+
+      const producer = await this.accountService.findByTelegramId(telegramUserId);
+      if (!producer) {
+        await ctx.reply(Msg.gemini.notLinked);
+        return;
+      }
+
+      if (!process.env.GEMINI_API_KEY) {
+        await ctx.reply(Msg.gemini.notConfigured);
+        return;
+      }
+
+      await ctx.sendChatAction('typing');
+
+      try {
+        const reply = await this.geminiService.chat(telegramUserId, producer.id, ctx.message.text);
+        await ctx.reply(reply);
+      } catch (error) {
+        this.logger.error('Erro na conversa com Gemini', error);
+        await ctx.reply(Msg.gemini.error);
+      }
+    });
+
     bot.catch(async (error, ctx) => {
       this.logger.error('Erro no bot do Telegram', error);
       try {
@@ -62,5 +99,4 @@ export class TelegramRouter {
       }
     });
   }
-
 }
