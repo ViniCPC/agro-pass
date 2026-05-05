@@ -14,6 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { BubblegumService } from '../solana/bubblegum/bubblegum.service';
 import { BatchDocumentsService } from './batch-documents.service';
 import { BatchQrCodeService } from './batch-qrcode.service';
 import { BatchValidationService } from './batch-validation.service';
@@ -34,6 +35,7 @@ export class BatchesController {
     private readonly batchDocumentsService: BatchDocumentsService,
     private readonly batchValidationService: BatchValidationService,
     private readonly batchQrCodeService: BatchQrCodeService,
+    private readonly bubblegumService: BubblegumService,
   ) {}
 
   @Post()
@@ -92,5 +94,10 @@ export class BatchesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
     return this.batchesService.remove(id);
+  }
+
+  @Post(':id/mint')
+  async mintBatch(@Param('id') id: string) {
+    return this.bubblegumService.mintBatchCnft(id);
   }
 }

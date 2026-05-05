@@ -18,7 +18,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
-    "seed": "tsx --require dotenv/config prisma/seed.ts"
+    "seed": "tsx --require dotenv/config prisma/seed.ts",
+    "solana:create-wallet": "tsx src/scripts/create-devnet-wallet.ts",
+    "solana:airdrop": "tsx src/scripts/request-devnet-airdrop.ts",
+    "solana:create-tree": "tsx src/scripts/create-merkle-tree.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config prisma/seed.ts"
@@ -26,13 +29,18 @@
   "dependencies": {
     "@google/earthengine": "^1.7.25",
     "@google/generative-ai": "^0.21.0",
+    "@metaplex-foundation/mpl-bubblegum": "^5.0.2",
+    "@metaplex-foundation/umi": "^1.5.1",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.5.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.1.19",
     "@nestjs/swagger": "^11.2.1",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@solana/web3.js": "^1.98.4",
     "@turf/turf": "^7.3.5",
+    "bs58": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^17.4.2",

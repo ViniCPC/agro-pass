@@ -49,6 +49,7 @@ backend/.env.test.local
 backend/.env.production.local
 backend/.env.local
 !backend/.env.example
+backend/keys/
 
 # temp
 .temp

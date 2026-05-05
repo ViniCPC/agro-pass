@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SolanaModule } from '../solana/solana.module';
 import { BatchCodeService } from './batch-code.service';
 import { BatchDocumentsService } from './batch-documents.service';
 import { BatchQrCodeService } from './batch-qrcode.service';
@@ -8,7 +9,7 @@ import { BatchesController } from './batches.controller';
 import { BatchesService } from './batches.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SolanaModule],
   controllers: [BatchesController],
   providers: [
     BatchesService,
@@ -17,6 +18,6 @@ import { BatchesService } from './batches.service';
     BatchValidationService,
     BatchQrCodeService,
   ],
-  exports: [BatchesService]
+  exports: [BatchesService],
 })
 export class BatchesModule {}
