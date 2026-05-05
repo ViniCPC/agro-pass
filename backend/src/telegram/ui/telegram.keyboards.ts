@@ -10,7 +10,7 @@ export const PRODUCT_KEYBOARD = Markup.inlineKeyboard([
     Markup.button.callback('Gado', 'product:CATTLE'),
     Markup.button.callback('Cacau', 'product:COCOA'),
   ],
-  [Markup.button.callback('Óleo de Palma', 'product:PALM_OIL')],
+  [Markup.button.callback('Óleo de palma', 'product:PALM_OIL')],
   [
     Markup.button.callback('Borracha', 'product:RUBBER'),
     Markup.button.callback('Madeira', 'product:WOOD'),
@@ -26,12 +26,12 @@ export const CONFIRM_KEYBOARD = Markup.inlineKeyboard([
 
 export function buildFarmKeyboard(farms: Farm[]) {
   return Markup.inlineKeyboard(
-    farms.map((f) => [Markup.button.callback(f.name, `farm:${f.id}`)]),
+    farms.map((farm) => [Markup.button.callback(farm.name, `farm:${farm.id}`)]),
   );
 }
 
 export function buildQrKeyboard(publicBatchUrl: string) {
   return Markup.inlineKeyboard([
-    [Markup.button.url('Ver QR Code', publicBatchUrl)],
+    [Markup.button.url('Ver lote público', publicBatchUrl)],
   ]);
 }

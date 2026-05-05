@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Scenes } from 'telegraf';
-import { BotContext, extractTelegramId, extractText } from '../telegram.types';
+import {
+  BotContext,
+  extractTelegramId,
+  extractText,
+  wizardState,
+} from '../telegram.types';
 import { TelegramAccountService } from '../services/telegram-account.service';
 import { Msg } from '../ui/telegram.messages';
 
@@ -14,13 +19,18 @@ export class LinkAccountScene {
     const scene = new Scenes.WizardScene<BotContext>(
       'linkAccount',
 
-      // Passo 0: solicitar telefone
+      // Passo 0: solicitar telefone ou CPF/CNPJ quando veio de deep link.
       async (ctx) => {
+        if (wizardState(ctx).cooperativeInviteCode) {
+          await ctx.reply(Msg.cooperative.askDocument);
+          return ctx.wizard.next();
+        }
+
         await ctx.reply(Msg.link.askPhone);
         return ctx.wizard.next();
       },
 
-      // Passo 1: receber telefone e vincular
+      // Passo 1: receber telefone ou documento e vincular
       async (ctx) => {
         const telegramUserId = extractTelegramId(ctx);
         if (!telegramUserId) {
@@ -32,6 +42,48 @@ export class LinkAccountScene {
         if (!text) {
           await ctx.reply(Msg.link.notText);
           return;
+        }
+
+        const state = wizardState(ctx);
+        if (state.cooperativeInviteCode) {
+          const document = this.accountService.normalizeDocument(text);
+
+          if (!this.accountService.isValidDocumentLength(document)) {
+            await ctx.reply(Msg.cooperative.invalidDocument);
+            return;
+          }
+
+          try {
+            const result = await this.accountService.linkProducerByDocument({
+              telegramUserId,
+              document,
+              cooperativeInviteCode: state.cooperativeInviteCode,
+            });
+
+            switch (result.status) {
+              case 'success':
+              case 'already_linked':
+                await ctx.reply(Msg.cooperative.producerLinked(result.producerName));
+                break;
+              case 'invalid_document':
+                await ctx.reply(Msg.cooperative.invalidDocument);
+                break;
+              case 'not_found':
+                await ctx.reply(Msg.cooperative.producerNotFound);
+                break;
+              case 'document_conflict':
+                await ctx.reply(Msg.cooperative.alreadyLinked);
+                break;
+              case 'telegram_conflict':
+                await ctx.reply(Msg.link.telegramConflict(result.existingProducerName));
+                break;
+            }
+          } catch (error) {
+            this.logger.error('Erro ao vincular conta Telegram por documento', error);
+            await ctx.reply(Msg.link.error);
+          }
+
+          return ctx.scene.leave();
         }
 
         const phone = this.accountService.normalizePhone(text);

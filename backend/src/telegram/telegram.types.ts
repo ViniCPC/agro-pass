@@ -7,6 +7,8 @@ export interface WizardState {
   farmId?: string;
   farmName?: string;
   quantity?: number;
+  cooperativeInviteCode?: string;
+  cooperativeName?: string;
 }
 
 export type BotContext = Context & Scenes.WizardContext;

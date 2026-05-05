@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { ProductType } from '../../../generated/prisma/enums';
+import { ProductType, ValidationStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BatchesService } from '../../batches/batches.service';
 import { UNIT_BY_PRODUCT } from '../ui/telegram.messages';
@@ -20,6 +20,16 @@ export class TelegramHarvestService {
     });
   }
 
+  async getCompliantFarmsForProducer(producerId: string) {
+    return this.prisma.farm.findMany({
+      where: {
+        producerId,
+        lastValidationStatus: ValidationStatus.COMPLIANT,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async getFarmName(farmId: string): Promise<string | null> {
     const farm = await this.prisma.farm.findUnique({
       where: { id: farmId },
@@ -31,14 +41,28 @@ export class TelegramHarvestService {
   async getFarmIfOwned(
     farmId: string,
     producerId: string,
-  ): Promise<{ id: string; name: string } | null> {
+  ): Promise<{
+    id: string;
+    name: string;
+    lastValidationStatus: ValidationStatus | null;
+    lastValidationHash: string | null;
+  } | null> {
     return this.prisma.farm.findFirst({
       where: { id: farmId, producerId },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        lastValidationStatus: true,
+        lastValidationHash: true,
+      },
     });
   }
 
-  async createBatch(data: { productType: ProductType; farmId: string; quantity: number }) {
+  async createBatch(data: {
+    productType: ProductType;
+    farmId: string;
+    quantity: number;
+  }) {
     return this.batchesService.create({
       productType: data.productType,
       quantity: data.quantity,
@@ -78,7 +102,7 @@ export class TelegramHarvestService {
     if (!configured) {
       this.logger.warn(
         'Nenhuma env var de URL pública configurada (PUBLIC_BATCHES_URL, PUBLIC_BACKEND_URL, PUBLIC_APP_URL). ' +
-        'Links de QR apontando para localhost.',
+          'Links de QR apontando para localhost.',
       );
     }
 

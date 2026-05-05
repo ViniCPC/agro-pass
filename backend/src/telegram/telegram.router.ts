@@ -6,6 +6,7 @@ import { HarvestScene } from './scenes/harvest.scene';
 import { TelegramAccountService } from './services/telegram-account.service';
 import { GeminiService } from './gemini/gemini.service';
 import { Msg } from './ui/telegram.messages';
+import { CooperativesService } from '../cooperatives/cooperatives.service';
 
 @Injectable()
 export class TelegramRouter {
@@ -16,6 +17,7 @@ export class TelegramRouter {
     private readonly harvestScene: HarvestScene,
     private readonly accountService: TelegramAccountService,
     private readonly geminiService: GeminiService,
+    private readonly cooperativesService: CooperativesService,
   ) {}
 
   register(bot: Telegraf<BotContext>): void {
@@ -28,7 +30,28 @@ export class TelegramRouter {
     bot.use(stage.middleware());
 
     bot.start(async (ctx) => {
+      const text = 'text' in ctx.message ? ctx.message.text : '';
+      const payload = text.split(/\s+/)[1];
+
       await ctx.reply(Msg.welcome);
+
+      if (payload?.startsWith('coop_')) {
+        const inviteCode = payload.slice('coop_'.length);
+        const cooperative =
+          await this.cooperativesService.findByInviteCode(inviteCode);
+
+        if (!cooperative) {
+          await ctx.reply(Msg.cooperative.invalidLink);
+          return;
+        }
+
+        await ctx.reply(Msg.cooperative.detected(cooperative.name));
+        return ctx.scene.enter('linkAccount', {
+          cooperativeInviteCode: inviteCode,
+          cooperativeName: cooperative.name,
+        });
+      }
+
       return ctx.scene.enter('linkAccount');
     });
 
@@ -47,7 +70,8 @@ export class TelegramRouter {
         await ctx.reply(Msg.notLinked);
         return;
       }
-      const producer = await this.accountService.findByTelegramId(telegramUserId);
+      const producer =
+        await this.accountService.findByTelegramId(telegramUserId);
       if (!producer) {
         await ctx.reply(Msg.notLinked);
         return;
@@ -68,7 +92,8 @@ export class TelegramRouter {
         return;
       }
 
-      const producer = await this.accountService.findByTelegramId(telegramUserId);
+      const producer =
+        await this.accountService.findByTelegramId(telegramUserId);
       if (!producer) {
         await ctx.reply(Msg.gemini.notLinked);
         return;
@@ -82,7 +107,11 @@ export class TelegramRouter {
       await ctx.sendChatAction('typing');
 
       try {
-        const reply = await this.geminiService.chat(telegramUserId, producer.id, ctx.message.text);
+        const reply = await this.geminiService.chat(
+          telegramUserId,
+          producer.id,
+          ctx.message.text,
+        );
         await ctx.reply(reply);
       } catch (error) {
         this.logger.error('Erro na conversa com Gemini', error);
@@ -95,7 +124,10 @@ export class TelegramRouter {
       try {
         await ctx.reply(Msg.globalError);
       } catch (replyError) {
-        this.logger.error('Falha ao responder ao usuário após erro', replyError);
+        this.logger.error(
+          'Falha ao responder ao usuário após erro',
+          replyError,
+        );
       }
     });
   }

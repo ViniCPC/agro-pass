@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+﻿import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { BatchesService } from '../../batches/batches.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -53,7 +53,7 @@ describe('TelegramHarvestService', () => {
     jest.restoreAllMocks();
   });
 
-  // ─── getFarmIfOwned ──────────────────────────────────────────────────
+  // â”€â”€â”€ getFarmIfOwned â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('getFarmIfOwned', () => {
     it('retorna null quando a fazenda pertence a outro produtor', async () => {
@@ -64,12 +64,22 @@ describe('TelegramHarvestService', () => {
       expect(result).toBeNull();
       expect(farmFindFirst).toHaveBeenCalledWith({
         where: { id: 'farm-1', producerId: 'wrong-producer' },
-        select: { id: true, name: true },
+        select: {
+          id: true,
+          name: true,
+          lastValidationStatus: true,
+          lastValidationHash: true,
+        },
       });
     });
 
     it('retorna { id, name } quando a fazenda pertence ao produtor', async () => {
-      const farm = { id: 'farm-1', name: 'Fazenda Santa Fé' };
+      const farm = {
+        id: 'farm-1',
+        name: 'Fazenda Santa Fé',
+        lastValidationStatus: 'COMPLIANT',
+        lastValidationHash: 'hash',
+      };
       farmFindFirst.mockResolvedValue(farm);
 
       const result = await service.getFarmIfOwned('farm-1', 'producer-1');
@@ -78,7 +88,7 @@ describe('TelegramHarvestService', () => {
     });
   });
 
-  // ─── buildPublicBatchUrl ─────────────────────────────────────────────
+  // â”€â”€â”€ buildPublicBatchUrl â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('buildPublicBatchUrl', () => {
     it('usa PUBLIC_BATCHES_URL quando configurada', () => {
@@ -89,7 +99,7 @@ describe('TelegramHarvestService', () => {
       );
     });
 
-    it('usa PUBLIC_BACKEND_URL como segunda opção', () => {
+    it('usa PUBLIC_BACKEND_URL como segunda opÃ§Ã£o', () => {
       process.env.PUBLIC_BACKEND_URL = 'https://backend.agropass.com';
 
       expect(service.buildPublicBatchUrl('SOJ-2026-0001')).toBe(
@@ -97,7 +107,7 @@ describe('TelegramHarvestService', () => {
       );
     });
 
-    it('usa PUBLIC_APP_URL como terceira opção', () => {
+    it('usa PUBLIC_APP_URL como terceira opÃ§Ã£o', () => {
       process.env.PUBLIC_APP_URL = 'https://app.agropass.com';
 
       expect(service.buildPublicBatchUrl('GAD-2026-0001')).toBe(
@@ -105,14 +115,16 @@ describe('TelegramHarvestService', () => {
       );
     });
 
-    it('usa localhost e emite warn quando nenhuma env var está configurada', () => {
+    it('usa localhost e emite warn quando nenhuma env var estÃ¡ configurada', () => {
       const warnSpy = jest
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => {});
 
       const url = service.buildPublicBatchUrl('CAF-2026-0001');
 
-      expect(url).toMatch(/^http:\/\/localhost:\d+\/public\/batches\/CAF-2026-0001$/);
+      expect(url).toMatch(
+        /^http:\/\/localhost:\d+\/public\/batches\/CAF-2026-0001$/,
+      );
       expect(warnSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -125,7 +137,7 @@ describe('TelegramHarvestService', () => {
     });
   });
 
-  // ─── getUnit ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ getUnit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('getUnit', () => {
     const cases: Array<[ProductType, string]> = [
@@ -138,8 +150,11 @@ describe('TelegramHarvestService', () => {
       ['WOOD', 'm³'],
     ];
 
-    it.each(cases)('retorna unidade correta para %s', (productType, expectedUnit) => {
-      expect(service.getUnit(productType)).toBe(expectedUnit);
-    });
+    it.each(cases)(
+      'retorna unidade correta para %s',
+      (productType, expectedUnit) => {
+        expect(service.getUnit(productType)).toBe(expectedUnit);
+      },
+    );
   });
 });
