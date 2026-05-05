@@ -51,6 +51,11 @@ describe('PublicBatches (e2e)', () => {
       .expect(201);
     farmId = farmRes.body.id;
 
+    await prisma.farm.update({
+      where: { id: farmId },
+      data: { lastValidationStatus: 'COMPLIANT', status: 'APPROVED' },
+    });
+
     // Criar lote
     const batchRes = await request(app.getHttpServer())
       .post('/batches')

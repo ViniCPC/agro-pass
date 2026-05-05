@@ -1,15 +1,16 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { FarmStatus, ValidationStatus } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
-import { EudrService } from './eudr.service';
 import { EudrValidationMode, ValidateFarmDto } from './dto/validate-farm.dto';
+import { EudrQueryService } from './eudr-query.service';
+import { EudrValidateService } from './eudr-validate.service';
 import { HansenService } from './sources/hansen.service';
 import { MapBiomasService } from './sources/mapbiomas.service';
 import { ProdesService } from './sources/prodes.service';
 import { SentinelService } from './sources/sentinel.service';
 
-// ─── Factories ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Factories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function makeFarm(overrides: Record<string, unknown> = {}) {
   return {
@@ -24,7 +25,7 @@ function makeFarm(overrides: Record<string, unknown> = {}) {
     status: FarmStatus.PENDING,
     lastValidationId: null,
     lastValidation: null,
-    producer: { id: 'producer-uuid', name: 'João', document: '12345678901' },
+    producer: { id: 'producer-uuid', name: 'JoÃ£o', document: '12345678901' },
     ...overrides,
   };
 }
@@ -68,10 +69,11 @@ function makeSentinelResult() {
   };
 }
 
-// ─── Suite ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Suite â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-describe('EudrService', () => {
-  let service: EudrService;
+describe('EUDR services', () => {
+  let validateService: EudrValidateService;
+  let queryService: EudrQueryService;
 
   let farmFindUnique: jest.Mock;
   let farmUpdate: jest.Mock;
@@ -110,7 +112,8 @@ describe('EudrService', () => {
 
     const module = await Test.createTestingModule({
       providers: [
-        EudrService,
+        EudrValidateService,
+        EudrQueryService,
         {
           provide: PrismaService,
           useValue: {
@@ -136,39 +139,40 @@ describe('EudrService', () => {
       ],
     }).compile();
 
-    service = module.get(EudrService);
+    validateService = module.get(EudrValidateService);
+    queryService = module.get(EudrQueryService);
   });
 
-  // ─── validateFarm ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ validateFarm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('validateFarm', () => {
-    it('lança NotFoundException quando a fazenda não existe', async () => {
+    it('lanÃ§a NotFoundException quando a fazenda nÃ£o existe', async () => {
       farmFindUnique.mockResolvedValue(null);
 
       await expect(
-        service.validateFarm('farm-uuid', {} as ValidateFarmDto),
+        validateService.validateFarm('farm-uuid', {} as ValidateFarmDto),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('lança BadRequestException ao usar mockHectaresDeforested com SEMI_AUTOMATIC', async () => {
+    it('lanÃ§a BadRequestException ao usar mockHectaresDeforested com SEMI_AUTOMATIC', async () => {
       farmFindUnique.mockResolvedValue(makeFarm());
 
       await expect(
-        service.validateFarm('farm-uuid', {
+        validateService.validateFarm('farm-uuid', {
           mode: EudrValidationMode.SEMI_AUTOMATIC,
           mockHectaresDeforested: 1.5,
         }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('lança BadRequestException quando a fazenda não tem coordenadas', async () => {
+    it('lanÃ§a BadRequestException quando a fazenda nÃ£o tem coordenadas', async () => {
       farmFindUnique.mockResolvedValue(
         makeFarm({ latitude: null, longitude: null }),
       );
 
-      await expect(service.validateFarm('farm-uuid', {})).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        validateService.validateFarm('farm-uuid', {}),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('retorna COMPLIANT e FarmStatus APPROVED quando hectaresDeforested = 0', async () => {
@@ -184,7 +188,7 @@ describe('EudrService', () => {
         }),
       );
 
-      const result = await service.validateFarm('farm-uuid', {
+      const result = await validateService.validateFarm('farm-uuid', {
         mode: EudrValidationMode.MOCK,
         mockHectaresDeforested: 0,
       });
@@ -194,7 +198,7 @@ describe('EudrService', () => {
       expect(result.hectaresDeforested).toBe(0);
     });
 
-    it('retorna NEEDS_REVIEW e FarmStatus PENDING quando hectaresDeforested está entre 0 e 1', async () => {
+    it('retorna NEEDS_REVIEW e FarmStatus PENDING quando hectaresDeforested estÃ¡ entre 0 e 1', async () => {
       farmFindUnique.mockResolvedValue(makeFarm());
       mapBiomasAnalyze.mockResolvedValue(makeSourceResult(0.6));
       prodesAnalyze.mockResolvedValue(makeSourceResult(0.6));
@@ -207,7 +211,7 @@ describe('EudrService', () => {
         }),
       );
 
-      const result = await service.validateFarm('farm-uuid', {
+      const result = await validateService.validateFarm('farm-uuid', {
         mode: EudrValidationMode.MOCK,
         mockHectaresDeforested: 0.6,
       });
@@ -229,7 +233,7 @@ describe('EudrService', () => {
         }),
       );
 
-      const result = await service.validateFarm('farm-uuid', {
+      const result = await validateService.validateFarm('farm-uuid', {
         mode: EudrValidationMode.MOCK,
         mockHectaresDeforested: 2,
       });
@@ -238,26 +242,25 @@ describe('EudrService', () => {
       expect(result.farmStatus).toBe(FarmStatus.REJECTED);
     });
 
-    it('calcula a média dos hectares das três fontes corretamente', async () => {
+    it('usa o maior valor de hectares entre as fontes por conservadorismo', async () => {
       farmFindUnique.mockResolvedValue(makeFarm());
-      // média de 0, 0.6, 1.8 = 0.8 → NEEDS_REVIEW
       mapBiomasAnalyze.mockResolvedValue(makeSourceResult(0));
       prodesAnalyze.mockResolvedValue(makeSourceResult(0.6));
       hansenAnalyze.mockResolvedValue(makeSourceResult(1.8));
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(
         makeValidation({
-          status: ValidationStatus.NEEDS_REVIEW,
-          hectaresDeforested: 0.8,
+          status: ValidationStatus.NON_COMPLIANT,
+          hectaresDeforested: 1.8,
         }),
       );
 
-      const result = await service.validateFarm('farm-uuid', {
+      const result = await validateService.validateFarm('farm-uuid', {
         mode: EudrValidationMode.MOCK,
         mockHectaresDeforested: 0.8,
       });
 
-      expect(result.hectaresDeforested).toBe(0.8);
+      expect(result.hectaresDeforested).toBe(1.8);
     });
 
     it('inclui satelliteImageBeforeUrl, satelliteImageAfterUrl, ndviBefore e ndviAfter no retorno', async () => {
@@ -268,7 +271,7 @@ describe('EudrService', () => {
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(makeValidation());
 
-      const result = await service.validateFarm('farm-uuid', {
+      const result = await validateService.validateFarm('farm-uuid', {
         mode: EudrValidationMode.MOCK,
         mockHectaresDeforested: 0,
       });
@@ -288,7 +291,7 @@ describe('EudrService', () => {
       sentinelAnalyze.mockResolvedValue(sentinel);
       eudrValidationCreate.mockResolvedValue(makeValidation());
 
-      await service.validateFarm('farm-uuid', {
+      await validateService.validateFarm('farm-uuid', {
         mode: EudrValidationMode.MOCK,
         mockHectaresDeforested: 0,
       });
@@ -305,7 +308,7 @@ describe('EudrService', () => {
       );
     });
 
-    it('usa SEMI_AUTOMATIC como modo padrão quando mode não é informado', async () => {
+    it('usa SEMI_AUTOMATIC como modo padrÃ£o quando mode nÃ£o Ã© informado', async () => {
       farmFindUnique.mockResolvedValue(makeFarm());
       mapBiomasAnalyze.mockResolvedValue(makeSourceResult(0));
       prodesAnalyze.mockResolvedValue(makeSourceResult(0));
@@ -313,28 +316,28 @@ describe('EudrService', () => {
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(makeValidation());
 
-      await service.validateFarm('farm-uuid', {});
+      await validateService.validateFarm('farm-uuid', {});
 
       const callArg = sentinelAnalyze.mock.calls[0][0];
       expect(callArg.mode).toBe(EudrValidationMode.SEMI_AUTOMATIC);
     });
   });
 
-  // ─── getLastValidation ─────────────────────────────────────────────────────
+  // â”€â”€â”€ getLastValidation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('getLastValidation', () => {
-    it('lança NotFoundException quando a fazenda não existe', async () => {
+    it('lanÃ§a NotFoundException quando a fazenda nÃ£o existe', async () => {
       farmFindUnique.mockResolvedValue(null);
 
-      await expect(service.getLastValidation('farm-uuid')).rejects.toThrow(
+      await expect(queryService.getLastValidation('farm-uuid')).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('retorna mensagem de sem validação quando lastValidation é null', async () => {
+    it('retorna mensagem de sem validaÃ§Ã£o quando lastValidation Ã© null', async () => {
       farmFindUnique.mockResolvedValue(makeFarm({ lastValidation: null }));
 
-      const result = await service.getLastValidation('farm-uuid');
+      const result = await queryService.getLastValidation('farm-uuid');
 
       expect(result.lastValidation).toBeNull();
       expect(result.message).toBeDefined();
@@ -346,7 +349,7 @@ describe('EudrService', () => {
         makeFarm({ lastValidation: validation }),
       );
 
-      const result = await service.getLastValidation('farm-uuid');
+      const result = await queryService.getLastValidation('farm-uuid');
 
       expect(result.lastValidation).not.toBeNull();
       expect(result.lastValidation?.id).toBe(validation.id);
@@ -354,18 +357,18 @@ describe('EudrService', () => {
     });
   });
 
-  // ─── getValidationHistory ──────────────────────────────────────────────────
+  // â”€â”€â”€ getValidationHistory â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe('getValidationHistory', () => {
-    it('lança NotFoundException quando a fazenda não existe', async () => {
+    it('lanÃ§a NotFoundException quando a fazenda nÃ£o existe', async () => {
       farmFindUnique.mockResolvedValue(null);
 
       await expect(
-        service.getValidationHistory('farm-uuid', 1, 10),
+        queryService.getValidationHistory('farm-uuid', 1, 10),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('retorna lista paginada de validações', async () => {
+    it('retorna lista paginada de validaÃ§Ãµes', async () => {
       farmFindUnique.mockResolvedValue(
         makeFarm({
           id: 'farm-uuid',
@@ -379,29 +382,41 @@ describe('EudrService', () => {
       ]);
       eudrValidationCount.mockResolvedValue(2);
 
-      const result = await service.getValidationHistory('farm-uuid', 1, 10);
+      const result = await queryService.getValidationHistory(
+        'farm-uuid',
+        1,
+        10,
+      );
 
       expect(result.data).toHaveLength(2);
       expect(result.pagination.totalItems).toBe(2);
       expect(result.pagination.totalPages).toBe(1);
     });
 
-    it('calcula totalPages corretamente para múltiplas páginas', async () => {
+    it('calcula totalPages corretamente para mÃºltiplas pÃ¡ginas', async () => {
       farmFindUnique.mockResolvedValue(makeFarm());
       eudrValidationFindMany.mockResolvedValue([makeValidation()]);
       eudrValidationCount.mockResolvedValue(25);
 
-      const result = await service.getValidationHistory('farm-uuid', 1, 10);
+      const result = await queryService.getValidationHistory(
+        'farm-uuid',
+        1,
+        10,
+      );
 
       expect(result.pagination.totalPages).toBe(3);
     });
 
-    it('retorna totalPages mínimo de 1 mesmo sem registros', async () => {
+    it('retorna totalPages mÃ­nimo de 1 mesmo sem registros', async () => {
       farmFindUnique.mockResolvedValue(makeFarm());
       eudrValidationFindMany.mockResolvedValue([]);
       eudrValidationCount.mockResolvedValue(0);
 
-      const result = await service.getValidationHistory('farm-uuid', 1, 10);
+      const result = await queryService.getValidationHistory(
+        'farm-uuid',
+        1,
+        10,
+      );
 
       expect(result.pagination.totalPages).toBe(1);
     });

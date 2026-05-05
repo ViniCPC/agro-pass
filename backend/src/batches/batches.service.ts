@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ValidationStatus } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { BatchCodeService } from './batch-code.service';
 import { BatchDto } from './dto/batch.dto';
@@ -20,7 +22,13 @@ export class BatchesService {
   ) {}
 
   async create(dto: CreateBatchDto): Promise<BatchDto> {
-    await this.findFarmOrThrow(dto.farmId);
+    const farm = await this.findFarmOrThrow(dto.farmId);
+
+    if (farm.lastValidationStatus !== ValidationStatus.COMPLIANT) {
+      throw new BadRequestException(
+        'Esta fazenda ainda nao possui validacao EUDR aprovada para criacao de lote.',
+      );
+    }
 
     const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : undefined;
 
@@ -115,15 +123,20 @@ export class BatchesService {
     await this.prisma.batch.delete({ where: { id } });
   }
 
-  private async findFarmOrThrow(farmId: string): Promise<void> {
+  private async findFarmOrThrow(farmId: string): Promise<{
+    id: string;
+    lastValidationStatus: ValidationStatus | null;
+  }> {
     const farm = await this.prisma.farm.findUnique({
       where: { id: farmId },
-      select: { id: true },
+      select: { id: true, lastValidationStatus: true },
     });
 
     if (!farm) {
       throw new NotFoundException('Fazenda nao encontrada.');
     }
+
+    return farm;
   }
 
   private async findBatchOrThrow(id: string): Promise<void> {

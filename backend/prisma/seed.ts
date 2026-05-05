@@ -1,5 +1,10 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Biome, FarmStatus, PrismaClient } from '../generated/prisma/client';
+import {
+  Biome,
+  FarmStatus,
+  PrismaClient,
+  ValidationStatus,
+} from '../generated/prisma/client';
 import { EUDR_DEMO_CACHE } from '../src/eudr/demo/eudr-demo-cache';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -55,6 +60,8 @@ async function main() {
         : demoFarm.status === 'NON_COMPLIANT'
           ? FarmStatus.REJECTED
           : FarmStatus.PENDING;
+    const validationStatus = toPrismaValidationStatus(demoFarm.status);
+    const validationHash = `demo-eudr-${demoFarm.farmCode}`;
 
     await prisma.farm.upsert({
       where: { carNumber: `DEMO-CAR-${demoFarm.farmCode}` },
@@ -62,6 +69,9 @@ async function main() {
         demoCode: demoFarm.farmCode,
         totalAreaHa: demoFarm.totalAreaHa,
         status,
+        lastValidationStatus: validationStatus,
+        lastValidationHash: validationHash,
+        lastValidatedAt: new Date(),
       },
       create: {
         name: `Fazenda ${demoFarm.farmCode}`,
@@ -74,6 +84,9 @@ async function main() {
         totalAreaHa: demoFarm.totalAreaHa,
         biome: toPrismaBiome(demoFarm.biome),
         status,
+        lastValidationStatus: validationStatus,
+        lastValidationHash: validationHash,
+        lastValidatedAt: new Date(),
         producerId: producer.id,
       },
     });
@@ -99,6 +112,12 @@ function toPrismaBiome(biome: string): Biome {
   if (biome.includes('Amaz')) return Biome.AMAZON;
   if (biome.includes('Mata')) return Biome.ATLANTIC_FOREST;
   return Biome.CERRADO;
+}
+
+function toPrismaValidationStatus(status: string): ValidationStatus {
+  if (status === 'COMPLIANT') return ValidationStatus.COMPLIANT;
+  if (status === 'NON_COMPLIANT') return ValidationStatus.NON_COMPLIANT;
+  return ValidationStatus.NEEDS_REVIEW;
 }
 
 main()

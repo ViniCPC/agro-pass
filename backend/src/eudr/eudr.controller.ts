@@ -17,12 +17,16 @@ import {
 import { ListValidationsQueryDto } from './dto/list-validations-query.dto';
 import { ListValidationsResponseDto } from './dto/list-validations-response.dto';
 import { ValidateFarmDto } from './dto/validate-farm.dto';
-import { EudrService } from './eudr.service';
+import { EudrQueryService } from './eudr-query.service';
+import { EudrValidateService } from './eudr-validate.service';
 
 @ApiTags('EUDR')
 @Controller('eudr')
 export class EudrController {
-  constructor(private readonly eudrService: EudrService) {}
+  constructor(
+    private readonly eudrValidateService: EudrValidateService,
+    private readonly eudrQueryService: EudrQueryService,
+  ) {}
 
   @Post('farms/:farmId/validate')
   @ApiOperation({
@@ -42,7 +46,7 @@ export class EudrController {
     @Param('farmId', new ParseUUIDPipe()) farmId: string,
     @Body() dto: ValidateFarmDto,
   ) {
-    return this.eudrService.validateFarm(farmId, dto);
+    return this.eudrValidateService.validateFarm(farmId, dto);
   }
 
   @Get('farms/:farmId/last-validation')
@@ -56,7 +60,7 @@ export class EudrController {
     description: 'Fazenda nao encontrada.',
   })
   getLastValidation(@Param('farmId', new ParseUUIDPipe()) farmId: string) {
-    return this.eudrService.getLastValidation(farmId);
+    return this.eudrQueryService.getLastValidation(farmId);
   }
 
   @Get('farms/:farmId/validations')
@@ -74,7 +78,7 @@ export class EudrController {
     @Param('farmId', new ParseUUIDPipe()) farmId: string,
     @Query() query: ListValidationsQueryDto,
   ) {
-    return this.eudrService.getValidationHistory(
+    return this.eudrQueryService.getValidationHistory(
       farmId,
       query.page,
       query.limit,

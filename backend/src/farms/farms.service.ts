@@ -73,7 +73,7 @@ export class FarmsService {
     }
 
     const updated = await this.prisma.farm.update({
-      where: { id },
+      where: { id: farm.id },
       data: { status: dto.status },
     });
 
@@ -85,8 +85,6 @@ export class FarmsService {
       return undefined;
     }
 
-    return value === null
-      ? Prisma.DbNull
-      : (value as Prisma.InputJsonValue);
+    return value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue);
   }
 }

@@ -3,12 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FarmStatus, ValidationStatus } from '../../generated/prisma/enums';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { EUDR_CUTOFF_DATE, EUDR_VALIDITY_MONTHS } from './eudr.constants';
-import { EudrValidationDto } from './dto/eudr-validation.dto';
-import { ListValidationsResponseDto } from './dto/list-validations-response.dto';
 import { EudrValidationMode, ValidateFarmDto } from './dto/validate-farm.dto';
 import { HansenService } from './sources/hansen.service';
 import { MapBiomasService } from './sources/mapbiomas.service';
@@ -16,11 +13,16 @@ import { ProdesService } from './sources/prodes.service';
 import { SentinelService } from './sources/sentinel.service';
 import { AnalyzeFarmInput } from './sources/source-input.types';
 import { createSha256Hash } from './utils/hash.util';
-
-type EudrApiStatus = 'COMPLIANT' | 'REVIEW_REQUIRED' | 'NON_COMPLIANT';
+import {
+  calculateHectaresDeforested,
+  classifyValidationStatus,
+  toApiStatus,
+  toCutoffDate,
+  toFarmStatus,
+} from './utils/eudr-status.util';
 
 @Injectable()
-export class EudrService {
+export class EudrValidateService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mapBiomasService: MapBiomasService,
@@ -78,14 +80,14 @@ export class EudrService {
         this.sentinelService.analyzeFarm(sourceInput),
       ]);
 
-    const hectaresDeforested = this.calculateHectaresDeforested([
+    const hectaresDeforested = calculateHectaresDeforested([
       mapBiomasResult.hectaresDeforested,
       prodesResult.hectaresDeforested,
       hansenResult.hectaresDeforested,
     ]);
 
-    const validationStatus = this.classifyValidationStatus(hectaresDeforested);
-    const farmStatus = this.toFarmStatus(validationStatus);
+    const validationStatus = classifyValidationStatus(hectaresDeforested);
+    const farmStatus = toFarmStatus(validationStatus);
 
     const validUntil = new Date();
     validUntil.setMonth(validUntil.getMonth() + EUDR_VALIDITY_MONTHS);
@@ -127,7 +129,7 @@ export class EudrService {
         data: {
           farmId: farm.id,
           status: validationStatus,
-          cutoffDate: this.toCutoffDate(),
+          cutoffDate: toCutoffDate(),
           hectaresDeforested,
           mapBiomasResult,
           prodesResult,
@@ -147,6 +149,9 @@ export class EudrService {
         },
         data: {
           lastValidationId: createdValidation.id,
+          lastValidationStatus: createdValidation.status,
+          lastValidationHash: createdValidation.evidenceHash,
+          lastValidatedAt: createdValidation.validatedAt,
           status: farmStatus,
         },
       });
@@ -159,7 +164,7 @@ export class EudrService {
       validationId: validation.id,
       farmId: farm.id,
       farmName: farm.name,
-      status: this.toApiStatus(validation.status),
+      status: toApiStatus(validation.status),
       farmStatus,
       hectaresDeforested,
       cutoffDate: validation.cutoffDate,
@@ -174,138 +179,5 @@ export class EudrService {
       ndviAfter: sentinelResult.ndviAfter,
       ndviDelta: sentinelResult.ndviDelta,
     };
-  }
-
-  async getLastValidation(farmId: string) {
-    const farm = await this.prisma.farm.findUnique({
-      where: {
-        id: farmId,
-      },
-      include: {
-        lastValidation: true,
-      },
-    });
-
-    if (!farm) {
-      throw new NotFoundException('Fazenda nao encontrada.');
-    }
-
-    if (!farm.lastValidation) {
-      return {
-        message: 'Esta fazenda ainda nao possui validacao EUDR.',
-        farmId: farm.id,
-        farmName: farm.name,
-        farmStatus: farm.status,
-        lastValidation: null,
-      };
-    }
-
-    return {
-      farmId: farm.id,
-      farmName: farm.name,
-      farmStatus: farm.status,
-      lastValidation: EudrValidationDto.fromModel(farm.lastValidation),
-    };
-  }
-
-  async getValidationHistory(
-    farmId: string,
-    page: number,
-    limit: number,
-  ): Promise<ListValidationsResponseDto> {
-    const farm = await this.prisma.farm.findUnique({
-      where: { id: farmId },
-      select: {
-        id: true,
-        name: true,
-        status: true,
-      },
-    });
-
-    if (!farm) {
-      throw new NotFoundException('Fazenda nao encontrada.');
-    }
-
-    const skip = (page - 1) * limit;
-
-    const [validations, totalItems] = await this.prisma.$transaction([
-      this.prisma.eudrValidation.findMany({
-        where: { farmId: farm.id },
-        orderBy: { validatedAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.eudrValidation.count({
-        where: { farmId: farm.id },
-      }),
-    ]);
-
-    return {
-      farmId: farm.id,
-      farmName: farm.name,
-      farmStatus: farm.status,
-      data: validations.map((validation) =>
-        EudrValidationDto.fromModel(validation),
-      ),
-      pagination: {
-        page,
-        limit,
-        totalItems,
-        totalPages: Math.max(1, Math.ceil(totalItems / limit)),
-      },
-    };
-  }
-
-  private classifyValidationStatus(
-    hectaresDeforested: number,
-  ): ValidationStatus {
-    if (hectaresDeforested === 0) {
-      return ValidationStatus.COMPLIANT;
-    }
-
-    if (hectaresDeforested > 0 && hectaresDeforested < 1) {
-      return ValidationStatus.NEEDS_REVIEW;
-    }
-
-    return ValidationStatus.NON_COMPLIANT;
-  }
-
-  private calculateHectaresDeforested(values: number[]): number {
-    if (values.length === 0) {
-      return 0;
-    }
-
-    const average =
-      values.reduce((total, current) => total + current, 0) / values.length;
-
-    return Number(average.toFixed(2));
-  }
-
-  private toCutoffDate(): Date {
-    return new Date(`${EUDR_CUTOFF_DATE}T00:00:00.000Z`);
-  }
-
-  private toFarmStatus(status: ValidationStatus): FarmStatus {
-    if (status === ValidationStatus.COMPLIANT) {
-      return FarmStatus.APPROVED;
-    }
-
-    if (status === ValidationStatus.NON_COMPLIANT) {
-      return FarmStatus.REJECTED;
-    }
-
-    return FarmStatus.PENDING;
-  }
-
-  private toApiStatus(status: ValidationStatus): EudrApiStatus {
-    if (status === ValidationStatus.COMPLIANT) {
-      return 'COMPLIANT';
-    }
-
-    if (status === ValidationStatus.NON_COMPLIANT) {
-      return 'NON_COMPLIANT';
-    }
-
-    return 'REVIEW_REQUIRED';
   }
 }
