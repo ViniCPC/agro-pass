@@ -9,17 +9,21 @@ import { TraceEventsModule } from './trace-events/trace-events.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { PublicBatchesModule } from './public-batches/public-batches.module';
 import { EudrModule } from './eudr/eudr.module';
+import { CooperativesModule } from './cooperatives/cooperatives.module';
 
 @Module({
-  imports: [PrismaModule,
+  imports: [
+    PrismaModule,
     ProducersModule,
     FarmsModule,
     BatchesModule,
     TraceEventsModule,
     TelegramModule,
     PublicBatchesModule,
-    EudrModule],
+    EudrModule,
+    CooperativesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}
