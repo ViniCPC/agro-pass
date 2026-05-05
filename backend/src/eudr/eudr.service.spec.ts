@@ -56,8 +56,10 @@ function makeSourceResult(hectaresDeforested: number) {
 
 function makeSentinelResult() {
   return {
-    satelliteImageBeforeUrl: 'https://mock-eo.agropass.dev/sentinel2/farm-uuid/before_2020-12-31.png',
-    satelliteImageAfterUrl: 'https://mock-eo.agropass.dev/sentinel2/farm-uuid/after_2025-01-01.png',
+    satelliteImageBeforeUrl:
+      'https://mock-eo.agropass.dev/sentinel2/farm-uuid/before_2020-12-31.png',
+    satelliteImageAfterUrl:
+      'https://mock-eo.agropass.dev/sentinel2/farm-uuid/after_2025-01-01.png',
     ndviBefore: 0.6,
     ndviAfter: 0.55,
     ndviDelta: -0.05,
@@ -121,10 +123,16 @@ describe('EudrService', () => {
             $transaction,
           },
         },
-        { provide: MapBiomasService, useValue: { analyzeFarm: mapBiomasAnalyze } },
+        {
+          provide: MapBiomasService,
+          useValue: { analyzeFarm: mapBiomasAnalyze },
+        },
         { provide: ProdesService, useValue: { analyzeFarm: prodesAnalyze } },
         { provide: HansenService, useValue: { analyzeFarm: hansenAnalyze } },
-        { provide: SentinelService, useValue: { analyzeFarm: sentinelAnalyze } },
+        {
+          provide: SentinelService,
+          useValue: { analyzeFarm: sentinelAnalyze },
+        },
       ],
     }).compile();
 
@@ -158,9 +166,9 @@ describe('EudrService', () => {
         makeFarm({ latitude: null, longitude: null }),
       );
 
-      await expect(
-        service.validateFarm('farm-uuid', {}),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.validateFarm('farm-uuid', {})).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('retorna COMPLIANT e FarmStatus APPROVED quando hectaresDeforested = 0', async () => {
@@ -170,10 +178,16 @@ describe('EudrService', () => {
       hansenAnalyze.mockResolvedValue(makeSourceResult(0));
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(
-        makeValidation({ status: ValidationStatus.COMPLIANT, hectaresDeforested: 0 }),
+        makeValidation({
+          status: ValidationStatus.COMPLIANT,
+          hectaresDeforested: 0,
+        }),
       );
 
-      const result = await service.validateFarm('farm-uuid', { mode: EudrValidationMode.MOCK, mockHectaresDeforested: 0 });
+      const result = await service.validateFarm('farm-uuid', {
+        mode: EudrValidationMode.MOCK,
+        mockHectaresDeforested: 0,
+      });
 
       expect(result.status).toBe(ValidationStatus.COMPLIANT);
       expect(result.farmStatus).toBe(FarmStatus.APPROVED);
@@ -187,12 +201,18 @@ describe('EudrService', () => {
       hansenAnalyze.mockResolvedValue(makeSourceResult(0.6));
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(
-        makeValidation({ status: ValidationStatus.NEEDS_REVIEW, hectaresDeforested: 0.6 }),
+        makeValidation({
+          status: ValidationStatus.NEEDS_REVIEW,
+          hectaresDeforested: 0.6,
+        }),
       );
 
-      const result = await service.validateFarm('farm-uuid', { mode: EudrValidationMode.MOCK, mockHectaresDeforested: 0.6 });
+      const result = await service.validateFarm('farm-uuid', {
+        mode: EudrValidationMode.MOCK,
+        mockHectaresDeforested: 0.6,
+      });
 
-      expect(result.status).toBe(ValidationStatus.NEEDS_REVIEW);
+      expect(result.status).toBe('REVIEW_REQUIRED');
       expect(result.farmStatus).toBe(FarmStatus.PENDING);
     });
 
@@ -203,10 +223,16 @@ describe('EudrService', () => {
       hansenAnalyze.mockResolvedValue(makeSourceResult(2));
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(
-        makeValidation({ status: ValidationStatus.NON_COMPLIANT, hectaresDeforested: 2 }),
+        makeValidation({
+          status: ValidationStatus.NON_COMPLIANT,
+          hectaresDeforested: 2,
+        }),
       );
 
-      const result = await service.validateFarm('farm-uuid', { mode: EudrValidationMode.MOCK, mockHectaresDeforested: 2 });
+      const result = await service.validateFarm('farm-uuid', {
+        mode: EudrValidationMode.MOCK,
+        mockHectaresDeforested: 2,
+      });
 
       expect(result.status).toBe(ValidationStatus.NON_COMPLIANT);
       expect(result.farmStatus).toBe(FarmStatus.REJECTED);
@@ -220,10 +246,16 @@ describe('EudrService', () => {
       hansenAnalyze.mockResolvedValue(makeSourceResult(1.8));
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(
-        makeValidation({ status: ValidationStatus.NEEDS_REVIEW, hectaresDeforested: 0.8 }),
+        makeValidation({
+          status: ValidationStatus.NEEDS_REVIEW,
+          hectaresDeforested: 0.8,
+        }),
       );
 
-      const result = await service.validateFarm('farm-uuid', { mode: EudrValidationMode.MOCK, mockHectaresDeforested: 0.8 });
+      const result = await service.validateFarm('farm-uuid', {
+        mode: EudrValidationMode.MOCK,
+        mockHectaresDeforested: 0.8,
+      });
 
       expect(result.hectaresDeforested).toBe(0.8);
     });
@@ -236,7 +268,10 @@ describe('EudrService', () => {
       sentinelAnalyze.mockResolvedValue(makeSentinelResult());
       eudrValidationCreate.mockResolvedValue(makeValidation());
 
-      const result = await service.validateFarm('farm-uuid', { mode: EudrValidationMode.MOCK, mockHectaresDeforested: 0 });
+      const result = await service.validateFarm('farm-uuid', {
+        mode: EudrValidationMode.MOCK,
+        mockHectaresDeforested: 0,
+      });
 
       expect(result.satelliteImageBeforeUrl).toBeDefined();
       expect(result.satelliteImageAfterUrl).toBeDefined();
@@ -253,7 +288,10 @@ describe('EudrService', () => {
       sentinelAnalyze.mockResolvedValue(sentinel);
       eudrValidationCreate.mockResolvedValue(makeValidation());
 
-      await service.validateFarm('farm-uuid', { mode: EudrValidationMode.MOCK, mockHectaresDeforested: 0 });
+      await service.validateFarm('farm-uuid', {
+        mode: EudrValidationMode.MOCK,
+        mockHectaresDeforested: 0,
+      });
 
       expect(eudrValidationCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -304,7 +342,9 @@ describe('EudrService', () => {
 
     it('retorna EudrValidationDto quando lastValidation existe', async () => {
       const validation = makeValidation();
-      farmFindUnique.mockResolvedValue(makeFarm({ lastValidation: validation }));
+      farmFindUnique.mockResolvedValue(
+        makeFarm({ lastValidation: validation }),
+      );
 
       const result = await service.getLastValidation('farm-uuid');
 
@@ -327,9 +367,16 @@ describe('EudrService', () => {
 
     it('retorna lista paginada de validações', async () => {
       farmFindUnique.mockResolvedValue(
-        makeFarm({ id: 'farm-uuid', name: 'Fazenda Test', status: FarmStatus.APPROVED }),
+        makeFarm({
+          id: 'farm-uuid',
+          name: 'Fazenda Test',
+          status: FarmStatus.APPROVED,
+        }),
       );
-      eudrValidationFindMany.mockResolvedValue([makeValidation(), makeValidation({ id: 'v2' })]);
+      eudrValidationFindMany.mockResolvedValue([
+        makeValidation(),
+        makeValidation({ id: 'v2' }),
+      ]);
       eudrValidationCount.mockResolvedValue(2);
 
       const result = await service.getValidationHistory('farm-uuid', 1, 10);

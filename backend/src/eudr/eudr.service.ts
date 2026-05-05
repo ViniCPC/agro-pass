@@ -17,6 +17,8 @@ import { SentinelService } from './sources/sentinel.service';
 import { AnalyzeFarmInput } from './sources/source-input.types';
 import { createSha256Hash } from './utils/hash.util';
 
+type EudrApiStatus = 'COMPLIANT' | 'REVIEW_REQUIRED' | 'NON_COMPLIANT';
+
 @Injectable()
 export class EudrService {
   constructor(
@@ -68,12 +70,13 @@ export class EudrService {
       mockHectaresDeforested: dto.mockHectaresDeforested,
     };
 
-    const [mapBiomasResult, prodesResult, hansenResult, sentinelResult] = await Promise.all([
-      this.mapBiomasService.analyzeFarm(sourceInput),
-      this.prodesService.analyzeFarm(sourceInput),
-      this.hansenService.analyzeFarm(sourceInput),
-      this.sentinelService.analyzeFarm(sourceInput),
-    ]);
+    const [mapBiomasResult, prodesResult, hansenResult, sentinelResult] =
+      await Promise.all([
+        this.mapBiomasService.analyzeFarm(sourceInput),
+        this.prodesService.analyzeFarm(sourceInput),
+        this.hansenService.analyzeFarm(sourceInput),
+        this.sentinelService.analyzeFarm(sourceInput),
+      ]);
 
     const hectaresDeforested = this.calculateHectaresDeforested([
       mapBiomasResult.hectaresDeforested,
@@ -156,7 +159,7 @@ export class EudrService {
       validationId: validation.id,
       farmId: farm.id,
       farmName: farm.name,
-      status: validation.status,
+      status: this.toApiStatus(validation.status),
       farmStatus,
       hectaresDeforested,
       cutoffDate: validation.cutoffDate,
@@ -169,6 +172,7 @@ export class EudrService {
       satelliteImageAfterUrl: sentinelResult.satelliteImageAfterUrl,
       ndviBefore: sentinelResult.ndviBefore,
       ndviAfter: sentinelResult.ndviAfter,
+      ndviDelta: sentinelResult.ndviDelta,
     };
   }
 
@@ -291,5 +295,17 @@ export class EudrService {
     }
 
     return FarmStatus.PENDING;
+  }
+
+  private toApiStatus(status: ValidationStatus): EudrApiStatus {
+    if (status === ValidationStatus.COMPLIANT) {
+      return 'COMPLIANT';
+    }
+
+    if (status === ValidationStatus.NON_COMPLIANT) {
+      return 'NON_COMPLIANT';
+    }
+
+    return 'REVIEW_REQUIRED';
   }
 }

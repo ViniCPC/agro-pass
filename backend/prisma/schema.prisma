@@ -108,6 +108,7 @@ model Farm {
   appAreaHa          Float?
   consolidatedAreaHa Float?
   biome              Biome?
+  demoCode String?
   isAmazonLegal      Boolean @default(false)
 
   status FarmStatus @default(PENDING)
