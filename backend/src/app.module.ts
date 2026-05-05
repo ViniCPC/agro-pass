@@ -10,6 +10,8 @@ import { TelegramModule } from './telegram/telegram.module';
 import { PublicBatchesModule } from './public-batches/public-batches.module';
 import { EudrModule } from './eudr/eudr.module';
 import { CooperativesModule } from './cooperatives/cooperatives.module';
+import { ReportsModule } from './reports/reports.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { CooperativesModule } from './cooperatives/cooperatives.module';
     PublicBatchesModule,
     EudrModule,
     CooperativesModule,
+    ReportsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
