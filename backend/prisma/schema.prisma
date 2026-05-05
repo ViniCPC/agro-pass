@@ -4,8 +4,8 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -18,13 +18,13 @@ datasource db {
 // ============================================
 
 model Producer {
-  id              String   @id @default(uuid())
+  id              String  @id @default(uuid())
   name            String
-  phone           String   @unique
-  document        String   @unique 
-  telegramUserId  String?  @unique 
-  walletAddress   String?  @unique
-  reputationScore Int      @default(0)
+  phone           String  @unique
+  document        String  @unique
+  telegramUserId  String? @unique
+  walletAddress   String? @unique
+  reputationScore Int     @default(0)
 
   cooperativeId String?
   cooperative   Cooperative? @relation(fields: [cooperativeId], references: [id])
@@ -42,11 +42,12 @@ model Producer {
 model Cooperative {
   id            String          @id @default(uuid())
   name          String
-  document      String          @unique 
+  document      String          @unique
   city          String
   state         String
   walletAddress String?         @unique
   slug          String          @unique // pra deep links: t.me/AgroPassBot?start=coop_cooxupe
+  inviteCode    String          @unique @default(uuid())
   plan          CooperativePlan @default(BASIC)
   monthlyFee    Float?
   contractedAt  DateTime?
@@ -59,11 +60,11 @@ model Cooperative {
 }
 
 model Exporter {
-  id            String   @id @default(uuid())
+  id            String  @id @default(uuid())
   name          String
-  document      String   @unique
-  email         String   @unique
-  walletAddress String?  @unique
+  document      String  @unique
+  email         String  @unique
+  walletAddress String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,14 +109,17 @@ model Farm {
   appAreaHa          Float?
   consolidatedAreaHa Float?
   biome              Biome?
-  demoCode String?
+  demoCode           String?
   isAmazonLegal      Boolean @default(false)
 
   status FarmStatus @default(PENDING)
 
   // Última validação EUDR
-  lastValidationId String?          @unique
-  lastValidation   EudrValidation?  @relation("FarmLastValidation", fields: [lastValidationId], references: [id])
+  lastValidationId     String?           @unique
+  lastValidation       EudrValidation?   @relation("FarmLastValidation", fields: [lastValidationId], references: [id])
+  lastValidationStatus ValidationStatus?
+  lastValidationHash   String?
+  lastValidatedAt      DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -154,7 +158,7 @@ model EudrValidation {
   ndviAfter               Float?
 
   // Auditoria
-  evidenceHash String   // sha256 de tudo combinado
+  evidenceHash String // sha256 de tudo combinado
   validatedAt  DateTime @default(now())
   validUntil   DateTime // 6 meses
 
