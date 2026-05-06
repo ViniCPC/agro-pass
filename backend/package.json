@@ -27,6 +27,7 @@
     "seed": "tsx --require dotenv/config prisma/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.94.0",
     "@google/earthengine": "^1.7.25",
     "@google/generative-ai": "^0.21.0",
     "@metaplex-foundation/mpl-bubblegum": "^5.0.2",

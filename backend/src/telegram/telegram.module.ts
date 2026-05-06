@@ -10,10 +10,15 @@ import { TelegramRouter } from './telegram.router';
 import { HarvestFlowService } from './flows/harvest.flow';
 import { LinkAccountScene } from './scenes/link-account.scene';
 import { HarvestScene } from './scenes/harvest.scene';
+import { RegisterFarmScene } from './scenes/register-farm.scene';
 import { TelegramAccountService } from './services/telegram-account.service';
 import { TelegramHarvestService } from './services/telegram-harvest.service';
+import { TelegramFarmService } from './services/telegram-farm.service';
 import { GeminiService } from './gemini/gemini.service';
 import { GeminiDispatcherService } from './gemini/gemini-dispatcher.service';
+import { AiModule } from 'src/ai/ai.module';
+import { FarmsModule } from '../farms/farms.module';
+import { EudrModule } from '../eudr/eudr.module';
 
 @Module({
   imports: [
@@ -22,6 +27,9 @@ import { GeminiDispatcherService } from './gemini/gemini-dispatcher.service';
     CooperativesModule,
     SolanaModule,
     QrModule,
+    AiModule,
+    FarmsModule,
+    EudrModule,
   ],
   providers: [
     {
@@ -33,9 +41,11 @@ import { GeminiDispatcherService } from './gemini/gemini-dispatcher.service';
     TelegramRouter,
     LinkAccountScene,
     HarvestScene,
+    RegisterFarmScene,
     HarvestFlowService,
     TelegramAccountService,
     TelegramHarvestService,
+    TelegramFarmService,
     GeminiService,
     GeminiDispatcherService,
   ],

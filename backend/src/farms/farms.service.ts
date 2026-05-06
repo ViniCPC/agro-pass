@@ -20,6 +20,7 @@ export class FarmsService {
         longitude: createFarmDto.longitude,
         carNumber: createFarmDto.carNumber?.trim() || null,
         polygonGeoJson: this.toNullableJsonInput(createFarmDto.polygonGeoJson),
+        carRawJson: this.toNullableJsonInput(createFarmDto.carRawJson),
         totalAreaHa: createFarmDto.totalAreaHa ?? null,
         legalReserveAreaHa: createFarmDto.legalReserveAreaHa ?? null,
         appAreaHa: createFarmDto.appAreaHa ?? null,

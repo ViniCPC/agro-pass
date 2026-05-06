@@ -7,5 +7,6 @@ import { FarmsService } from './farms.service';
   imports: [PrismaModule],
   controllers: [FarmsController],
   providers: [FarmsService],
+  exports: [FarmsService],
 })
 export class FarmsModule {}

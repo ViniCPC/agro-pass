@@ -3,6 +3,7 @@ import { Scenes, session, Telegraf } from 'telegraf';
 import { BotContext, extractTelegramId } from './telegram.types';
 import { LinkAccountScene } from './scenes/link-account.scene';
 import { HarvestScene } from './scenes/harvest.scene';
+import { RegisterFarmScene } from './scenes/register-farm.scene';
 import { TelegramAccountService } from './services/telegram-account.service';
 import { GeminiService } from './gemini/gemini.service';
 import { Msg } from './ui/telegram.messages';
@@ -15,6 +16,7 @@ export class TelegramRouter {
   constructor(
     private readonly linkAccountScene: LinkAccountScene,
     private readonly harvestScene: HarvestScene,
+    private readonly registerFarmScene: RegisterFarmScene,
     private readonly accountService: TelegramAccountService,
     private readonly geminiService: GeminiService,
     private readonly cooperativesService: CooperativesService,
@@ -24,6 +26,7 @@ export class TelegramRouter {
     const stage = new Scenes.Stage<BotContext>([
       this.linkAccountScene.create(),
       this.harvestScene.create(),
+      this.registerFarmScene.create(),
     ]);
 
     bot.use(session());
@@ -79,8 +82,48 @@ export class TelegramRouter {
       return ctx.scene.enter('harvest');
     });
 
-    // Mensagens de texto livre fora de qualquer cena vão para o Gemini
+    bot.command(['fazenda', 'car'], async (ctx) => {
+      const telegramUserId = extractTelegramId(ctx);
+      if (!telegramUserId) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+      const producer =
+        await this.accountService.findByTelegramId(telegramUserId);
+      if (!producer) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+      return ctx.scene.enter('registerFarm');
+    });
+
+    bot.on('photo', async (ctx) => {
+      if (ctx.scene.current?.id) {
+        return;
+      }
+
+      const telegramUserId = extractTelegramId(ctx);
+      if (!telegramUserId) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+
+      const producer =
+        await this.accountService.findByTelegramId(telegramUserId);
+      if (!producer) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+
+      return ctx.scene.enter('registerFarm');
+    });
+
+    // Mensagens de texto livre fora de qualquer scene vao para o Gemini.
     bot.on('text', async (ctx) => {
+      if (ctx.scene.current?.id) {
+        return;
+      }
+
       if (ctx.message.text.startsWith('/')) {
         await ctx.reply(Msg.unknownCommand);
         return;
@@ -125,7 +168,7 @@ export class TelegramRouter {
         await ctx.reply(Msg.globalError);
       } catch (replyError) {
         this.logger.error(
-          'Falha ao responder ao usuário após erro',
+          'Falha ao responder ao usuario apos erro',
           replyError,
         );
       }

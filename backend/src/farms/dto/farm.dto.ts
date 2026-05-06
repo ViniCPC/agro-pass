@@ -10,6 +10,7 @@ export class FarmDto {
   longitude!: number;
   carNumber!: string | null;
   polygonGeoJson!: object | null;
+  carRawJson!: object | null;
   totalAreaHa!: number | null;
   legalReserveAreaHa!: number | null;
   appAreaHa!: number | null;
@@ -31,6 +32,7 @@ export class FarmDto {
       longitude: farm.longitude,
       carNumber: farm.carNumber,
       polygonGeoJson: farm.polygonGeoJson as object | null,
+      carRawJson: farm.carRawJson as object | null,
       totalAreaHa: farm.totalAreaHa,
       legalReserveAreaHa: farm.legalReserveAreaHa,
       appAreaHa: farm.appAreaHa,

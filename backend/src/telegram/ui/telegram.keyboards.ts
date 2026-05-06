@@ -24,6 +24,17 @@ export const CONFIRM_KEYBOARD = Markup.inlineKeyboard([
   ],
 ]);
 
+export const FARM_CAR_RETRY_KEYBOARD = Markup.inlineKeyboard([
+  [Markup.button.callback('Digitar manualmente', 'farm_manual_input')],
+  [Markup.button.callback('Enviar outra foto', 'farm_send_another_car_photo')],
+]);
+
+export const FARM_CAR_CONFIRM_KEYBOARD = Markup.inlineKeyboard([
+  [Markup.button.callback('Confirmar dados', 'farm_confirm_car_data')],
+  [Markup.button.callback('Corrigir manualmente', 'farm_manual_input')],
+  [Markup.button.callback('Enviar outra foto', 'farm_send_another_car_photo')],
+]);
+
 export function buildFarmKeyboard(farms: Farm[]) {
   return Markup.inlineKeyboard(
     farms.map((farm) => [Markup.button.callback(farm.name, `farm:${farm.id}`)]),

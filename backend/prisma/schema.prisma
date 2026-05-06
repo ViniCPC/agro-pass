@@ -87,6 +87,19 @@ model ConversationMessage {
   @@index([telegramUserId, createdAt])
 }
 
+model CarDraft {
+  id             String   @id @default(uuid())
+  telegramUserId String   @unique
+  carData        Json
+  imageUrl       String?
+  imageFileHash  String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([expiresAt])
+}
+
 // ============================================
 // FAZENDA
 // ============================================
@@ -103,6 +116,7 @@ model Farm {
 
   // Polígono real da propriedade (do SICAR)
   polygonGeoJson Json?
+  carRawJson     Json?
 
   totalAreaHa        Float?
   legalReserveAreaHa Float?

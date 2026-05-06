@@ -50,6 +50,10 @@ export class CreateFarmDto {
   @IsOptional()
   polygonGeoJson?: object;
 
+  @IsObject()
+  @IsOptional()
+  carRawJson?: object;
+
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
