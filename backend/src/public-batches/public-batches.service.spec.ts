@@ -7,7 +7,7 @@ function makeTraceEvent(id: string, createdAt: Date) {
   return {
     id,
     type: 'CREATED',
-    actorName: 'João da Silva',
+    actorName: 'Joao da Silva',
     location: null,
     latitude: null,
     longitude: null,
@@ -35,7 +35,7 @@ function makeBatch(overrides: Record<string, unknown> = {}) {
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     farm: {
       id: 'farm-1',
-      name: 'Fazenda Santa Fé',
+      name: 'Fazenda Santa Fe',
       city: 'Rio Verde',
       state: 'GO',
       latitude: -17.79,
@@ -47,11 +47,10 @@ function makeBatch(overrides: Record<string, unknown> = {}) {
       consolidatedAreaHa: 380,
       biome: 'CERRADO',
       isAmazonLegal: false,
-      isEudrCompliant: true,
-      eudrEvidenceUrl: null,
-      validatedAt: null,
-      producer: { name: 'João da Silva', reputationScore: 0 },
+      producer: { name: 'Joao da Silva', reputationScore: 0 },
+      lastValidation: null,
     },
+    documents: [],
     traceEvents: [
       makeTraceEvent('evt-1', new Date('2026-01-01T08:00:00Z')),
       makeTraceEvent('evt-2', new Date('2026-01-01T10:00:00Z')),
@@ -63,16 +62,21 @@ function makeBatch(overrides: Record<string, unknown> = {}) {
 describe('PublicBatchesService', () => {
   let service: PublicBatchesService;
   let batchFindUnique: jest.Mock;
+  let documentFindMany: jest.Mock;
 
   beforeEach(async () => {
     batchFindUnique = jest.fn();
+    documentFindMany = jest.fn().mockResolvedValue([]);
 
     const module = await Test.createTestingModule({
       providers: [
         PublicBatchesService,
         {
           provide: PrismaService,
-          useValue: { batch: { findUnique: batchFindUnique } },
+          useValue: {
+            batch: { findUnique: batchFindUnique },
+            document: { findMany: documentFindMany },
+          },
         },
       ],
     }).compile();
@@ -80,29 +84,29 @@ describe('PublicBatchesService', () => {
     service = module.get(PublicBatchesService);
   });
 
-  // ─── findByCode ──────────────────────────────────────────────────────
-
   describe('findByCode', () => {
-    it('lança NotFoundException quando o código não existe', async () => {
+    it('throws NotFoundException when code does not exist', async () => {
       batchFindUnique.mockResolvedValue(null);
 
-      await expect(service.findByCode('NOTEXIST')).rejects.toThrow(NotFoundException);
+      await expect(service.findByCode('NOTEXIST')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('retorna estrutura batch / blockchain / farm / traceEvents no caminho feliz', async () => {
+    it('returns batch / blockchain / farm / traceEvents / documents', async () => {
       batchFindUnique.mockResolvedValue(makeBatch());
 
       const result = await service.findByCode('CAF-2026-0001');
 
-      // Dados do lote
-      expect(result.batch.id).toBe('batch-1');
-      expect(result.batch.code).toBe('CAF-2026-0001');
-      expect(result.batch.productType).toBe('COFFEE');
-      expect(result.batch.quantity).toBe(100);
-      expect(result.batch.unit).toBe('sacas');
-      expect(result.batch.status).toBe('CREATED');
+      expect(result.batch).toMatchObject({
+        id: 'batch-1',
+        code: 'CAF-2026-0001',
+        productType: 'COFFEE',
+        quantity: 100,
+        unit: 'sacas',
+        status: 'CREATED',
+      });
 
-      // Campos blockchain presentes (null se ainda não mintado)
       expect(result.blockchain).toMatchObject({
         cnftAddress: null,
         merkleTree: null,
@@ -110,15 +114,13 @@ describe('PublicBatchesService', () => {
         mintTxHash: null,
       });
 
-      // Fazenda com produtor aninhado
-      expect(result.farm.name).toBe('Fazenda Santa Fé');
-      expect(result.farm.producer.name).toBe('João da Silva');
-
-      // Eventos presentes
+      expect(result.farm.name).toBe('Fazenda Santa Fe');
+      expect(result.farm.producer.name).toBe('Joao da Silva');
       expect(result.traceEvents).toHaveLength(2);
+      expect(result.documents).toHaveLength(0);
     });
 
-    it('passa traceEvents na ordem cronológica retornada pelo Prisma (ASC)', async () => {
+    it('keeps traceEvents in ascending chronological order', async () => {
       const earlier = new Date('2026-01-01T08:00:00Z');
       const later = new Date('2026-01-01T10:00:00Z');
 
@@ -137,13 +139,16 @@ describe('PublicBatchesService', () => {
       expect(result.traceEvents[1].createdAt).toEqual(later);
     });
 
-    it('chama Prisma com o código correto', async () => {
+    it('queries Prisma with code and farm document lookup', async () => {
       batchFindUnique.mockResolvedValue(makeBatch());
 
       await service.findByCode('CAF-2026-0001');
 
       expect(batchFindUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { code: 'CAF-2026-0001' } }),
+      );
+      expect(documentFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { farmId: 'farm-1' } }),
       );
     });
   });

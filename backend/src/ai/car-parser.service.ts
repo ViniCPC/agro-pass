@@ -31,14 +31,17 @@ export type CarData = {
 
 @Injectable()
 export class CarParserService {
-  private readonly anthropic: Anthropic;
+  private readonly anthropic?: Anthropic;
   private readonly logger = new Logger(CarParserService.name);
 
   constructor() {
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY nao foi definida no .env');
+      this.logger.warn(
+        'ANTHROPIC_API_KEY nao definida. Extracao de CAR por IA ficara desabilitada.',
+      );
+      return;
     }
 
     this.anthropic = new Anthropic({
@@ -48,6 +51,13 @@ export class CarParserService {
 
   async parseCarImage(buffer: Buffer): Promise<CarData> {
     try {
+      if (!this.anthropic) {
+        this.logger.warn(
+          'CarParserService chamado sem ANTHROPIC_API_KEY configurada.',
+        );
+        return this.emptyCarData();
+      }
+
       const base64Image = buffer.toString('base64');
       const mediaType = this.detectMimeType(buffer);
 

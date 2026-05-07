@@ -86,12 +86,50 @@ export class PublicBatchesService {
             createdAt: true,
           },
         },
+
+        documents: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          select: {
+            id: true,
+            type: true,
+            fileUrl: true,
+            fileHash: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
     if (!batch) {
       throw new NotFoundException('Lote não encontrado');
     }
+
+    const farmDocuments = await this.prisma.document.findMany({
+      where: { farmId: batch.farm.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        type: true,
+        fileUrl: true,
+        fileHash: true,
+        createdAt: true,
+      },
+    });
+
+    const documents = [
+      ...batch.documents.map((document) => ({
+        ...document,
+        scope: 'BATCH' as const,
+      })),
+      ...farmDocuments.map((document) => ({
+        ...document,
+        scope: 'FARM' as const,
+      })),
+    ].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
 
     return {
       batch: {
@@ -116,6 +154,8 @@ export class PublicBatchesService {
       farm: batch.farm,
 
       traceEvents: batch.traceEvents,
+
+      documents,
     };
   }
 }

@@ -13,18 +13,18 @@ export const PRODUCT_LABELS: Record<ProductType, string> = {
 export const UNIT_BY_PRODUCT: Record<ProductType, string> = {
   COFFEE: 'sacas',
   SOY: 'sacas',
-  CATTLE: 'cabecas',
+  CATTLE: 'cabeças',
   COCOA: 'sacas',
   PALM_OIL: 'toneladas',
   RUBBER: 'kg',
-  WOOD: 'm3',
+  WOOD: 'm³',
 };
 
 export const Msg = {
   welcome:
-    'Bem-vindo ao AgroPass!\n\n' +
+    'Bem-vindo ao AgroPass!🌽\n\n' +
     'Eu ajudo produtores e cooperativas a criarem lotes rastreaveis com validacao ambiental e prova digital de origem.\n\n' +
-    'Comandos:\n' +
+    'Comandos: 🌽\n' +
     '/linkar - vincular sua conta por telefone\n' +
     '/fazenda - cadastrar fazenda com foto do CAR\n' +
     '/colheita - cadastrar novo lote\n' +

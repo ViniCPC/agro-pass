@@ -41,6 +41,11 @@ Thumbs.db
 .env.*
 !.env.example
 
+# Solana wallet keys
+keys/
+.keys/
+backend/keys/
+backend/.keys/
 
 # variáveis de ambiente
 backend/.env

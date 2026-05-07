@@ -121,6 +121,8 @@ describe('PublicBatches (e2e)', () => {
 
     expect(Array.isArray(body.traceEvents)).toBe(true);
     expect(body.traceEvents).toHaveLength(0);
+    expect(Array.isArray(body.documents)).toBe(true);
+    expect(body.documents).toHaveLength(0);
   });
 
   it('traceEvents aparecem em ordem cronológica (ASC)', async () => {

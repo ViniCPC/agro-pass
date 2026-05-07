@@ -55,11 +55,11 @@ export class TelegramFarmService {
 
     await ctx.reply(Msg.farmRegistration.readingCar);
 
-    let fileUrl: string | null = null;
+    let imageReference: string | null = null;
     let imageBuffer: Buffer;
     try {
       const fileLink = await ctx.telegram.getFileLink(bestPhoto.file_id);
-      fileUrl = fileLink.href;
+      imageReference = this.toSafeTelegramReference(bestPhoto.file_id);
 
       const response = await fetch(fileLink.href);
       if (!response.ok) {
@@ -95,13 +95,13 @@ export class TelegramFarmService {
       create: {
         telegramUserId,
         carData: carData as unknown as Prisma.InputJsonValue,
-        imageUrl: fileUrl,
+        imageUrl: imageReference,
         imageFileHash,
         expiresAt,
       },
       update: {
         carData: carData as unknown as Prisma.InputJsonValue,
-        imageUrl: fileUrl,
+        imageUrl: imageReference,
         imageFileHash,
         expiresAt,
       },
@@ -351,5 +351,9 @@ export class TelegramFarmService {
     if (value < 0) return 0;
     if (value > 1) return 1;
     return value;
+  }
+
+  private toSafeTelegramReference(fileId: string): string {
+    return `telegram://file/${fileId}`;
   }
 }

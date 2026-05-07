@@ -11,7 +11,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -21,7 +21,8 @@
     "seed": "tsx --require dotenv/config prisma/seed.ts",
     "solana:create-wallet": "tsx src/scripts/create-devnet-wallet.ts",
     "solana:airdrop": "tsx src/scripts/request-devnet-airdrop.ts",
-    "solana:create-tree": "tsx src/scripts/create-merkle-tree.ts"
+    "solana:create-tree": "tsx src/scripts/create-merkle-tree.ts",
+    "smoke:test": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config prisma/seed.ts"

@@ -51,6 +51,13 @@ coverage/
 !.env.example
 !**/.env.example
 
+# Solana wallet keys
+keys/
+.keys/
+backend/keys/
+backend/.keys/
+
+
 # uploads
 uploads/
 **/uploads/

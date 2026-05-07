@@ -3,6 +3,7 @@ import { Connection } from '@solana/web3.js';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_SOLANA_TIMEOUT_MS = 3_000;
+const SOLANA_HEALTH_ENABLED_ENV = 'HEALTHCHECK_SOLANA_ENABLED';
 
 export type HealthStatus = 'ok' | 'degraded';
 export type ServiceHealthStatus = 'ok' | 'error';
@@ -72,6 +73,13 @@ export class HealthService {
   }
 
   private async checkSolana(): Promise<ServiceHealth> {
+    if (!this.isSolanaHealthCheckEnabled()) {
+      return {
+        status: 'ok',
+        message: `${SOLANA_HEALTH_ENABLED_ENV}=false (check ignorado)`,
+      };
+    }
+
     const rpcUrl = process.env.SOLANA_RPC_URL;
 
     if (!rpcUrl) {
@@ -144,5 +152,16 @@ export class HealthService {
   private readTimeoutEnv(key: string, fallback: number): number {
     const rawValue = Number(process.env[key]);
     return Number.isInteger(rawValue) && rawValue > 0 ? rawValue : fallback;
+  }
+
+  private isSolanaHealthCheckEnabled(): boolean {
+    const rawValue = process.env[SOLANA_HEALTH_ENABLED_ENV];
+
+    if (!rawValue) {
+      return true;
+    }
+
+    const normalized = rawValue.trim().toLowerCase();
+    return !['false', '0', 'off', 'no'].includes(normalized);
   }
 }
