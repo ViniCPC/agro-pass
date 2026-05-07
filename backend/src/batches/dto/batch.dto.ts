@@ -14,6 +14,9 @@ export class BatchDto {
   unit!: string;
   harvestDate!: Date | null;
   status!: string;
+  cnftAddress!: string | null;
+  qrCodeUrl!: string | null;
+  mintTxHash!: string | null;
   farm!: FarmSummaryDto;
   createdAt!: Date;
 
@@ -26,6 +29,9 @@ export class BatchDto {
       unit: batch.unit,
       harvestDate: batch.harvestDate,
       status: batch.status,
+      cnftAddress: batch.cnftAddress,
+      qrCodeUrl: batch.qrCodeUrl,
+      mintTxHash: batch.mintTxHash,
       farm: {
         name: batch.farm.name,
         latitude: batch.farm.latitude,

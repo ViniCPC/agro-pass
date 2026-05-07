@@ -57,7 +57,7 @@ describe('BatchQrCodeService', () => {
 
     const result = await service.generateQrCode('batch-uuid');
 
-    expect(result.targetUrl).toBe('https://app.agropass.com.br/batches/CAF-2026-0001');
+    expect(result.targetUrl).toBe('https://app.agropass.com.br/trace/CAF-2026-0001');
     delete process.env.PUBLIC_APP_URL;
   });
 

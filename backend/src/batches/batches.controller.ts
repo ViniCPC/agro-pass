@@ -10,10 +10,12 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { BubblegumService } from '../solana/bubblegum/bubblegum.service';
 import { BatchDocumentsService } from './batch-documents.service';
 import { BatchQrCodeService } from './batch-qrcode.service';
@@ -73,6 +75,26 @@ export class BatchesController {
   @Post(':id/qrcode')
   generateQrCode(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.batchQrCodeService.generateQrCode(id);
+  }
+
+  @Get(':id/qrcode/print-sheet')
+  async downloadQrPrintSheet(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('copies') copies: string | undefined,
+    @Res() res: Response,
+  ) {
+    const parsedCopies = Number(copies ?? 8);
+    const pdfBuffer = await this.batchQrCodeService.generatePrintSheetPdf(
+      id,
+      parsedCopies,
+    );
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="batch-${id}-qr-sheet.pdf"`,
+    );
+    res.send(pdfBuffer);
   }
 
   @Patch(':id/validate')

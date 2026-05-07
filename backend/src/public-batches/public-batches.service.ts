@@ -140,6 +140,7 @@ export class PublicBatchesService {
         unit: batch.unit,
         harvestDate: batch.harvestDate,
         status: batch.status,
+        qrCodeUrl: batch.qrCodeUrl,
         createdAt: batch.createdAt,
         updatedAt: batch.updatedAt,
       },
