@@ -1,4 +1,5 @@
 import { Sprout } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { DataTable } from '@/components/DataTable'
 import { EmptyState } from '@/components/EmptyState'
 import type { Farm } from '@/types/api'
@@ -44,6 +45,8 @@ const columns = [
 ]
 
 export function FarmsTable({ farms }: FarmsTableProps) {
+  const navigate = useNavigate()
+
   if (farms.length === 0) {
     return (
       <EmptyState
@@ -62,7 +65,8 @@ export function FarmsTable({ farms }: FarmsTableProps) {
         return (
           <tr
             key={farm.id}
-            className="border-b border-[var(--color-border-soft)] last:border-0 hover:bg-[var(--color-page)] transition-colors"
+            onClick={() => navigate(`/farms/${farm.id}`)}
+            className="border-b border-[var(--color-border-soft)] last:border-0 hover:bg-[var(--color-page)] transition-colors cursor-pointer"
           >
             <td className={TD}>
               <p className="font-medium text-[var(--color-ink)]">{farm.name}</p>

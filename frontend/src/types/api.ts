@@ -16,6 +16,7 @@ export type TraceEventType   =
 export type Biome        = 'AMAZON' | 'CERRADO' | 'ATLANTIC_FOREST' | 'CAATINGA' | 'PAMPA' | 'PANTANAL'
 export type DocumentType = 'CAR' | 'INVOICE' | 'WAREHOUSE_RECEIPT' | 'ENVIRONMENTAL_REPORT' | 'SATELLITE_IMAGE' | 'OTHER'
 export type PublicDocumentScope = 'BATCH' | 'FARM'
+export type EudrValidationMode = 'MOCK' | 'SEMI_AUTOMATIC'
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 
@@ -55,10 +56,12 @@ export interface Farm {
   biome: Biome | null
   isAmazonLegal: boolean
   lastValidationId: string | null
-  // Optional — backend exposes when available; always present in mock data
-  lastValidationStatus?: ValidationStatus | null
-  lastValidatedAt?: string | null
-  lastValidationHash?: string | null
+  lastValidationStatus: ValidationStatus | null
+  lastValidatedAt: string | null
+  lastValidationHash: string | null
+  // Populated only by GET /farms/:id (null in list responses)
+  producerName: string | null
+  cooperativeName: string | null
   status: FarmStatus
   producerId: string
   createdAt: string
@@ -117,6 +120,24 @@ export interface EudrValidation {
   evidenceHash: string | null
   validatedAt: string | null
   validUntil: string | null
+}
+
+export interface EudrValidateResult {
+  message: string
+  validationId: string
+  farmId: string
+  farmName: string
+  status: ValidationStatus
+  farmStatus: FarmStatus
+  hectaresDeforested: number
+  cutoffDate: string
+  validUntil: string
+  evidenceHash: string
+  satelliteImageBeforeUrl: string | null
+  satelliteImageAfterUrl: string | null
+  ndviBefore: number | null
+  ndviAfter: number | null
+  ndviDelta: number | null
 }
 
 export interface PublicDocument {

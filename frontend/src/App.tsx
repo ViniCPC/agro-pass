@@ -8,6 +8,7 @@ import { PublicTraceLayout } from '@/layouts/PublicTraceLayout'
 import { BatchesPage } from '@/pages/BatchesPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { DemoEntryPage } from '@/pages/DemoEntryPage'
+import { FarmDetailPage } from '@/pages/FarmDetailPage'
 import { FarmsPage } from '@/pages/FarmsPage'
 import { TracePage } from '@/pages/TracePage'
 
@@ -36,6 +37,7 @@ export default function App() {
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/farms" element={<FarmsPage />} />
+                <Route path="/farms/:id" element={<FarmDetailPage />} />
                 <Route path="/batches" element={<BatchesPage />} />
                 <Route path="/trace" element={<Navigate to="/batches" replace />} />
               </Route>

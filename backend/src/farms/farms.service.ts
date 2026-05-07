@@ -57,13 +57,19 @@ export class FarmsService {
   }
 
   async findOne(id: string): Promise<FarmDto> {
-    const farm = await this.prisma.farm.findUnique({ where: { id } });
+    const farm = await this.prisma.farm.findUnique({
+      where: { id },
+      include: { producer: { include: { cooperative: true } } },
+    });
 
     if (!farm) {
       throw new NotFoundException('Fazenda não encontrada.');
     }
 
-    return FarmDto.fromModel(farm);
+    return FarmDto.fromModel(farm, {
+      producerName: farm.producer.name,
+      cooperativeName: farm.producer.cooperative?.name ?? null,
+    });
   }
 
   async updateStatus(id: string, dto: UpdateFarmStatusDto): Promise<FarmDto> {

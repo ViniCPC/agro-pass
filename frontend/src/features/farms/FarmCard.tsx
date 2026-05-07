@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { StatusBadge } from '@/components/StatusBadge'
 import { FarmValidationCell } from './FarmValidationCell'
 import type { Farm } from '@/types/api'
@@ -18,7 +19,8 @@ interface FarmCardProps {
 
 export function FarmCard({ farm }: FarmCardProps) {
   return (
-    <div className="bg-[var(--color-surface)] rounded-[var(--radius-card)] shadow-[var(--shadow-card)] p-4 space-y-3">
+    <Link to={`/farms/${farm.id}`} className="block">
+    <div className="bg-[var(--color-surface)] rounded-[var(--radius-card)] shadow-[var(--shadow-card)] p-4 space-y-3 hover:shadow-[var(--shadow-card-hover)] transition-shadow">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-[var(--color-ink)]">{farm.name}</p>
@@ -53,5 +55,6 @@ export function FarmCard({ farm }: FarmCardProps) {
         </p>
       )}
     </div>
+    </Link>
   )
 }

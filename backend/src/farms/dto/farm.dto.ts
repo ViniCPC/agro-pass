@@ -1,5 +1,10 @@
 import type { Farm } from '../../../generated/prisma/client';
-import type { Biome } from '../../../generated/prisma/enums';
+import type { Biome, ValidationStatus } from '../../../generated/prisma/enums';
+
+interface FarmDtoMeta {
+  producerName?: string;
+  cooperativeName?: string | null;
+}
 
 export class FarmDto {
   id!: string;
@@ -18,11 +23,16 @@ export class FarmDto {
   biome!: Biome | null;
   isAmazonLegal!: boolean;
   lastValidationId!: string | null;
+  lastValidationStatus!: ValidationStatus | null;
+  lastValidationHash!: string | null;
+  lastValidatedAt!: Date | null;
   status!: string;
   producerId!: string;
+  producerName!: string | null;
+  cooperativeName!: string | null;
   createdAt!: Date;
 
-  static fromModel(farm: Farm): FarmDto {
+  static fromModel(farm: Farm, meta?: FarmDtoMeta): FarmDto {
     return {
       id: farm.id,
       name: farm.name,
@@ -40,8 +50,13 @@ export class FarmDto {
       biome: farm.biome,
       isAmazonLegal: farm.isAmazonLegal,
       lastValidationId: farm.lastValidationId,
+      lastValidationStatus: farm.lastValidationStatus,
+      lastValidationHash: farm.lastValidationHash,
+      lastValidatedAt: farm.lastValidatedAt,
       status: farm.status,
       producerId: farm.producerId,
+      producerName: meta?.producerName ?? null,
+      cooperativeName: meta?.cooperativeName ?? null,
       createdAt: farm.createdAt,
     };
   }
