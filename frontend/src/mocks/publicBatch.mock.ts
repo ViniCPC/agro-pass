@@ -9,6 +9,7 @@ const AGP_2025_001: PublicBatch = {
     unit: 'kg',
     harvestDate: '2025-03-15T00:00:00Z',
     status: 'MINTED',
+    qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=http%3A%2F%2Flocalhost%3A5173%2Ftrace%2FAGP-2025-001',
     createdAt: '2025-03-16T08:00:00Z',
     updatedAt: '2025-03-20T14:22:00Z',
   },
@@ -135,6 +136,14 @@ const AGP_2025_001: PublicBatch = {
       fileHash: 'sha256:3b3be7154eb4dfd8bd3a0655afcd7063fd2b48e1e7af9541f17ef3a70a5ca2cd',
       createdAt: '2025-03-20T10:32:00Z',
     },
+    {
+      id: 'doc-003',
+      type: 'ENVIRONMENTAL_REPORT',
+      scope: 'FARM',
+      fileUrl: '/uploads/documents/eudr-report-farm-001.pdf',
+      fileHash: 'sha256:7d52154deafcd7063fd2b48e1e7af9541f17ef3a70a5ca2cd39ba1129ff8841',
+      createdAt: '2025-03-21T11:10:00Z',
+    },
   ],
 }
 
@@ -147,6 +156,7 @@ const AGP_2025_003: PublicBatch = {
     unit: 'kg',
     harvestDate: '2025-04-10T00:00:00Z',
     status: 'IN_TRANSIT',
+    qrCodeUrl: null,
     createdAt: '2025-04-11T07:30:00Z',
     updatedAt: '2025-04-15T16:00:00Z',
   },

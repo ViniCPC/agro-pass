@@ -1,6 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
+import { StickyMobileCta } from '@/components/StickyMobileCta'
+import { TouchFriendlyButton } from '@/components/TouchFriendlyButton'
 import { TraceBatchSummary } from '@/features/trace/TraceBatchSummary'
 import { BlockchainProofCard } from '@/features/trace/BlockchainProofCard'
 import { TraceCertificateMeta } from '@/features/trace/TraceCertificateMeta'
@@ -10,7 +12,15 @@ import { TraceFarmCard } from '@/features/trace/TraceFarmCard'
 import { TraceHero } from '@/features/trace/TraceHero'
 import { TraceTimeline } from '@/features/trace/TraceTimeline'
 import { TraceTrustFooter } from '@/features/trace/TraceTrustFooter'
+import { TraceQrSection } from '@/features/qr/TraceQrSection'
+import { resolveAssetUrl } from '@/features/qr/qr.utils'
 import { useTraceByCode } from '@/hooks/useTraceByCode'
+import type { PublicBatch } from '@/types/api'
+
+function getEudrReportUrl(data: PublicBatch) {
+  const report = data.documents.find((document) => document.type === 'ENVIRONMENTAL_REPORT')
+  return resolveAssetUrl(report?.fileUrl ?? null)
+}
 
 export function TracePage() {
   const { code } = useParams<{ code: string }>()
@@ -51,8 +61,10 @@ export function TracePage() {
     )
   }
 
+  const eudrReportUrl = getEudrReportUrl(data)
+
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="mx-auto w-full max-w-5xl pb-24 sm:pb-0">
       <div className="space-y-4 rounded-[16px] border-2 border-[var(--color-teal-100)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card-hover)] sm:p-6">
         <TraceCertificateMeta data={data} />
 
@@ -62,6 +74,11 @@ export function TracePage() {
           <TraceBatchSummary data={data} />
           <TraceFarmCard data={data} />
         </div>
+
+        <TraceQrSection
+          batchCode={data.batch.code}
+          qrCodeUrl={data.batch.qrCodeUrl}
+        />
 
         <TraceComplianceCard data={data} />
 
@@ -74,6 +91,17 @@ export function TracePage() {
 
         <TraceTrustFooter />
       </div>
+
+      {eudrReportUrl && (
+        <StickyMobileCta>
+          <TouchFriendlyButton
+            onClick={() => window.open(eudrReportUrl, '_blank', 'noopener,noreferrer')}
+            className="w-full rounded-lg bg-[var(--color-teal-700)] px-4 text-sm font-semibold text-white"
+          >
+            Download EUDR Report
+          </TouchFriendlyButton>
+        </StickyMobileCta>
+      )}
     </div>
   )
 }

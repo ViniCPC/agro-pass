@@ -6,6 +6,7 @@ interface ActiveItemProps {
   to: string
   icon: LucideIcon
   label: string
+  onClick?: () => void
 }
 
 interface ComingSoonItemProps {
@@ -43,6 +44,7 @@ export function SidebarItem(props: SidebarItemProps) {
   return (
     <NavLink
       to={props.to}
+      onClick={props.onClick}
       className={({ isActive }) =>
         cn(
           'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',

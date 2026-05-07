@@ -6,6 +6,8 @@ import { AppShell } from '@/layouts/AppShell'
 import { PublicLayout } from '@/layouts/PublicLayout'
 import { PublicTraceLayout } from '@/layouts/PublicTraceLayout'
 import { BatchesPage } from '@/pages/BatchesPage'
+import { BatchDetailPage } from '@/pages/BatchDetailPage'
+import { CreateBatchPage } from '@/pages/CreateBatchPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { DemoEntryPage } from '@/pages/DemoEntryPage'
 import { FarmDetailPage } from '@/pages/FarmDetailPage'
@@ -39,6 +41,8 @@ export default function App() {
                 <Route path="/farms" element={<FarmsPage />} />
                 <Route path="/farms/:id" element={<FarmDetailPage />} />
                 <Route path="/batches" element={<BatchesPage />} />
+                <Route path="/batches/new" element={<CreateBatchPage />} />
+                <Route path="/batches/:id" element={<BatchDetailPage />} />
                 <Route path="/trace" element={<Navigate to="/batches" replace />} />
               </Route>
             </Route>

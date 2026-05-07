@@ -59,7 +59,7 @@ export function FarmDetailHeader({ farm }: FarmDetailHeaderProps) {
         </div>
       </div>
 
-      <RunEudrValidationButton farmId={farm.id} className="sm:shrink-0" />
+      <RunEudrValidationButton farmId={farm.id} className="hidden sm:flex sm:shrink-0" />
     </div>
   )
 }

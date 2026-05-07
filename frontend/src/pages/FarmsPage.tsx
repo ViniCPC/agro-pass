@@ -1,19 +1,22 @@
-import { useState, useMemo } from 'react'
-import { useFarms } from '@/hooks/useFarms'
-import { LoadingState } from '@/components/LoadingState'
+import { useMemo, useState } from 'react'
 import { ErrorState } from '@/components/ErrorState'
-import { FarmsHeader } from '@/features/farms/FarmsHeader'
-import { FarmsFilters, DEFAULT_FILTERS, applyFarmFilters, type FarmFilters } from '@/features/farms/FarmsFilters'
-import { FarmsTable } from '@/features/farms/FarmsTable'
-import { FarmCard } from '@/features/farms/FarmCard'
+import { LoadingState } from '@/components/LoadingState'
 import { PageContainer } from '@/components/PageContainer'
+import { FarmCard } from '@/features/farms/FarmCard'
+import { FarmsFilters, DEFAULT_FILTERS, applyFarmFilters, type FarmFilters } from '@/features/farms/FarmsFilters'
+import { FarmsHeader } from '@/features/farms/FarmsHeader'
+import { FarmsTable } from '@/features/farms/FarmsTable'
+import { useFarms } from '@/hooks/useFarms'
 
 export function FarmsPage() {
   const [filters, setFilters] = useState<FarmFilters>(DEFAULT_FILTERS)
   const { data, isLoading, error, refetch } = useFarms()
 
   const allFarms = data?.data ?? []
-  const farms = useMemo(() => applyFarmFilters(allFarms, filters), [allFarms, filters])
+  const farms = useMemo(
+    () => applyFarmFilters(allFarms, filters),
+    [allFarms, filters],
+  )
 
   return (
     <PageContainer className="space-y-5">
@@ -25,19 +28,20 @@ export function FarmsPage() {
         <LoadingState rows={5} />
       ) : error ? (
         <ErrorState
-          description="Não foi possível carregar as fazendas. Verifique a conexão com o backend."
+          description="Nao foi possivel carregar as fazendas. Verifique a conexao com o backend."
           onRetry={() => refetch()}
         />
+      ) : farms.length === 0 ? (
+        <FarmsTable farms={farms} />
       ) : (
         <>
-          {/* Tabela — desktop */}
           <div className="hidden sm:block">
             <FarmsTable farms={farms} />
           </div>
-
-          {/* Cards — mobile */}
           <div className="grid grid-cols-1 gap-3 sm:hidden">
-            {farms.map(farm => <FarmCard key={farm.id} farm={farm} />)}
+            {farms.map((farm) => (
+              <FarmCard key={farm.id} farm={farm} />
+            ))}
           </div>
         </>
       )}

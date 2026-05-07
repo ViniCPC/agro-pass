@@ -2,10 +2,12 @@ import { useParams } from 'react-router-dom'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { PageContainer } from '@/components/PageContainer'
+import { StickyMobileCta } from '@/components/StickyMobileCta'
 import { FarmAreaCard } from '@/features/farms/FarmAreaCard'
 import { FarmComplianceCard } from '@/features/farms/FarmComplianceCard'
 import { FarmDetailHeader } from '@/features/farms/FarmDetailHeader'
 import { FarmIdentityCard } from '@/features/farms/FarmIdentityCard'
+import { RunEudrValidationButton } from '@/features/farms/RunEudrValidationButton'
 import { FarmSatelliteComparison } from '@/features/farms/FarmSatelliteComparison'
 import { FarmValidationHistoryList } from '@/features/farms/FarmValidationHistoryList'
 import { useFarm } from '@/hooks/useFarms'
@@ -40,7 +42,7 @@ export function FarmDetailPage() {
   }
 
   return (
-    <PageContainer className="space-y-5">
+    <PageContainer className="space-y-5 pb-24 sm:pb-0">
       <FarmDetailHeader farm={farm} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -56,6 +58,10 @@ export function FarmDetailPage() {
       <FarmSatelliteComparison validation={lastValidation ?? null} />
 
       <FarmValidationHistoryList items={history} />
+
+      <StickyMobileCta>
+        <RunEudrValidationButton farmId={farm.id} fullWidth />
+      </StickyMobileCta>
     </PageContainer>
   )
 }

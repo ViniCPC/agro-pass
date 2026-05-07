@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority'
+import { AnimatePresence, motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 const badge = cva(
@@ -66,9 +67,18 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   return (
-    <span className={cn(badge({ variant: status }), className)}>
-      <span className={cn('w-1.5 h-1.5 rounded-full', dot[status])} />
-      {label ?? labels[status] ?? status}
-    </span>
+    <AnimatePresence mode="wait">
+      <motion.span
+        key={`${status}-${label ?? ''}`}
+        initial={{ scale: 0.94, opacity: 0.75 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.98, opacity: 0.9 }}
+        transition={{ type: 'spring', stiffness: 340, damping: 24 }}
+        className={cn(badge({ variant: status }), className)}
+      >
+        <span className={cn('w-1.5 h-1.5 rounded-full', dot[status])} />
+        {label ?? labels[status] ?? status}
+      </motion.span>
+    </AnimatePresence>
   )
 }

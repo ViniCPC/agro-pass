@@ -1,14 +1,20 @@
 import { useState } from 'react'
 import { AlertCircle, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react'
+import { TouchFriendlyButton } from '@/components/TouchFriendlyButton'
 import { cn } from '@/lib/utils'
 import { useRunEudrValidation } from '@/hooks/useFarmValidations'
 
 interface RunEudrValidationButtonProps {
   farmId: string
   className?: string
+  fullWidth?: boolean
 }
 
-export function RunEudrValidationButton({ farmId, className }: RunEudrValidationButtonProps) {
+export function RunEudrValidationButton({
+  farmId,
+  className,
+  fullWidth = false,
+}: RunEudrValidationButtonProps) {
   const { mutate, isPending, isSuccess, isError } = useRunEudrValidation(farmId)
   const [ran, setRan] = useState(false)
 
@@ -19,11 +25,12 @@ export function RunEudrValidationButton({ farmId, className }: RunEudrValidation
 
   return (
     <div className={cn('flex flex-col items-end gap-2', className)}>
-      <button
+      <TouchFriendlyButton
         onClick={handleClick}
         disabled={isPending}
         className={cn(
           'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all',
+          fullWidth && 'w-full justify-center',
           'bg-[var(--color-teal-700,#0f766e)] text-white shadow-sm',
           'hover:bg-[var(--color-teal-800,#0d6660)] active:scale-[0.98]',
           'disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100',
@@ -35,7 +42,7 @@ export function RunEudrValidationButton({ farmId, className }: RunEudrValidation
           <ShieldCheck size={15} />
         )}
         {isPending ? 'Validating…' : 'Run EUDR Validation'}
-      </button>
+      </TouchFriendlyButton>
 
       {ran && !isPending && isSuccess && (
         <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-green-700,#15803d)]">

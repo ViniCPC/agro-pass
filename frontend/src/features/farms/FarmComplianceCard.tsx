@@ -57,7 +57,7 @@ export function FarmComplianceCard({ validation, isLoading }: FarmComplianceCard
 
   if (!validation) {
     return (
-      <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] p-6 text-center">
+      <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] p-6 sm:p-7 text-center">
         <ShieldAlert size={32} className="mx-auto mb-2 text-[var(--color-ink-subtle)]" />
         <p className="text-sm font-medium text-[var(--color-ink)]">No EUDR validation yet</p>
         <p className="mt-1 text-xs text-[var(--color-ink-subtle)]">
@@ -74,7 +74,7 @@ export function FarmComplianceCard({ validation, isLoading }: FarmComplianceCard
       'rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] overflow-hidden',
       accentClass,
     )}>
-      <div className="p-5">
+      <div className="p-6 sm:p-7">
         {/* Header row */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
           <div className="flex items-center gap-2">

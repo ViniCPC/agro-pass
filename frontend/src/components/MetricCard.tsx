@@ -1,4 +1,5 @@
 import { type LucideIcon } from 'lucide-react'
+import { AnimatedCounter } from '@/components/AnimatedCounter'
 import { cn } from '@/lib/utils'
 
 interface MetricCardProps {
@@ -43,6 +44,7 @@ export function MetricCard({
 }: MetricCardProps) {
   const colors = accentMap[accent]
   const isPrimary = emphasis === 'primary'
+  const isNumberValue = typeof value === 'number'
 
   return (
     <div
@@ -62,7 +64,11 @@ export function MetricCard({
       )}
       <div>
         <p className={cn('font-semibold text-[var(--color-ink)] leading-none', isPrimary ? 'text-[30px]' : 'text-2xl')}>
-          {value}
+          {isNumberValue ? (
+            <AnimatedCounter value={value} />
+          ) : (
+            value
+          )}
         </p>
         <p className="text-xs text-[var(--color-ink-subtle)] mt-1 font-medium uppercase tracking-wide">{label}</p>
       </div>

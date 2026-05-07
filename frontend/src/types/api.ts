@@ -160,6 +160,7 @@ export interface PublicBatch {
     unit: string
     harvestDate: string | null
     status: BatchStatus
+    qrCodeUrl: string | null
     createdAt: string
     updatedAt: string
   }

@@ -50,7 +50,7 @@ export function BatchesTable({ batches }: BatchesTableProps) {
           className="border-b border-[var(--color-border-soft)] last:border-0 hover:bg-[var(--color-page)] transition-colors"
         >
           <td className={TD}>
-            <BatchQrCell code={batch.code} />
+            <BatchQrCell id={batch.id} code={batch.code} />
           </td>
           <td className={TD}>
             <BatchProductCell
