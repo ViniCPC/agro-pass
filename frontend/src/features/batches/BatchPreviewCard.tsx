@@ -47,17 +47,17 @@ export function BatchPreviewCard({
         </div>
         <div>
           <h2 className="text-base font-semibold text-[var(--color-ink)]">
-            Batch preview
+            Pré-visualização do lote
           </h2>
           <p className="text-xs text-[var(--color-ink-subtle)]">
-            Live preview before submit
+            Prévia em tempo real antes de enviar
           </p>
         </div>
       </div>
 
       <div className="rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-3">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-          Code
+          Código
         </p>
         <p className="mt-1 font-mono text-sm text-[var(--color-ink)]">
           CAF-2026-XXXX
@@ -65,10 +65,10 @@ export function BatchPreviewCard({
       </div>
 
       <div className="mt-3 rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-3">
-        <PreviewRow label="Product" value={getProductLabel(values.productType)} />
-        <PreviewRow label="Quantity" value={quantityLabel} />
-        <PreviewRow label="Farm" value={farmLabel} />
-        <PreviewRow label="Harvest date" value={harvestLabel} />
+        <PreviewRow label="Produto" value={getProductLabel(values.productType)} />
+        <PreviewRow label="Quantidade" value={quantityLabel} />
+        <PreviewRow label="Fazenda" value={farmLabel} />
+        <PreviewRow label="Data da colheita" value={harvestLabel} />
         <div className="mt-2 pt-2">
           <StatusBadge status="CREATED" />
         </div>

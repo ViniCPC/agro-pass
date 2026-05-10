@@ -8,7 +8,7 @@ export function useFarmLastValidation(farmId: string | null) {
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['eudr', farmId, 'last-validation'],
+    queryKey: ['eudr', isDemoMode ? 'demo' : 'live', farmId, 'last-validation'],
     queryFn: isDemoMode
       ? async (): Promise<EudrValidation | null> =>
           MOCK_LAST_VALIDATION[farmId!] ?? null
@@ -25,7 +25,7 @@ export function useFarmValidationHistory(
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['eudr', farmId, 'validations', params],
+    queryKey: ['eudr', isDemoMode ? 'demo' : 'live', farmId, 'validations', params],
     queryFn: isDemoMode
       ? async () => MOCK_VALIDATION_HISTORY[farmId!] ?? { data: [], pagination: { page: 1, limit: 20, totalItems: 0, totalPages: 1 } }
       : () => eudrApi.getValidationHistory(farmId!, params),
@@ -45,8 +45,8 @@ export function useRunEudrValidation(farmId: string) {
         isDemoMode ? { mode: 'MOCK', mockHectaresDeforested: 0 } : { mode: 'SEMI_AUTOMATIC' },
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['farms', farmId] })
-      queryClient.invalidateQueries({ queryKey: ['eudr', farmId] })
+      queryClient.invalidateQueries({ queryKey: ['farms'] })
+      queryClient.invalidateQueries({ queryKey: ['eudr'] })
     },
   })
 }

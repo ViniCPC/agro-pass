@@ -8,7 +8,7 @@ export function PublicTraceLayout() {
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
           <AppLogo />
           <span className="rounded-[var(--radius-badge)] border border-[var(--color-teal-100)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-teal-700)]">
-            Public traceability page
+            Página de rastreabilidade pública
           </span>
         </header>
 
@@ -17,7 +17,7 @@ export function PublicTraceLayout() {
         </main>
 
         <footer className="mt-8 border-t border-[var(--color-border)] pt-4 text-xs text-[var(--color-ink-subtle)]">
-          AgroPass public verification interface • digital traceability certificate
+          AgroPass • Interface pública de verificação • Certificado digital de rastreabilidade
         </footer>
       </div>
     </div>

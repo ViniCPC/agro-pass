@@ -206,11 +206,21 @@ export class TelegramFarmService {
           mode: EudrValidationMode.SEMI_AUTOMATIC,
           notes: 'Validation triggered from Telegram CAR confirmation flow.',
         })
+        .then(async (result) => {
+          await this.safeReply(
+            ctx,
+            Msg.farmRegistration.eudrValidationCompleted(
+              farm.name,
+              result.status,
+            ),
+          );
+        })
         .catch((error) => {
           this.logger.error(
             `Erro ao disparar validacao EUDR automatica para fazenda ${farm.id}`,
             error,
           );
+          void this.safeReply(ctx, Msg.farmRegistration.eudrValidationWarning);
         });
 
       return true;
@@ -355,5 +365,13 @@ export class TelegramFarmService {
 
   private toSafeTelegramReference(fileId: string): string {
     return `telegram://file/${fileId}`;
+  }
+
+  private async safeReply(ctx: BotContext, message: string): Promise<void> {
+    try {
+      await ctx.reply(message);
+    } catch (error) {
+      this.logger.warn('Falha ao enviar mensagem no Telegram', error);
+    }
   }
 }

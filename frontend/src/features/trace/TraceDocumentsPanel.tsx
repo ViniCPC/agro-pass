@@ -24,14 +24,26 @@ function toAbsoluteUrl(url: string) {
 }
 
 function getEvidenceItems(data: PublicBatch): EvidenceItem[] {
-  const documentItems = data.documents.map((document) => ({
-    id: document.id,
-    label: DOCUMENT_LABEL[document.type] ?? document.type,
-    source: document.scope === 'FARM' ? 'Farm document' : 'Batch document',
-    url: toAbsoluteUrl(document.fileUrl),
-    createdAt: document.createdAt,
-    hash: document.fileHash,
-  }))
+  const stageNameByDocumentId = new Map(
+    data.traceEvents
+      .filter((e) => e.documentId && e.customStageName)
+      .map((e) => [e.documentId!, e.customStageName!]),
+  )
+
+  const documentItems = data.documents.map((document) => {
+    const customLabel =
+      document.type === 'OTHER'
+        ? (stageNameByDocumentId.get(document.id) ?? DOCUMENT_LABEL[document.type])
+        : (DOCUMENT_LABEL[document.type] ?? document.type)
+    return {
+      id: document.id,
+      label: customLabel,
+      source: document.scope === 'FARM' ? 'Documento da fazenda' : 'Documento do lote',
+      url: toAbsoluteUrl(document.fileUrl),
+      createdAt: document.createdAt,
+      hash: document.fileHash,
+    }
+  })
 
   const validation = data.farm.lastValidation
   const satelliteItems: EvidenceItem[] = []
@@ -39,8 +51,8 @@ function getEvidenceItems(data: PublicBatch): EvidenceItem[] {
   if (validation?.satelliteImageBeforeUrl) {
     satelliteItems.push({
       id: `${validation.id}-sat-before`,
-      label: 'Satellite image (before cutoff)',
-      source: 'EUDR validation',
+      label: 'Imagem de satélite (antes do corte)',
+      source: 'Validação EUDR',
       url: validation.satelliteImageBeforeUrl,
       createdAt: validation.validatedAt,
       hash: validation.evidenceHash,
@@ -50,8 +62,8 @@ function getEvidenceItems(data: PublicBatch): EvidenceItem[] {
   if (validation?.satelliteImageAfterUrl) {
     satelliteItems.push({
       id: `${validation.id}-sat-after`,
-      label: 'Satellite image (latest)',
-      source: 'EUDR validation',
+      label: 'Imagem de satélite (mais recente)',
+      source: 'Validação EUDR',
       url: validation.satelliteImageAfterUrl,
       createdAt: validation.validatedAt,
       hash: validation.evidenceHash,
@@ -68,12 +80,12 @@ export function TraceDocumentsPanel({ data }: { data: PublicBatch }) {
     <section className="rounded-[var(--radius-card)] border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
       <div className="mb-4 flex items-center gap-2">
         <FileText size={16} className="text-[var(--color-teal-700)]" />
-        <h2 className="text-base font-semibold text-[var(--color-ink)]">Documents and evidence</h2>
+        <h2 className="text-base font-semibold text-[var(--color-ink)]">Documentos e evidências</h2>
       </div>
 
       {evidenceItems.length === 0 ? (
         <p className="text-sm text-[var(--color-ink-subtle)]">
-          No public documents or environmental evidence are available for this batch yet.
+          Nenhum documento ou evidência ambiental disponível para este lote ainda.
         </p>
       ) : (
         <div className="space-y-3">
@@ -100,8 +112,8 @@ export function TraceDocumentsPanel({ data }: { data: PublicBatch }) {
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-medium text-[var(--color-teal-700)] hover:border-[var(--color-teal-100)]"
               >
-                {item.label.includes('Satellite') ? <Satellite size={13} /> : <Image size={13} />}
-                Open
+                {item.label.includes('satélite') ? <Satellite size={13} /> : <Image size={13} />}
+                Abrir
               </a>
             </article>
           ))}

@@ -46,10 +46,10 @@ export function TraceHero({ data }: TraceHeroProps) {
         <div className="space-y-2">
           <p className="inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] bg-[var(--color-teal-50)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-teal-700)]">
             <Shield size={12} />
-            Public verification record
+            Registro público de verificação
           </p>
           <h1 className="text-xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-2xl">
-            Batch {data.batch.code}
+            Lote {data.batch.code}
           </h1>
           <p className="text-sm text-[var(--color-ink-muted)]">{product}</p>
           <p className="max-w-2xl text-sm text-[var(--color-ink-subtle)]">
@@ -67,7 +67,7 @@ export function TraceHero({ data }: TraceHeroProps) {
             }`}
           >
             {isNotarized ? <BadgeCheck size={13} /> : <Shield size={13} />}
-            {isNotarized ? 'Notarized' : 'Pending'}
+            {isNotarized ? 'Notarizado' : 'Pendente'}
           </span>
           {validationStatus && (
             <span className={`inline-flex items-center gap-1 rounded-[var(--radius-badge)] px-2.5 py-1 text-xs font-semibold ${validationToneClass}`}>
@@ -81,7 +81,7 @@ export function TraceHero({ data }: TraceHeroProps) {
             className="inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-muted)] hover:border-[var(--color-teal-100)] hover:text-[var(--color-teal-700)]"
           >
             {isCopied ? <Check size={13} /> : <Copy size={13} />}
-            {isCopied ? 'Copied' : 'Copy link'}
+            {isCopied ? 'Copiado' : 'Copiar link'}
           </button>
         </div>
       </div>

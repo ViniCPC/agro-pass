@@ -1,14 +1,19 @@
 import { Context, Scenes } from 'telegraf';
-import type { ProductType } from '../../generated/prisma/enums';
+import type { DocumentType, ProductType } from '../../generated/prisma/enums';
 
 export interface WizardState {
   productType?: ProductType;
   producerId?: string;
+  producerName?: string;
   farmId?: string;
   farmName?: string;
   quantity?: number;
   cooperativeInviteCode?: string;
   cooperativeName?: string;
+  batchId?: string;
+  batchCode?: string;
+  documentType?: DocumentType;
+  stageName?: string;
 }
 
 export type BotContext = Context & Scenes.WizardContext;

@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Scenes, session, Telegraf } from 'telegraf';
+import { message } from 'telegraf/filters';
 import { BotContext, extractTelegramId } from './telegram.types';
 import { LinkAccountScene } from './scenes/link-account.scene';
 import { HarvestScene } from './scenes/harvest.scene';
 import { RegisterFarmScene } from './scenes/register-farm.scene';
+import { DocumentUploadScene } from './scenes/document-upload.scene';
+import { AddStageScene } from './scenes/add-stage.scene';
 import { TelegramAccountService } from './services/telegram-account.service';
 import { GeminiService } from './gemini/gemini.service';
 import { Msg } from './ui/telegram.messages';
@@ -17,6 +20,8 @@ export class TelegramRouter {
     private readonly linkAccountScene: LinkAccountScene,
     private readonly harvestScene: HarvestScene,
     private readonly registerFarmScene: RegisterFarmScene,
+    private readonly documentUploadScene: DocumentUploadScene,
+    private readonly addStageScene: AddStageScene,
     private readonly accountService: TelegramAccountService,
     private readonly geminiService: GeminiService,
     private readonly cooperativesService: CooperativesService,
@@ -27,6 +32,8 @@ export class TelegramRouter {
       this.linkAccountScene.create(),
       this.harvestScene.create(),
       this.registerFarmScene.create(),
+      this.documentUploadScene.create(),
+      this.addStageScene.create(),
     ]);
 
     bot.use(session());
@@ -97,7 +104,55 @@ export class TelegramRouter {
       return ctx.scene.enter('registerFarm');
     });
 
-    bot.on('photo', async (ctx) => {
+    bot.command(['documento', 'doc'], async (ctx) => {
+      const telegramUserId = extractTelegramId(ctx);
+      if (!telegramUserId) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+      const producer = await this.accountService.findByTelegramId(telegramUserId);
+      if (!producer) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+      return ctx.scene.enter('documentUpload');
+    });
+
+    bot.command(['etapa', 'stage'], async (ctx) => {
+      const telegramUserId = extractTelegramId(ctx);
+      if (!telegramUserId) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+      const producer = await this.accountService.findByTelegramId(telegramUserId);
+      if (!producer) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+      return ctx.scene.enter('addStage');
+    });
+
+    bot.on(message('document'), async (ctx) => {
+      if (ctx.scene.current?.id) {
+        return;
+      }
+
+      const telegramUserId = extractTelegramId(ctx);
+      if (!telegramUserId) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+
+      const producer = await this.accountService.findByTelegramId(telegramUserId);
+      if (!producer) {
+        await ctx.reply(Msg.notLinked);
+        return;
+      }
+
+      return ctx.scene.enter('documentUpload');
+    });
+
+    bot.on(message('photo'), async (ctx) => {
       if (ctx.scene.current?.id) {
         return;
       }

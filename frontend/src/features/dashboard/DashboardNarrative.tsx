@@ -48,46 +48,46 @@ export function DashboardNarrative() {
       : 0
 
   const narrativeText = isLoading
-    ? 'Building traceability story...'
-    : `${metrics.compliantFarms}/${metrics.totalFarms} farms are compliant, ${metrics.tracedBatches}/${metrics.totalBatches} batches are traced, and ${metrics.blockchainProofBatches} already have blockchain proof.`
+    ? 'Carregando dados de rastreabilidade...'
+    : `${metrics.compliantFarms}/${metrics.totalFarms} fazendas conformes, ${metrics.tracedBatches}/${metrics.totalBatches} lotes rastreados e ${metrics.blockchainProofBatches} com prova blockchain.`
 
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-gradient-to-r from-[var(--color-surface)] via-[var(--color-teal-50)] to-[var(--color-surface)] p-5 shadow-[var(--shadow-card-hover)]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-teal-700)]">
-            Operational narrative
+            Narrativa operacional
           </p>
-          <h2 className="text-lg font-semibold text-[var(--color-ink)]">Traceability pulse</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-ink)]">Pulso de rastreabilidade</h2>
           <p className="max-w-3xl text-sm text-[var(--color-ink-muted)]">{narrativeText}</p>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] bg-[var(--color-green-50)] px-2.5 py-1 text-xs font-semibold text-[var(--color-green-700)]">
             <CheckCircle2 size={13} />
-            {isLoading ? '...' : `${complianceRate}% compliant`}
+            {isLoading ? '...' : `${complianceRate}% conformes`}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] bg-[var(--color-amber-50)] px-2.5 py-1 text-xs font-semibold text-[var(--color-amber-700)]">
             <AlertTriangle size={13} />
-            {isLoading ? '...' : `${metrics.farmsNeedingReview + metrics.farmsAtRisk} to review`}
+            {isLoading ? '...' : `${metrics.farmsNeedingReview + metrics.farmsAtRisk} para revisar`}
           </span>
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <NarrativeValue label="Farms" value={isLoading ? '...' : metrics.totalFarms} />
+        <NarrativeValue label="Fazendas" value={isLoading ? '...' : metrics.totalFarms} />
         <NarrativeValue
-          label="Compliant"
+          label="Conformes"
           value={isLoading ? '...' : metrics.compliantFarms}
           tone="green"
         />
         <NarrativeValue
-          label="Traced batches"
+          label="Lotes rastreados"
           value={isLoading ? '...' : metrics.tracedBatches}
           tone="amber"
         />
         <NarrativeValue
-          label="Blockchain proof"
+          label="Prova blockchain"
           value={isLoading ? '...' : metrics.blockchainProofBatches}
           tone="teal"
         />
@@ -96,11 +96,11 @@ export function DashboardNarrative() {
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
         <span className="inline-flex items-center gap-1 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[var(--color-ink-subtle)]">
           <Route size={12} />
-          End-to-end traceability
+          Rastreabilidade ponta a ponta
         </span>
         <span className="inline-flex items-center gap-1 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[var(--color-ink-subtle)]">
           <Link2 size={12} />
-          Digital proof layer
+          Camada de prova digital
         </span>
       </div>
     </section>

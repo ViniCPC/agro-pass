@@ -77,7 +77,7 @@ export function BatchCreatedSuccessDialog({
               <div>
                 <p className="inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] bg-[var(--color-green-50)] px-2.5 py-1 text-xs font-semibold text-[var(--color-green-700)]">
                   <CheckCircle2 size={12} />
-                  Batch created successfully
+                  Lote criado com sucesso
                 </p>
                 <h2 className="mt-2 text-lg font-semibold text-[var(--color-ink)]">
                   {batch.code}
@@ -87,13 +87,13 @@ export function BatchCreatedSuccessDialog({
             </div>
 
             <p className="text-sm text-[var(--color-ink-subtle)]">
-              Your lot is ready for traceability events and blockchain proof.
+              Seu lote está pronto para eventos de rastreabilidade e registro blockchain.
             </p>
 
             {mintResult && (
               <div className="mt-4 rounded-lg border border-[var(--color-teal-100)] bg-[var(--color-teal-50)] p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-teal-700)]">
-                  Blockchain proof ready
+                  Prova blockchain gerada
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-teal-700)]">
                   Tx hash: {shortHash(mintResult.mintTxHash)}
@@ -106,7 +106,7 @@ export function BatchCreatedSuccessDialog({
 
             {mintError && (
               <p className="mt-4 rounded-lg bg-[var(--color-red-50)] px-3 py-2 text-xs text-[var(--color-red-700)]">
-                Mint failed: {mintError}
+                Erro no mint: {mintError}
               </p>
             )}
 
@@ -118,7 +118,7 @@ export function BatchCreatedSuccessDialog({
                 className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-[var(--color-teal-700)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--color-teal-600)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isMinting ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
-                {isMinting ? 'Minting...' : mintResult ? 'Mint completed' : 'Mint on Solana now'}
+                {isMinting ? 'Registrando...' : mintResult ? 'Registro concluído' : 'Registrar na Solana agora'}
               </button>
 
               <button
@@ -126,7 +126,7 @@ export function BatchCreatedSuccessDialog({
                 onClick={onGoToBatchDetail}
                 className="min-h-[44px] rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
               >
-                Go to batch detail
+                Ver detalhes do lote
               </button>
 
               <button
@@ -134,7 +134,7 @@ export function BatchCreatedSuccessDialog({
                 onClick={onCreateAnother}
                 className="min-h-[44px] rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
               >
-                Create another
+                Criar outro
               </button>
 
               <button
@@ -142,7 +142,7 @@ export function BatchCreatedSuccessDialog({
                 onClick={onBackToBatches}
                 className="min-h-[44px] rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
               >
-                Back to batches
+                Voltar para lotes
               </button>
             </div>
           </motion.section>

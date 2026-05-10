@@ -9,17 +9,13 @@ interface DemoModeContextValue {
 const DemoModeContext = createContext<DemoModeContextValue | null>(null)
 
 export function DemoModeProvider({ children }: { children: ReactNode }) {
-  const [isDemoMode, setIsDemoMode] = useState(() =>
-    localStorage.getItem('agropass:demo') === 'true'
-  )
+  const [isDemoMode, setIsDemoMode] = useState(false)
 
   const enableDemoMode = useCallback(() => {
-    localStorage.setItem('agropass:demo', 'true')
     setIsDemoMode(true)
   }, [])
 
   const disableDemoMode = useCallback(() => {
-    localStorage.removeItem('agropass:demo')
     setIsDemoMode(false)
   }, [])
 

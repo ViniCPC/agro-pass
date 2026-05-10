@@ -21,7 +21,9 @@ export class TelegramBootstrapService implements OnModuleInit, OnModuleDestroy {
 
     this.bot = new Telegraf<BotContext>(token);
     this.router.register(this.bot);
-    await this.bot.launch();
+    this.bot.launch().catch((error) => {
+      this.logger.error('Bot crashed', error);
+    });
     this.logger.log('Bot do Telegram iniciado (long polling).');
   }
 

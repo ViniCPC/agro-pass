@@ -19,10 +19,12 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
     "seed": "tsx --require dotenv/config prisma/seed.ts",
+    "start:clean": "powershell -ExecutionPolicy Bypass -File scripts/start-clean.ps1",
     "solana:create-wallet": "tsx src/scripts/create-devnet-wallet.ts",
     "solana:airdrop": "tsx src/scripts/request-devnet-airdrop.ts",
     "solana:create-tree": "tsx src/scripts/create-merkle-tree.ts",
-    "smoke:test": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1"
+    "smoke:test": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1",
+    "demo:satellite": "tsx --require dotenv/config src/scripts/update-satellite-images.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config prisma/seed.ts"

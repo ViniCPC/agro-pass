@@ -65,22 +65,35 @@ export class HarvestFlowService {
       );
     }
 
-    const qrPdf = await this.qrPdfService.generateBatchQrPdf({
-      batchCode: batch.code,
-      publicTraceUrl,
-      evidenceHash: farm.lastValidationHash ?? undefined,
-      cnftAddress: mintResult?.cnftAddress ?? undefined,
-      mintTxHash: mintResult?.mintTxHash,
-    });
+    let qrPdfUrl: string | undefined;
+    let qrPdfError: string | undefined;
+
+    try {
+      const qrPdf = await this.qrPdfService.generateBatchQrPdf({
+        batchCode: batch.code,
+        publicTraceUrl,
+        evidenceHash: farm.lastValidationHash ?? undefined,
+        cnftAddress: mintResult?.cnftAddress ?? undefined,
+        mintTxHash: mintResult?.mintTxHash,
+      });
+      qrPdfUrl = qrPdf.publicUrl;
+    } catch (error) {
+      qrPdfError =
+        error instanceof Error ? error.message : 'Erro ao gerar PDF com QR';
+      this.logger.warn(
+        `QR PDF falhou para o lote ${batch.code}: ${qrPdfError}`,
+      );
+    }
 
     return {
       batchId: batch.id,
       batchCode: batch.code,
       publicTraceUrl,
-      qrPdfUrl: qrPdf.publicUrl,
+      qrPdfUrl,
       mintTxHash: mintResult?.mintTxHash,
       cnftAddress: mintResult?.cnftAddress,
       mintError,
+      qrPdfError,
     };
   }
 }

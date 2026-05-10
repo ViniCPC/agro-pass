@@ -14,7 +14,8 @@ export interface RunValidationParams {
 
 export const eudrApi = {
   getLastValidation: (farmId: string) =>
-    api.get<EudrValidation | null>(`/eudr/farms/${farmId}/last-validation`),
+    api.get<{ lastValidation: EudrValidation | null }>(`/eudr/farms/${farmId}/last-validation`)
+      .then((r) => r.lastValidation),
 
   getValidationHistory: (farmId: string, params: PaginationParams = {}) =>
     api.get<PaginatedResponse<EudrValidation>>(

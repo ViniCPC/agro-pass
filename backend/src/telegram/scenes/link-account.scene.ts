@@ -9,6 +9,8 @@ import {
 import { TelegramAccountService } from '../services/telegram-account.service';
 import { Msg } from '../ui/telegram.messages';
 
+const POSSIBLE_CAR_REGEX = /^[A-Za-z]{2}[-_]\d{7}[-_][A-Za-z0-9]{16,40}$/;
+
 @Injectable()
 export class LinkAccountScene {
   private readonly logger = new Logger(LinkAccountScene.name);
@@ -84,6 +86,11 @@ export class LinkAccountScene {
           }
 
           return ctx.scene.leave();
+        }
+
+        if (POSSIBLE_CAR_REGEX.test(text.trim())) {
+          await ctx.reply(Msg.link.carNumberDetected);
+          return;
         }
 
         const phone = this.accountService.normalizePhone(text);

@@ -57,13 +57,13 @@ export function BatchCard({ batch }: BatchCardProps) {
           to={`/batches/${batch.id}`}
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-[var(--color-border)] px-3 text-sm font-medium text-[var(--color-ink)]"
         >
-          QR detail
+          Detalhes do QR
         </Link>
         <Link
           to={`/trace/${encodeURIComponent(batch.code)}`}
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg bg-[var(--color-teal-700)] px-3 text-sm font-semibold text-white"
         >
-          Public trace
+          Rastreio público
         </Link>
       </div>
     </article>

@@ -1,12 +1,5 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import { useDemoMode } from '@/contexts/demo'
+import { Outlet } from 'react-router-dom'
 
 export function DemoGuard() {
-  const { isDemoMode } = useDemoMode()
-
-  if (!isDemoMode) {
-    return <Navigate to="/demo" replace />
-  }
-
   return <Outlet />
 }

@@ -102,6 +102,15 @@ export interface TraceEvent {
   longitude: number | null
   eventHash: string | null
   txHash: string | null
+  customStageName?: string | null
+  documentId?: string | null
+  document?: {
+    id: string
+    type: DocumentType
+    fileUrl: string
+    fileHash: string
+    createdAt: string
+  } | null
   batchId: string
   createdAt: string
 }
@@ -199,6 +208,15 @@ export interface PublicBatch {
     longitude: number | null
     eventHash: string | null
     txHash: string | null
+    customStageName?: string | null
+    documentId?: string | null
+    document?: {
+      id: string
+      type: DocumentType
+      fileUrl: string
+      fileHash: string
+      createdAt: string
+    } | null
     createdAt: string
   }>
   documents: PublicDocument[]

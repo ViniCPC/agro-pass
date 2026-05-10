@@ -83,6 +83,17 @@ export class PublicBatchesService {
             longitude: true,
             eventHash: true,
             txHash: true,
+            customStageName: true,
+            documentId: true,
+            document: {
+              select: {
+                id: true,
+                type: true,
+                fileUrl: true,
+                fileHash: true,
+                createdAt: true,
+              },
+            },
             createdAt: true,
           },
         },

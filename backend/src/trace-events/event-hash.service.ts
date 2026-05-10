@@ -11,6 +11,7 @@ interface EventHashInput {
   longitude?: number | null;
   cooperativeId?: string | null;
   exporterId?: string | null;
+  customStageName?: string | null;
   createdAt: Date;
 }
 
@@ -26,6 +27,7 @@ export class EventHashService {
       longitude: input.longitude ?? null,
       cooperativeId: input.cooperativeId ?? null,
       exporterId: input.exporterId ?? null,
+      customStageName: input.customStageName ?? null,
       createdAt: input.createdAt.toISOString(),
     });
 

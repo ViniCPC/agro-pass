@@ -24,17 +24,17 @@ export function TraceBatchSummary({ data }: TraceBatchSummaryProps) {
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
       <div className="mb-4 flex items-start justify-between gap-3">
-        <h2 className="text-base font-semibold text-[var(--color-ink)]">Batch summary</h2>
+        <h2 className="text-base font-semibold text-[var(--color-ink)]">Resumo do lote</h2>
         <StatusBadge status={data.batch.status} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <SummaryField label="Product" value={product} />
-        <SummaryField label="Quantity" value={`${quantity} ${data.batch.unit}`} />
-        <SummaryField label="Harvest date" value={formatDate(data.batch.harvestDate)} />
+        <SummaryField label="Produto" value={product} />
+        <SummaryField label="Quantidade" value={`${quantity} ${data.batch.unit}`} />
+        <SummaryField label="Data da colheita" value={formatDate(data.batch.harvestDate)} />
         <SummaryField label="Status" value={data.batch.status} />
-        <SummaryField label="Source farm" value={data.farm.name} />
-        <SummaryField label="Batch code" value={data.batch.code} />
+        <SummaryField label="Fazenda de origem" value={data.farm.name} />
+        <SummaryField label="Código do lote" value={data.batch.code} />
       </div>
     </section>
   )

@@ -24,7 +24,7 @@ export function TraceFarmCard({ data }: TraceFarmCardProps) {
     <section className="rounded-[var(--radius-card)] border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
       <div className="mb-4 flex items-center gap-2">
         <Sprout size={16} className="text-[var(--color-green-700)]" />
-        <h2 className="text-base font-semibold text-[var(--color-ink)]">Farm profile</h2>
+        <h2 className="text-base font-semibold text-[var(--color-ink)]">Perfil da fazenda</h2>
       </div>
 
       <div className="mb-4 inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] bg-[var(--color-slate-50)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]">
@@ -33,10 +33,10 @@ export function TraceFarmCard({ data }: TraceFarmCardProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FarmField label="Name" value={data.farm.name} />
-        <FarmField label="Producer" value={data.farm.producer.name} />
-        <FarmField label="Biome" value={biome} />
-        <FarmField label="Amazon legal" value={data.farm.isAmazonLegal ? 'Yes' : 'No'} />
+        <FarmField label="Nome" value={data.farm.name} />
+        <FarmField label="Produtor" value={data.farm.producer.name} />
+        <FarmField label="Bioma" value={biome} />
+        <FarmField label="Amazônia Legal" value={data.farm.isAmazonLegal ? 'Sim' : 'Não'} />
         <FarmField label="CAR" value={data.farm.carNumber ?? '-'} />
       </div>
     </section>

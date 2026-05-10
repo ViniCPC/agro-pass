@@ -8,7 +8,7 @@ export function useBatchEvents(batchId: string | null) {
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['batch-events', batchId],
+    queryKey: ['batch-events', isDemoMode ? 'demo' : 'live', batchId],
     queryFn: isDemoMode
       ? async () => {
           const batch = MOCK_BATCHES.find((b) => b.id === batchId)

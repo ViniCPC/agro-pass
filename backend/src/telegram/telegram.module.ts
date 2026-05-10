@@ -11,14 +11,18 @@ import { HarvestFlowService } from './flows/harvest.flow';
 import { LinkAccountScene } from './scenes/link-account.scene';
 import { HarvestScene } from './scenes/harvest.scene';
 import { RegisterFarmScene } from './scenes/register-farm.scene';
+import { DocumentUploadScene } from './scenes/document-upload.scene';
 import { TelegramAccountService } from './services/telegram-account.service';
 import { TelegramHarvestService } from './services/telegram-harvest.service';
 import { TelegramFarmService } from './services/telegram-farm.service';
+import { TelegramDocumentService } from './services/telegram-document.service';
 import { GeminiService } from './gemini/gemini.service';
 import { GeminiDispatcherService } from './gemini/gemini-dispatcher.service';
 import { AiModule } from 'src/ai/ai.module';
 import { FarmsModule } from '../farms/farms.module';
 import { EudrModule } from '../eudr/eudr.module';
+import { TraceEventsModule } from '../trace-events/trace-events.module';
+import { AddStageScene } from './scenes/add-stage.scene';
 
 @Module({
   imports: [
@@ -30,6 +34,7 @@ import { EudrModule } from '../eudr/eudr.module';
     AiModule,
     FarmsModule,
     EudrModule,
+    TraceEventsModule,
   ],
   providers: [
     {
@@ -42,10 +47,13 @@ import { EudrModule } from '../eudr/eudr.module';
     LinkAccountScene,
     HarvestScene,
     RegisterFarmScene,
+    DocumentUploadScene,
+    AddStageScene,
     HarvestFlowService,
     TelegramAccountService,
     TelegramHarvestService,
     TelegramFarmService,
+    TelegramDocumentService,
     GeminiService,
     GeminiDispatcherService,
   ],

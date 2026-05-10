@@ -1,6 +1,7 @@
 import { ExternalLink, MapPin } from 'lucide-react'
 import { TRACE_EVENT_LABEL, formatDateTime } from './trace.utils'
 import { TimelineEventIcon } from './TimelineEventIcon'
+import { TimelineDocumentBadge } from './TimelineDocumentBadge'
 import { TimelineHashInline } from './TimelineHashInline'
 import type { TimelineEventData } from './timeline.types'
 
@@ -23,6 +24,8 @@ function getExplorerTxLink(txHash: string) {
 
 export function TimelineItem({ event, isLast }: TimelineItemProps) {
   const locationLabel = getLocationLabel(event)
+  const stageName = event.customStageName?.trim() || null
+  const eventLabel = TRACE_EVENT_LABEL[event.type] ?? event.type
 
   return (
     <article className="group relative grid grid-cols-[2.25rem_1fr] gap-3">
@@ -37,9 +40,21 @@ export function TimelineItem({ event, isLast }: TimelineItemProps) {
         <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 shadow-[var(--shadow-card)] transition-all group-hover:border-[var(--color-teal-100)] group-hover:shadow-[var(--shadow-card-hover)]">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h3 className="text-sm font-semibold text-[var(--color-ink)]">
-                {TRACE_EVENT_LABEL[event.type] ?? event.type}
-              </h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+                  {event.type}
+                </span>
+                {stageName ? (
+                  <h3 className="text-sm font-semibold text-[var(--color-ink)]">
+                    "{stageName}"
+                  </h3>
+                ) : (
+                  <h3 className="text-sm font-semibold text-[var(--color-ink)]">
+                    {eventLabel}
+                  </h3>
+                )}
+                {event.document && <TimelineDocumentBadge document={event.document} />}
+              </div>
               <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
                 {event.actorName}
               </p>
@@ -66,7 +81,7 @@ export function TimelineItem({ event, isLast }: TimelineItemProps) {
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-teal-700)] hover:underline"
               >
-                View on Solana Explorer {'->'}
+                Ver no Solana Explorer {'->'}
                 <ExternalLink size={12} />
               </a>
             )}

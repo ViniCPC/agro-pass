@@ -8,7 +8,7 @@ export function useFarms(params?: PaginationParams) {
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['farms', params],
+    queryKey: ['farms', isDemoMode ? 'demo' : 'live', params],
     queryFn: isDemoMode
       ? async () => MOCK_FARMS_RESPONSE
       : () => farmsApi.list(params),
@@ -20,7 +20,7 @@ export function useFarm(id: string | null) {
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['farms', id],
+    queryKey: ['farms', isDemoMode ? 'demo' : 'live', id],
     queryFn: isDemoMode
       ? async () => {
           const farm = MOCK_FARMS.find((f) => f.id === id)

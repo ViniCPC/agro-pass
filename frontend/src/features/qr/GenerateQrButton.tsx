@@ -19,18 +19,18 @@ export function GenerateQrButton({
 
   useEffect(() => {
     if (generateQr.isPending) {
-      setToast('Generating QR...')
+      setToast('Gerando QR...')
       return
     }
 
     if (generateQr.isSuccess) {
-      setToast('QR generated successfully')
+      setToast('QR gerado com sucesso')
       const timeoutId = window.setTimeout(() => setToast(null), 1800)
       return () => window.clearTimeout(timeoutId)
     }
 
     if (generateQr.isError) {
-      setToast('Could not generate QR')
+      setToast('Não foi possível gerar o QR')
       const timeoutId = window.setTimeout(() => setToast(null), 2200)
       return () => window.clearTimeout(timeoutId)
     }
@@ -58,7 +58,7 @@ export function GenerateQrButton({
         ) : (
           <QrCode size={15} />
         )}
-        {generateQr.isPending ? 'Generating QR...' : 'Generate QR'}
+        {generateQr.isPending ? 'Gerando QR...' : 'Gerar QR'}
       </button>
 
       {toast && (

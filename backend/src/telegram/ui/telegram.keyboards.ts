@@ -1,6 +1,23 @@
 import { Markup } from 'telegraf';
 import type { Farm } from '../../../generated/prisma/client';
 
+type BatchSummary = { id: string; code: string; quantity: number; unit: string };
+
+export const DOCUMENT_TYPE_KEYBOARD = Markup.inlineKeyboard([
+  [Markup.button.callback('Nota fiscal', 'doctype:INVOICE')],
+  [Markup.button.callback('Recibo de armazém', 'doctype:WAREHOUSE_RECEIPT')],
+  [Markup.button.callback('Relatório ambiental', 'doctype:ENVIRONMENTAL_REPORT')],
+  [Markup.button.callback('Outro documento', 'doctype:OTHER')],
+]);
+
+export function buildBatchKeyboard(batches: BatchSummary[]) {
+  return Markup.inlineKeyboard(
+    batches.map((b) => [
+      Markup.button.callback(`${b.code} — ${b.quantity} ${b.unit}`, `batch:${b.id}`),
+    ]),
+  );
+}
+
 export const PRODUCT_KEYBOARD = Markup.inlineKeyboard([
   [
     Markup.button.callback('Café', 'product:COFFEE'),
@@ -22,6 +39,24 @@ export const CONFIRM_KEYBOARD = Markup.inlineKeyboard([
     Markup.button.callback('Confirmar', 'confirm:yes'),
     Markup.button.callback('Cancelar', 'confirm:no'),
   ],
+]);
+
+export const ADD_STAGE_AFTER_HARVEST_KEYBOARD = Markup.inlineKeyboard([
+  [
+    Markup.button.callback('Sim, adicionar etapa', 'harvest:add_stage:yes'),
+    Markup.button.callback('Nao, finalizar', 'harvest:add_stage:no'),
+  ],
+]);
+
+export const STAGE_ADD_MORE_KEYBOARD = Markup.inlineKeyboard([
+  [
+    Markup.button.callback('Sim', 'stage:add_more:yes'),
+    Markup.button.callback('Nao', 'stage:add_more:no'),
+  ],
+]);
+
+export const STAGE_SKIP_DOCUMENT_KEYBOARD = Markup.inlineKeyboard([
+  [Markup.button.callback('Pular comprovante', 'stage:skip_document')],
 ]);
 
 export const FARM_CAR_RETRY_KEYBOARD = Markup.inlineKeyboard([

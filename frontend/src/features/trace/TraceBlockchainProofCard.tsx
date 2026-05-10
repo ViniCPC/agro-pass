@@ -27,14 +27,14 @@ export function TraceBlockchainProofCard({ data }: TraceBlockchainProofCardProps
     <section className="rounded-[var(--radius-card)] border border-[var(--color-teal-100)] bg-gradient-to-br from-[var(--color-teal-50)] via-[var(--color-surface)] to-[var(--color-teal-50)] p-5 shadow-[var(--shadow-card-hover)]">
       <div className="mb-4 flex items-center gap-2">
         <Link2 size={16} className="text-[var(--color-teal-700)]" />
-        <h2 className="text-base font-semibold text-[var(--color-ink)]">Blockchain proof</h2>
+        <h2 className="text-base font-semibold text-[var(--color-ink)]">Prova blockchain</h2>
       </div>
 
       <div className="space-y-4">
-        <BlockchainField label="cNFT address" value={data.blockchain.cnftAddress} />
-        <BlockchainField label="Merkle tree" value={data.blockchain.merkleTree} />
-        <BlockchainField label="Metadata URI" value={data.blockchain.metadataUri} />
-        <BlockchainField label="Mint tx hash" value={data.blockchain.mintTxHash} />
+        <BlockchainField label="Endereço cNFT" value={data.blockchain.cnftAddress} />
+        <BlockchainField label="Árvore Merkle" value={data.blockchain.merkleTree} />
+        <BlockchainField label="URI de metadados" value={data.blockchain.metadataUri} />
+        <BlockchainField label="Hash da transação" value={data.blockchain.mintTxHash} />
       </div>
 
       {txExplorerUrl && (
@@ -45,7 +45,7 @@ export function TraceBlockchainProofCard({ data }: TraceBlockchainProofCardProps
           className="mt-4 inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] border border-[var(--color-teal-100)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-medium text-[var(--color-teal-700)] hover:bg-[var(--color-teal-50)]"
           title={data.blockchain.mintTxHash ?? ''}
         >
-          View transaction {shortHash(data.blockchain.mintTxHash, 10, 8)}
+          Ver transação {shortHash(data.blockchain.mintTxHash, 10, 8)}
         </a>
       )}
     </section>

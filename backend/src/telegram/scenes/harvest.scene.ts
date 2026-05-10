@@ -13,6 +13,7 @@ import { TelegramHarvestService } from '../services/telegram-harvest.service';
 import { HarvestFlowService } from '../flows/harvest.flow';
 import { Msg } from '../ui/telegram.messages';
 import {
+  ADD_STAGE_AFTER_HARVEST_KEYBOARD,
   PRODUCT_KEYBOARD,
   CONFIRM_KEYBOARD,
   buildFarmKeyboard,
@@ -184,29 +185,87 @@ export class HarvestScene {
             quantity,
           });
 
-          await ctx.reply(
-            Msg.harvest.successWithLinks({
-              code: result.batchCode,
-              productType,
-              quantity,
-              publicUrl: result.publicTraceUrl,
-              qrPdfUrl: result.qrPdfUrl,
-              mintTxHash: result.mintTxHash,
-            }),
-            buildQrKeyboard(result.publicTraceUrl),
-          );
+          const successMessage = Msg.harvest.successWithLinks({
+            code: result.batchCode,
+            productType,
+            quantity,
+            publicUrl: result.publicTraceUrl,
+            qrPdfUrl: result.qrPdfUrl,
+            mintTxHash: result.mintTxHash,
+          });
+
+          try {
+            if (this.isTelegramButtonUrlSafe(result.publicTraceUrl)) {
+              await ctx.reply(
+                successMessage,
+                buildQrKeyboard(result.publicTraceUrl),
+              );
+            } else {
+              await ctx.reply(successMessage);
+              await ctx.reply(
+                'Lote criado com sucesso. Nao anexei o botao por usar URL local (localhost).',
+              );
+            }
+          } catch (sendError) {
+            this.logger.warn(
+              `Falha ao enviar mensagem de sucesso detalhada do lote ${result.batchCode}`,
+              sendError instanceof Error ? sendError.stack : String(sendError),
+            );
+            await ctx.reply(
+              `Lote cadastrado com sucesso! Codigo: ${result.batchCode}`,
+            );
+          }
 
           if (result.mintError) {
             await ctx.reply(
               `Lote criado, mas o mint cNFT ficou pendente: ${result.mintError}`,
             );
           }
+
+          if (result.qrPdfError) {
+            await ctx.reply(
+              `Lote criado, mas o QR PDF ficou pendente: ${result.qrPdfError}`,
+            );
+          }
+
+          wizardState(ctx).batchId = result.batchId;
+          wizardState(ctx).batchCode = result.batchCode;
+          await ctx.reply(
+            Msg.harvest.askAddStage,
+            ADD_STAGE_AFTER_HARVEST_KEYBOARD,
+          );
+          return ctx.wizard.next();
         } catch (error) {
           this.logger.error('Erro ao criar lote pelo Telegram', error);
           await ctx.reply(Msg.harvest.error);
+          return ctx.scene.leave();
+        }
+      },
+
+      // Passo 5: decidir se registra etapas adicionais
+      async (ctx) => {
+        const data = extractCallbackData(ctx);
+
+        if (data === 'harvest:add_stage:yes') {
+          await ctx.answerCbQuery();
+
+          const batchId = wizardState(ctx).batchId;
+          const batchCode = wizardState(ctx).batchCode;
+          if (!batchId || !batchCode) {
+            await ctx.reply(Msg.harvest.incomplete);
+            return ctx.scene.leave();
+          }
+
+          return ctx.scene.enter('addStage', { batchId, batchCode });
         }
 
-        return ctx.scene.leave();
+        if (data === 'harvest:add_stage:no') {
+          await ctx.answerCbQuery();
+          await ctx.reply(Msg.harvest.finishedWithoutExtraStages);
+          return ctx.scene.leave();
+        }
+
+        await ctx.reply(Msg.harvest.chooseAddStageButton);
       },
     );
 
@@ -216,5 +275,28 @@ export class HarvestScene {
     });
 
     return scene;
+  }
+
+  private isTelegramButtonUrlSafe(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return false;
+      }
+
+      const host = parsed.hostname.toLowerCase();
+      if (
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        host === '0.0.0.0' ||
+        host.endsWith('.local')
+      ) {
+        return false;
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

@@ -7,7 +7,7 @@ export function TimelineEmptyState() {
         <Activity size={16} />
       </div>
       <p className="text-sm font-medium text-[var(--color-ink)]">
-        No traceability events yet
+        Nenhum evento de rastreabilidade registrado
       </p>
     </div>
   )

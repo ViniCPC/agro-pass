@@ -8,7 +8,7 @@ export function useBatches(params?: PaginationParams) {
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['batches', params],
+    queryKey: ['batches', isDemoMode ? 'demo' : 'live', params],
     queryFn: isDemoMode
       ? async () => MOCK_BATCHES_RESPONSE
       : () => batchesApi.list(params),
@@ -20,7 +20,7 @@ export function useBatch(id: string | null) {
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['batches', id],
+    queryKey: ['batches', isDemoMode ? 'demo' : 'live', id],
     queryFn: isDemoMode
       ? async () => {
           const batch = MOCK_BATCHES.find((b) => b.id === id)

@@ -39,7 +39,7 @@ function parseApiError(error: unknown): string {
     return error.message
   }
 
-  return 'Unexpected error while creating batch.'
+  return 'Erro inesperado ao criar o lote.'
 }
 
 function toIsoDateString(dateInput: string): string {
@@ -83,27 +83,27 @@ export function CreateBatchPage() {
     const fieldErrors: FieldErrorMap = {}
 
     if (!values.farmId) {
-      fieldErrors.farmId = 'Farm is required.'
+      fieldErrors.farmId = 'A fazenda é obrigatória.'
     } else if (!selectedFarm || selectedFarm.lastValidationStatus !== 'COMPLIANT') {
-      fieldErrors.farmId = 'Only compliant farms can create a batch.'
+      fieldErrors.farmId = 'Apenas fazendas conformes podem criar lotes.'
     }
 
     if (!values.productType) {
-      fieldErrors.productType = 'Product is required.'
+      fieldErrors.productType = 'O produto é obrigatório.'
     }
 
     if (!values.quantity) {
-      fieldErrors.quantity = 'Quantity is required.'
+      fieldErrors.quantity = 'A quantidade é obrigatória.'
     } else if (!Number.isFinite(Number(values.quantity)) || Number(values.quantity) <= 0) {
-      fieldErrors.quantity = 'Quantity must be greater than zero.'
+      fieldErrors.quantity = 'A quantidade deve ser maior que zero.'
     }
 
     if (!values.unit.trim()) {
-      fieldErrors.unit = 'Unit is required.'
+      fieldErrors.unit = 'A unidade é obrigatória.'
     }
 
     if (!values.harvestDate) {
-      fieldErrors.harvestDate = 'Harvest date is required.'
+      fieldErrors.harvestDate = 'A data da colheita é obrigatória.'
     }
 
     return fieldErrors
@@ -173,7 +173,7 @@ export function CreateBatchPage() {
   const submitHint =
     submitError ??
     (selectedFarm && selectedFarm.lastValidationStatus !== 'COMPLIANT'
-      ? 'Selected farm is not compliant yet. Run EUDR validation first.'
+      ? 'A fazenda selecionada ainda não está conforme. Execute a validação EUDR primeiro.'
       : null)
 
   if (farmsQuery.isLoading) {
@@ -188,8 +188,8 @@ export function CreateBatchPage() {
     return (
       <PageContainer>
         <ErrorState
-          title="Could not load farms"
-          description="Check backend connection and try again."
+          title="Não foi possível carregar as fazendas"
+          description="Verifique a conexão com o servidor e tente novamente."
           onRetry={() => farmsQuery.refetch()}
         />
       </PageContainer>
@@ -201,8 +201,7 @@ export function CreateBatchPage() {
       <CreateBatchHeader />
 
       <p className="text-sm text-[var(--color-ink-subtle)]">
-        {compliantCount} compliant farm{compliantCount !== 1 ? 's' : ''} ready
-        for batch creation.
+        {compliantCount} fazenda{compliantCount !== 1 ? 's' : ''} conforme{compliantCount !== 1 ? 's' : ''} pronta{compliantCount !== 1 ? 's' : ''} para criar lotes.
       </p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -242,7 +241,7 @@ export function CreateBatchPage() {
           disabled={!canSubmit || createBatch.isPending}
           className="w-full rounded-lg bg-[var(--color-teal-700)] px-4 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {createBatch.isPending ? 'Creating...' : 'Create batch'}
+          {createBatch.isPending ? 'Criando...' : 'Criar lote'}
         </TouchFriendlyButton>
       </StickyMobileCta>
     </PageContainer>

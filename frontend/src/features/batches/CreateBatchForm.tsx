@@ -38,10 +38,10 @@ export function CreateBatchForm({
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
       <h2 className="text-base font-semibold text-[var(--color-ink)]">
-        Batch data
+        Dados do lote
       </h2>
       <p className="mt-0.5 text-sm text-[var(--color-ink-subtle)]">
-        Fill all required fields to register a new traceability lot.
+        Preencha todos os campos obrigatórios para registrar um novo lote.
       </p>
 
       <form
@@ -61,7 +61,7 @@ export function CreateBatchForm({
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-            Product
+            Produto
           </label>
           <select
             value={values.productType}
@@ -71,7 +71,7 @@ export function CreateBatchForm({
             }
             className={INPUT_CLASS}
           >
-            <option value="">Select product</option>
+            <option value="">Selecione o produto</option>
             {PRODUCT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -86,7 +86,7 @@ export function CreateBatchForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-              Quantity
+              Quantidade
             </label>
             <input
               type="number"
@@ -104,7 +104,7 @@ export function CreateBatchForm({
 
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-              Unit
+              Unidade
             </label>
             <input
               type="text"
@@ -122,7 +122,7 @@ export function CreateBatchForm({
 
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-            Harvest date
+            Data da colheita
           </label>
           <input
             type="date"
@@ -148,7 +148,7 @@ export function CreateBatchForm({
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--color-teal-700)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-teal-600)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : null}
-          {isSubmitting ? 'Creating...' : 'Criar lote'}
+          {isSubmitting ? 'Criando...' : 'Criar lote'}
         </button>
       </form>
     </section>

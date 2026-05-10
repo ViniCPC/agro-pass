@@ -41,26 +41,26 @@ export function RunEudrValidationButton({
         ) : (
           <ShieldCheck size={15} />
         )}
-        {isPending ? 'Validating…' : 'Run EUDR Validation'}
+        {isPending ? 'Validando…' : 'Executar Validação EUDR'}
       </TouchFriendlyButton>
 
       {ran && !isPending && isSuccess && (
         <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-green-700,#15803d)]">
           <CheckCircle2 size={13} />
-          Validation complete — status updated
+          Validação concluída — status atualizado
         </div>
       )}
 
       {ran && !isPending && isError && (
         <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-red-700,#b91c1c)]">
           <AlertCircle size={13} />
-          Validation failed. Check server connection.
+          Falha na validação. Verifique a conexão com o servidor.
         </div>
       )}
 
       {isPending && (
         <p className="text-[11px] text-[var(--color-ink-subtle)] animate-pulse">
-          Querying MapBiomas + PRODES + Hansen + Sentinel-2…
+          Consultando MapBiomas + PRODES + Hansen + Sentinel-2…
         </p>
       )}
     </div>

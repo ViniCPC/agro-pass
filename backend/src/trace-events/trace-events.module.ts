@@ -8,5 +8,6 @@ import { EventHashService } from './event-hash.service';
   imports: [PrismaModule],
   controllers: [TraceEventsController],
   providers: [TraceEventsService, EventHashService],
+  exports: [TraceEventsService],
 })
 export class TraceEventsModule {}

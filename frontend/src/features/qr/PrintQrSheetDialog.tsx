@@ -58,7 +58,7 @@ export function PrintQrSheetDialog({
       const message =
         downloadError instanceof Error
           ? downloadError.message
-          : 'Could not download PDF sheet.'
+          : 'Não foi possível baixar o PDF.'
       setError(message)
     } finally {
       setIsDownloading(false)
@@ -67,7 +67,7 @@ export function PrintQrSheetDialog({
 
   function handlePrintSheet() {
     if (!qrSrc) {
-      setError('Generate QR first to print the sheet.')
+      setError('Gere o QR antes de imprimir a folha.')
       return
     }
 
@@ -84,7 +84,7 @@ export function PrintQrSheetDialog({
 
     const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=980,height=760')
     if (!printWindow) {
-      setError('Popup blocked. Allow popups to print.')
+      setError('Popup bloqueado. Permita popups para imprimir.')
       return
     }
 
@@ -185,7 +185,7 @@ export function PrintQrSheetDialog({
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-[var(--color-ink)]">
-                  Print QR sheet
+                  Imprimir folha de QR
                 </h3>
                 <p className="text-sm text-[var(--color-ink-subtle)]">
                   Cole esses QR codes nos fardos antes de entregar pra cooperativa.
@@ -195,7 +195,7 @@ export function PrintQrSheetDialog({
                 type="button"
                 onClick={onClose}
                 className="rounded-md border border-[var(--color-border)] p-1.5 text-[var(--color-ink-subtle)] hover:bg-[var(--color-page)]"
-                aria-label="Close print dialog"
+                aria-label="Fechar diálogo de impressão"
               >
                 <X size={15} />
               </button>
@@ -213,7 +213,7 @@ export function PrintQrSheetDialog({
                       : 'border border-[var(--color-border)] text-[var(--color-ink-muted)] hover:border-[var(--color-teal-600)]'
                   }`}
                 >
-                  {option} copies
+                  {option} cópias
                 </button>
               ))}
             </div>
@@ -221,7 +221,7 @@ export function PrintQrSheetDialog({
             <div className="rounded-xl border border-[var(--color-border)] bg-white p-4">
               <div className="mb-3 border-b border-dashed border-[var(--color-border)] pb-3">
                 <p className="text-sm font-semibold text-[var(--color-ink)]">
-                  A4 preview - {batchCode}
+                  Pré-visualização A4 - {batchCode}
                 </p>
               </div>
               <div
@@ -269,10 +269,10 @@ export function PrintQrSheetDialog({
               >
                 <Download size={14} />
                 {isDownloading
-                  ? 'Downloading...'
+                  ? 'Baixando...'
                   : isDemoMode
-                    ? 'Save as PDF'
-                    : 'Download PDF'}
+                    ? 'Salvar como PDF'
+                    : 'Baixar PDF'}
               </button>
               <button
                 type="button"
@@ -280,7 +280,7 @@ export function PrintQrSheetDialog({
                 className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
               >
                 <Printer size={14} />
-                Print
+                Imprimir
               </button>
             </div>
           </motion.section>

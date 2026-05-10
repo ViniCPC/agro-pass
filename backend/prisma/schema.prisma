@@ -233,6 +233,7 @@ model Document {
   farm    Farm?   @relation(fields: [farmId], references: [id], onDelete: Cascade)
   batchId String?
   batch   Batch?  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  traceEvent TraceEvent?
 
   @@index([farmId])
   @@index([batchId])
@@ -258,6 +259,9 @@ model TraceEvent {
 
   eventHash String? // sha256 dos campos
   txHash    String? // tx Solana
+  customStageName String?
+  documentId String? @unique
+  document   Document? @relation(fields: [documentId], references: [id])
 
   createdAt DateTime @default(now())
 

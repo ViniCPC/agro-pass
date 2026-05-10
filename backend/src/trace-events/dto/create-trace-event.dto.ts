@@ -42,4 +42,13 @@ export class CreateTraceEventDto {
   @IsOptional()
   @Type(() => Number)
   longitude?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(140)
+  customStageName?: string;
+
+  @IsUUID()
+  @IsOptional()
+  documentId?: string;
 }

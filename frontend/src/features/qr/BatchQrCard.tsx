@@ -56,10 +56,10 @@ export function BatchQrCard({
     >
       <div className="mb-4 flex flex-col items-center text-center">
         <h2 className="text-lg font-semibold text-[var(--color-ink)]">
-          QR traceability pass
+          Passaporte de rastreabilidade QR
         </h2>
         <p className="mt-1 text-sm text-[var(--color-ink-subtle)]">
-          Scan to verify traceability
+          Escaneie para verificar a rastreabilidade
         </p>
       </div>
 
@@ -75,7 +75,7 @@ export function BatchQrCard({
           className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[var(--color-teal-700)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--color-teal-600)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Download size={14} />
-          {isDownloading ? 'Downloading...' : 'Download PNG'}
+          {isDownloading ? 'Baixando...' : 'Baixar PNG'}
         </button>
         <button
           type="button"
@@ -83,7 +83,7 @@ export function BatchQrCard({
           className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
         >
           <Printer size={14} />
-          Print sheet
+          Imprimir folha
         </button>
         <button
           type="button"
@@ -91,7 +91,7 @@ export function BatchQrCard({
           className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
         >
           {isCopied ? <Check size={14} /> : <Copy size={14} />}
-          {isCopied ? 'Copied' : 'Copy public link'}
+          {isCopied ? 'Copiado' : 'Copiar link público'}
         </button>
       </div>
 

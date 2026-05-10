@@ -2,10 +2,10 @@ export function CreateBatchHeader() {
   return (
     <header>
       <h1 className="text-xl font-semibold tracking-tight text-[var(--color-ink)]">
-        Register batch
+        Registrar lote
       </h1>
       <p className="mt-1 text-sm text-[var(--color-ink-subtle)]">
-        Only EUDR-compliant farms can register new batches.
+        Apenas fazendas com validação EUDR aprovada podem registrar novos lotes.
       </p>
     </header>
   )

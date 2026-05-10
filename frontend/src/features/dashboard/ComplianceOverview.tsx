@@ -54,25 +54,25 @@ export function ComplianceOverview() {
 
   const rows: Row[] = [
     {
-      label: 'Compliant',
+      label: 'Conforme',
       count: compliant,
       color: 'bg-[var(--color-green-600)]',
       bg: 'bg-[var(--color-green-100)] text-[var(--color-green-700)]',
     },
     {
-      label: 'Review',
+      label: 'Revisão',
       count: needsReview,
       color: 'bg-[var(--color-amber-600)]',
       bg: 'bg-[var(--color-amber-100)] text-[var(--color-amber-700)]',
     },
     {
-      label: 'Risk',
+      label: 'Risco',
       count: nonCompliant,
       color: 'bg-[var(--color-red-600)]',
       bg: 'bg-[var(--color-red-100)] text-[var(--color-red-700)]',
     },
     {
-      label: 'Pending',
+      label: 'Pendente',
       count: noData,
       color: 'bg-[var(--color-slate-400)]',
       bg: 'bg-[var(--color-slate-100)] text-[var(--color-slate-600)]',
@@ -95,16 +95,16 @@ export function ComplianceOverview() {
       )}
     >
       <SectionHeader
-        title="Environmental compliance"
+        title="Conformidade ambiental"
         description={
           isLoading
             ? ''
-            : `${compliant}/${total} compliant • ${riskCount} need attention`
+            : `${compliant}/${total} conformes • ${riskCount} requerem atenção`
         }
         action={
           <span className="inline-flex items-center gap-1 rounded-[var(--radius-badge)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-semibold text-[var(--color-ink-muted)]">
             {riskCount > 0 ? <AlertTriangle size={12} /> : <ShieldCheck size={12} />}
-            {riskCount > 0 ? `${riskCount} flagged` : 'All clear'}
+            {riskCount > 0 ? `${riskCount} sinalizadas` : 'Tudo OK'}
           </span>
         }
       />

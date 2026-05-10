@@ -7,7 +7,7 @@ export function useTraceByCode(code: string | null) {
   const { isDemoMode } = useDemoMode()
 
   return useQuery({
-    queryKey: ['trace-by-code', code],
+    queryKey: ['trace-by-code', isDemoMode ? 'demo' : 'live', code],
     queryFn: isDemoMode
       ? async () => {
           const data = MOCK_PUBLIC_BATCHES[code ?? '']

@@ -46,7 +46,7 @@ export function FarmSelectorWithStatus({
   return (
     <div className="space-y-1.5">
       <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-        Farm
+        Fazenda
       </label>
 
       <div ref={rootRef} className="relative">
@@ -73,7 +73,7 @@ export function FarmSelectorWithStatus({
                 />
               </div>
             ) : (
-              <p className="text-[var(--color-ink-subtle)]">Select a farm</p>
+              <p className="text-[var(--color-ink-subtle)]">Selecione uma fazenda</p>
             )}
           </div>
           <ChevronDown
@@ -89,7 +89,7 @@ export function FarmSelectorWithStatus({
           <div className="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card-hover)]">
             {sortedFarms.length === 0 ? (
               <p className="px-2 py-2 text-sm text-[var(--color-ink-subtle)]">
-                No farms found.
+                Nenhuma fazenda encontrada.
               </p>
             ) : (
               sortedFarms.map((farm) => {
@@ -101,7 +101,7 @@ export function FarmSelectorWithStatus({
                     type="button"
                     disabled={!compliant}
                     title={
-                      compliant ? undefined : 'Run EUDR validation first'
+                      compliant ? undefined : 'Execute a validação EUDR primeiro'
                     }
                     onClick={() => {
                       onChange(farm.id)
@@ -123,7 +123,7 @@ export function FarmSelectorWithStatus({
                       </p>
                       {!compliant && (
                         <p className="mt-1 text-[11px] text-[var(--color-amber-700)]">
-                          Run EUDR validation first
+                          Execute a validação EUDR primeiro
                         </p>
                       )}
                     </div>

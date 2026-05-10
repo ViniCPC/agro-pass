@@ -4,10 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  mintV1,
   mintV2,
   parseLeafFromMintV2Transaction,
+  TokenProgramVersion,
+  TokenStandard,
 } from '@metaplex-foundation/mpl-bubblegum';
-import { none, publicKey } from '@metaplex-foundation/umi';
+import { publicKey } from '@metaplex-foundation/umi';
 import bs58 from 'bs58';
 import { PrismaService } from '../../prisma/prisma.service';
 import { createUmiClient } from '../umi.client';
@@ -49,23 +52,51 @@ export class BubblegumService {
 
     const metadataUri = `${publicBackendUrl}/public/batches/${batch.code}/metadata.json`;
 
-    const { signature } = await mintV2(umi, {
-      leafOwner: umi.identity.publicKey,
-      merkleTree: publicKey(merkleTreeAddress),
-      metadata: {
-        name: `AgroPass Batch ${batch.code}`,
-        uri: metadataUri,
-        sellerFeeBasisPoints: 0,
-        collection: none(),
-        creators: [
-          {
-            address: umi.identity.publicKey,
-            verified: false,
-            share: 100,
-          },
-        ],
-      },
-    }).sendAndConfirm(umi);
+    const baseMetadata = {
+      name: `AgroPass Batch ${batch.code}`,
+      symbol: '',
+      uri: metadataUri,
+      sellerFeeBasisPoints: 0,
+      primarySaleHappened: false,
+      isMutable: true,
+      creators: [
+        {
+          address: umi.identity.publicKey,
+          verified: false,
+          share: 100,
+        },
+      ],
+      collection: null,
+    };
+
+    let signature: Uint8Array;
+
+    try {
+      ({ signature } = await mintV2(umi, {
+        leafOwner: umi.identity.publicKey,
+        merkleTree: publicKey(merkleTreeAddress),
+        metadata: {
+          ...baseMetadata,
+          tokenStandard: TokenStandard.NonFungible,
+        },
+      }).sendAndConfirm(umi));
+    } catch (error) {
+      if (!this.isUnsupportedSchemaVersionError(error)) {
+        throw error;
+      }
+
+      ({ signature } = await mintV1(umi, {
+        leafOwner: umi.identity.publicKey,
+        merkleTree: publicKey(merkleTreeAddress),
+        metadata: {
+          ...baseMetadata,
+          editionNonce: null,
+          uses: null,
+          tokenStandard: TokenStandard.NonFungible,
+          tokenProgramVersion: TokenProgramVersion.Original,
+        },
+      }).sendAndConfirm(umi));
+    }
 
     const txHash = bs58.encode(signature);
 
@@ -107,5 +138,17 @@ export class BubblegumService {
     }
 
     return value;
+  }
+
+  private isUnsupportedSchemaVersionError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes('unsupported schema version') ||
+      msg.includes('unsupportedschemaversion')
+    );
   }
 }

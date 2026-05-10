@@ -44,7 +44,7 @@ export function DashboardMetricsGrid() {
     >
       <motion.div variants={item} transition={{ duration: 0.25 }}>
         <MetricCard
-          label="Total farms"
+          label="Total de fazendas"
           value={v(metrics.totalFarms, farmsLoading)}
           icon={Sprout}
           accent="default"
@@ -52,7 +52,7 @@ export function DashboardMetricsGrid() {
       </motion.div>
       <motion.div variants={item} transition={{ duration: 0.25 }}>
         <MetricCard
-          label="Compliant farms"
+          label="Fazendas conformes"
           value={v(metrics.compliantFarms, farmsLoading)}
           icon={CheckCircle2}
           accent="green"
@@ -61,7 +61,7 @@ export function DashboardMetricsGrid() {
       </motion.div>
       <motion.div variants={item} transition={{ duration: 0.25 }}>
         <MetricCard
-          label="Traced batches"
+          label="Lotes rastreados"
           value={v(metrics.tracedBatches, batchesLoading)}
           icon={BadgeCheck}
           accent="amber"
@@ -70,7 +70,7 @@ export function DashboardMetricsGrid() {
       </motion.div>
       <motion.div variants={item} transition={{ duration: 0.25 }}>
         <MetricCard
-          label="Blockchain proof"
+          label="Prova blockchain"
           value={v(metrics.blockchainProofBatches, batchesLoading)}
           icon={Blocks}
           accent="teal"
@@ -79,7 +79,7 @@ export function DashboardMetricsGrid() {
       </motion.div>
       <motion.div variants={item} transition={{ duration: 0.25 }}>
         <MetricCard
-          label="Need review"
+          label="Requerem revisão"
           value={v(metrics.farmsNeedingReview + metrics.farmsAtRisk, farmsLoading)}
           icon={AlertTriangle}
           accent="red"

@@ -43,7 +43,7 @@ const dot: Record<string, string> = {
 }
 
 const labels: Record<string, string> = {
-  COMPLIANT:     'Compliant',
+  COMPLIANT:     'Conforme',
   NEEDS_REVIEW:  'Em revisão',
   NON_COMPLIANT: 'Não Conforme',
   PENDING:       'Pendente',

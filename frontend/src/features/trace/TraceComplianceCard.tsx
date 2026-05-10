@@ -49,28 +49,28 @@ export function TraceComplianceCard({ data }: TraceComplianceCardProps) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ShieldCheck size={18} className="text-[var(--color-teal-700)]" />
-          <h2 className="text-base font-semibold text-[var(--color-ink)]">Environmental compliance</h2>
+          <h2 className="text-base font-semibold text-[var(--color-ink)]">Conformidade ambiental</h2>
         </div>
         <StatusBadge status={validation?.status ?? 'PENDING'} />
       </div>
 
       {!validation ? (
         <p className="text-sm text-[var(--color-ink-muted)]">
-          Environmental validation is not available for this farm yet.
+          A validação ambiental ainda não está disponível para esta fazenda.
         </p>
       ) : (
         <div className="space-y-4">
           <div className="inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] bg-[var(--color-surface)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]">
             <CalendarClock size={12} />
-            Last check {formatDate(validation.validatedAt)}
+            Última verificação {formatDate(validation.validatedAt)}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ComplianceField label="EUDR status" value={validation.status} />
-            <ComplianceField label="Validated on" value={formatDate(validation.validatedAt)} />
-            <ComplianceField label="Valid until" value={formatDate(validation.validUntil)} />
+            <ComplianceField label="Status EUDR" value={validation.status} />
+            <ComplianceField label="Validado em" value={formatDate(validation.validatedAt)} />
+            <ComplianceField label="Válido até" value={formatDate(validation.validUntil)} />
             <ComplianceField
-              label="Deforested hectares"
+              label="Hectares desmatados"
               value={validation.hectaresDeforested == null ? '-' : `${validation.hectaresDeforested} ha`}
             />
           </div>
@@ -78,7 +78,7 @@ export function TraceComplianceCard({ data }: TraceComplianceCardProps) {
           <div className="rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-                Evidence hash
+                Hash de evidência
               </p>
               <button
                 type="button"
@@ -87,7 +87,7 @@ export function TraceComplianceCard({ data }: TraceComplianceCardProps) {
                 className="inline-flex items-center gap-1 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-ink-muted)] hover:border-[var(--color-teal-100)] hover:text-[var(--color-teal-700)] disabled:opacity-40"
               >
                 {isHashCopied ? <Check size={11} /> : <Copy size={11} />}
-                {isHashCopied ? 'Copied' : 'Copy hash'}
+                {isHashCopied ? 'Copiado' : 'Copiar hash'}
               </button>
             </div>
             <p className="mt-1 font-mono text-xs text-[var(--color-ink-muted)]" title={validation.evidenceHash ?? ''}>
