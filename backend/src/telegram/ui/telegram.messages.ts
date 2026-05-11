@@ -48,6 +48,9 @@ export const Msg = {
     'Conta nao vinculada. Use /linkar ou o link da sua cooperativa primeiro.',
   unknownCommand:
     'Comando nao reconhecido. Use /ajuda para ver os comandos disponiveis.',
+  alreadyLinkedStart: (name: string) =>
+    `Conta ja vinculada: ${name}.\n\n` +
+    'Para demonstrar visao computacional do CAR, use /fazenda e envie a foto do comprovante.',
   qrReady: (publicBatchUrl: string) =>
     'Acesse o lote publico por este link:\n' + publicBatchUrl,
   qrNotFound:

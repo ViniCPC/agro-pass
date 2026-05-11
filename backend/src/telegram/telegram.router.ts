@@ -42,8 +42,17 @@ export class TelegramRouter {
     bot.start(async (ctx) => {
       const text = 'text' in ctx.message ? ctx.message.text : '';
       const payload = text.split(/\s+/)[1];
+      const telegramUserId = extractTelegramId(ctx);
 
       await ctx.reply(Msg.welcome);
+
+      if (telegramUserId) {
+        const linkedProducer = await this.accountService.findByTelegramId(telegramUserId);
+        if (linkedProducer) {
+          await ctx.reply(Msg.alreadyLinkedStart(linkedProducer.name));
+          return;
+        }
+      }
 
       if (payload?.startsWith('coop_')) {
         const inviteCode = payload.slice('coop_'.length);
