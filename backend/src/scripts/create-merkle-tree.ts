@@ -1,4 +1,6 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+config({ path: resolve(process.cwd(), '..', '.env') });
 import { createTree } from '@metaplex-foundation/mpl-bubblegum';
 import { generateSigner } from '@metaplex-foundation/umi';
 import { createUmiClient } from '../solana/umi.client';

@@ -73,42 +73,100 @@ agro-pass/
 
 ## Prerequisites
 
-- Node.js 20+
-- PostgreSQL 15+ (local or cloud, e.g. Supabase)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 - A Google Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
-- An Anthropic API key (for CAR parsing) from [console.anthropic.com](https://console.anthropic.com)
+- (Optional) An Anthropic API key for CAR document parsing
 - (Optional) Sentinel Hub account for real satellite imagery
 - (Optional) Solana CLI and a funded devnet wallet for cNFT minting
+
+For **Docker Compose** (recommended): Docker 24+ with the Compose plugin.  
+For **local dev**: Node.js 20+ and PostgreSQL 15+.
 
 ---
 
 ## Getting Started
 
-### 1. Clone and install
+### Option A — Docker Compose (recommended)
+
+All services (PostgreSQL, backend, frontend) start with a single command.
+
+#### 1. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and fill in the required values:
+
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres123
+POSTGRES_DB=agro_pass
+
+TELEGRAM_BOT_TOKEN=your_token_here   # from @BotFather
+GEMINI_API_KEY=your_key_here         # from Google AI Studio
+```
+
+#### 2. Build and start
+
+```bash
+docker compose up --build
+```
+
+#### 3. Seed demo data (first run only)
+
+```bash
+docker compose exec backend npx ts-node prisma/seed.ts
+```
+
+Services will be available at:
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3000 |
+| Swagger docs | http://localhost:3000/api |
+
+To stop everything:
+
+```bash
+docker compose down
+```
+
+To wipe the database volume as well:
+
+```bash
+docker compose down -v
+```
+
+---
+
+### Option B — Local development
+
+#### 1. Clone and install
 
 ```bash
 git clone https://github.com/ViniCPC/agro-pass.git
 cd agro-pass
 
-# Backend
 cd backend && npm install
-
-# Frontend
 cd ../frontend && npm install
 ```
 
-### 2. Configure environment
+#### 2. Configure environment
 
 ```bash
-cd backend
+# Root .env — starts PostgreSQL via Docker Compose
 cp .env.example .env
+
+# Backend .env — used when running npm run start:dev directly
+cp backend/.env.example backend/.env
 ```
 
 Edit `backend/.env` with your values:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/agropass"
+DATABASE_URL="postgresql://postgres:postgres123@localhost:5432/agro_pass"
 PORT=3000
 
 TELEGRAM_BOT_TOKEN=your_token_here
@@ -117,45 +175,35 @@ TELEGRAM_ENABLED=true
 GEMINI_API_KEY=your_key_here
 GEMINI_MODEL=gemini-2.0-flash
 
-# Leave as MOCK for demo stability; set SENTINEL_HUB for real satellite images
 SATELLITE_PROVIDER=MOCK
-
-SOLANA_RPC_URL="https://api.devnet.solana.com"
-SOLANA_TREASURY_KEYPAIR_PATH="./keys/treasury-devnet.json"
-SOLANA_MERKLE_TREE=   # your Bubblegum tree address
-
+HEALTHCHECK_SOLANA_ENABLED=false
 CORS_ORIGINS=http://localhost:5173
 ```
 
-The frontend proxies `/api` to `http://localhost:3000` in development. No `.env` file needed for local frontend dev.
+#### 3. Start PostgreSQL
 
-### 3. Database setup
+```bash
+docker compose up postgres -d
+```
+
+#### 4. Database setup
 
 ```bash
 cd backend
-
-# Apply all Prisma migrations
 npx prisma migrate deploy
-
-# Seed demo data (5 farms, 2 producers, cooperative)
-npx ts-node prisma/seed.ts
+npx ts-node prisma/seed.ts   # seed demo data
 ```
 
-### 4. (Optional) Solana devnet setup
+#### 5. (Optional) Solana devnet setup
 
 ```bash
-# Create a treasury wallet
 npx ts-node src/scripts/create-devnet-wallet.ts
-
-# Request 2 SOL airdrop
 npx ts-node src/scripts/request-devnet-airdrop.ts
-
-# Create a Bubblegum compressed NFT tree
 npx ts-node src/scripts/create-merkle-tree.ts
-# Copy the output address into SOLANA_MERKLE_TREE in .env
+# Copy the output address into SOLANA_MERKLE_TREE in backend/.env
 ```
 
-### 5. Run locally
+#### 6. Run
 
 ```bash
 # Terminal 1 — Backend
@@ -165,7 +213,7 @@ cd backend && npm run start:dev
 cd frontend && npm run dev
 ```
 
-Or use the all-in-one PowerShell script from the repo root:
+Or use the all-in-one PowerShell script:
 
 ```powershell
 .\scripts\start-agropass-dev.ps1

@@ -13,6 +13,10 @@
  *   2. Execute: npx tsx --require dotenv/config src/scripts/update-satellite-images.ts
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
+config({ path: resolve(process.cwd(), '..', '.env') });
+
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../generated/prisma/client';
 import { existsSync } from 'fs';

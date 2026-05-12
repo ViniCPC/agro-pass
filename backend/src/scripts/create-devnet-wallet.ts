@@ -1,7 +1,8 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { dirname, resolve } from 'node:path';
+config({ path: resolve(process.cwd(), '..', '.env') });
 import { Keypair } from '@solana/web3.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
 
 const keypairPath =
   process.env.SOLANA_TREASURY_KEYPAIR_PATH ?? './keys/treasury-devnet.json';
