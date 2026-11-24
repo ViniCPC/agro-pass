@@ -1,48 +1,92 @@
 import { PrismaPg } from '@prisma/adapter-pg';
+import { hash } from 'bcryptjs';
+import { createHash } from 'crypto';
 import {
-  Biome,
-  FarmStatus,
-  Prisma,
+  BatchStatus,
   PrismaClient,
-  ValidationStatus,
+  ProductType,
+  TraceEventType,
+  UserRole,
 } from '../generated/prisma/client';
-import { EUDR_DEMO_CACHE } from '../src/eudr/demo/eudr-demo-cache';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-const CUTOFF_DATE = new Date('2020-12-31T00:00:00.000Z');
-const VALIDITY_MONTHS = 6;
-
-function validUntilDate(): Date {
-  const d = new Date();
-  d.setMonth(d.getMonth() + VALIDITY_MONTHS);
-  return d;
+function generateEventHash(input: {
+  batchId: string;
+  sequence: number;
+  type: TraceEventType;
+  recordedById: string;
+  recordedAt: Date;
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string | null;
+  previousHash?: string | null;
+}): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        batchId: input.batchId,
+        sequence: input.sequence,
+        type: input.type,
+        recordedById: input.recordedById,
+        recordedAt: input.recordedAt.toISOString(),
+        location: input.location ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        notes: input.notes ?? null,
+        previousHash: input.previousHash ?? null,
+        documentHashes: [],
+        txHash: null,
+        correctedEventId: null,
+      }),
+    )
+    .digest('hex');
 }
 
-const DEMO_FARM_NAMES: Record<string, string> = {
-  'DEMO-COMPLIANT-01': 'Fazenda Boa Esperança',
-  'DEMO-COMPLIANT-02': 'Sítio Vale Verde',
-  'DEMO-COMPLIANT-03': 'Fazenda Floresta Viva',
-  'DEMO-REVIEW-01': 'Fazenda Cerradão',
-  'DEMO-NON-COMPLIANT-01': 'Fazenda São Benedito',
-};
-
 async function main() {
+  const cooperative = await prisma.cooperative.upsert({
+    where: { document: '12345678000199' },
+    update: {
+      name: 'Cooperativa Agro Centro-Oeste',
+      city: 'Rio Verde',
+      state: 'GO',
+    },
+    create: {
+      name: 'Cooperativa Agro Centro-Oeste',
+      document: '12345678000199',
+      city: 'Rio Verde',
+      state: 'GO',
+    },
+  });
+
   const producer = await prisma.producer.upsert({
     where: { document: '12345678901' },
-    update: { name: 'Carlos Alberto Mendes', phone: '64999990001' },
+    update: {
+      name: 'Carlos Alberto Mendes',
+      phone: '64999990001',
+      cooperativeId: cooperative.id,
+    },
     create: {
       name: 'Carlos Alberto Mendes',
       phone: '64999990001',
       document: '12345678901',
+      cooperativeId: cooperative.id,
     },
   });
-  console.log('Producer:', producer.id);
 
   const farm = await prisma.farm.upsert({
     where: { carNumber: 'GO-5214-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' },
-    update: {},
+    update: {
+      name: 'Fazenda Santa Fé',
+      city: 'Rio Verde',
+      state: 'GO',
+      latitude: -17.7988,
+      longitude: -50.9398,
+      totalAreaHa: 500,
+      producerId: producer.id,
+    },
     create: {
       name: 'Fazenda Santa Fé',
       city: 'Rio Verde',
@@ -51,139 +95,177 @@ async function main() {
       longitude: -50.9398,
       carNumber: 'GO-5214-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
       totalAreaHa: 500,
-      legalReserveAreaHa: 100,
-      appAreaHa: 20,
-      consolidatedAreaHa: 380,
-      biome: Biome.CERRADO,
-      isAmazonLegal: false,
-      status: FarmStatus.APPROVED,
       producerId: producer.id,
     },
   });
-  console.log('Farm:', farm.id);
 
-  const demoFarmCoords = [
-    { latitude: -17.81, longitude: -50.92, city: 'Rio Verde', state: 'GO' },
-    { latitude: -21.24, longitude: -45.0, city: 'Lavras', state: 'MG' },
-    { latitude: -3.13, longitude: -60.02, city: 'Manaus', state: 'AM' },
-    { latitude: -16.67, longitude: -49.25, city: 'Goiânia', state: 'GO' },
-    { latitude: -5.36, longitude: -49.12, city: 'Marabá', state: 'PA' },
+  const passwordHash = await hash('AgroPass@2026', 10);
+
+  const producerUser = await prisma.user.upsert({
+    where: { email: 'produtor@agropass.local' },
+    update: {
+      name: producer.name,
+      passwordHash,
+      role: UserRole.PRODUCER,
+      producerId: producer.id,
+      cooperativeId: null,
+    },
+    create: {
+      name: producer.name,
+      email: 'produtor@agropass.local',
+      passwordHash,
+      role: UserRole.PRODUCER,
+      producerId: producer.id,
+    },
+  });
+
+  const cooperativeUser = await prisma.user.upsert({
+    where: { email: 'cooperativa@agropass.local' },
+    update: {
+      name: cooperative.name,
+      passwordHash,
+      role: UserRole.COOPERATIVE,
+      cooperativeId: cooperative.id,
+      producerId: null,
+    },
+    create: {
+      name: cooperative.name,
+      email: 'cooperativa@agropass.local',
+      passwordHash,
+      role: UserRole.COOPERATIVE,
+      cooperativeId: cooperative.id,
+    },
+  });
+
+  const operatorUser = await prisma.user.upsert({
+    where: { email: 'operador@agropass.local' },
+    update: {
+      name: 'Operador Logistico AgroPass',
+      passwordHash,
+      role: UserRole.OPERATOR,
+      producerId: null,
+      cooperativeId: null,
+    },
+    create: {
+      name: 'Operador Logistico AgroPass',
+      email: 'operador@agropass.local',
+      passwordHash,
+      role: UserRole.OPERATOR,
+    },
+  });
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@agropass.local' },
+    update: {
+      name: 'Administrador AgroPass',
+      passwordHash,
+      role: UserRole.ADMIN,
+      producerId: null,
+      cooperativeId: null,
+    },
+    create: {
+      name: 'Administrador AgroPass',
+      email: 'admin@agropass.local',
+      passwordHash,
+      role: UserRole.ADMIN,
+    },
+  });
+
+  const batch = await prisma.batch.upsert({
+    where: { code: 'AGP-2026-0001' },
+    update: {
+      farmId: farm.id,
+      productType: ProductType.COFFEE,
+      quantity: 120,
+      unit: 'sacas',
+      publicCode: 'AGP-2026-0001',
+      isPublic: true,
+      integrityHash: null,
+      status: BatchStatus.RECEIVED,
+    },
+    create: {
+      code: 'AGP-2026-0001',
+      publicCode: 'AGP-2026-0001',
+      isPublic: true,
+      integrityHash: null,
+      farmId: farm.id,
+      productType: ProductType.COFFEE,
+      quantity: 120,
+      unit: 'sacas',
+      harvestDate: new Date('2026-06-15T00:00:00.000Z'),
+      status: BatchStatus.RECEIVED,
+    },
+  });
+
+  await prisma.document.deleteMany({ where: { batchId: batch.id } });
+  await prisma.traceEvent.deleteMany({ where: { batchId: batch.id } });
+  const eventDefinitions = [
+    {
+      type: TraceEventType.CREATED,
+      recordedById: producerUser.id,
+      location: `${farm.city}, ${farm.state}`,
+      latitude: farm.latitude,
+      longitude: farm.longitude,
+      recordedAt: new Date('2026-06-15T08:00:00.000Z'),
+    },
+    {
+      type: TraceEventType.HARVESTED,
+      recordedById: producerUser.id,
+      location: farm.name,
+      recordedAt: new Date('2026-06-16T10:00:00.000Z'),
+    },
+    {
+      type: TraceEventType.RECEIVED,
+      recordedById: cooperativeUser.id,
+      location: `${cooperative.city}, ${cooperative.state}`,
+      recordedAt: new Date('2026-06-17T14:00:00.000Z'),
+    },
   ];
 
-  for (const [index, demoFarm] of EUDR_DEMO_CACHE.entries()) {
-    const coords = demoFarmCoords[index];
-    const farmStatus =
-      demoFarm.status === 'COMPLIANT'
-        ? FarmStatus.APPROVED
-        : demoFarm.status === 'NON_COMPLIANT'
-          ? FarmStatus.REJECTED
-          : FarmStatus.PENDING;
-    const validationStatus = toPrismaValidationStatus(demoFarm.status);
-    const evidenceHash = `demo-eudr-${demoFarm.farmCode}`;
-
-    const farmName = DEMO_FARM_NAMES[demoFarm.farmCode] ?? `Fazenda ${demoFarm.farmCode}`;
-
-    const demoFarmRow = await prisma.farm.upsert({
-      where: { carNumber: `DEMO-CAR-${demoFarm.farmCode}` },
-      update: {
-        name: farmName,
-        demoCode: demoFarm.farmCode,
-        totalAreaHa: demoFarm.totalAreaHa,
-        status: farmStatus,
-      },
-      create: {
-        name: farmName,
-        city: coords.city,
-        state: coords.state,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        carNumber: `DEMO-CAR-${demoFarm.farmCode}`,
-        demoCode: demoFarm.farmCode,
-        totalAreaHa: demoFarm.totalAreaHa,
-        biome: toPrismaBiome(demoFarm.biome),
-        status: farmStatus,
-        producerId: producer.id,
-      },
+  let previousHash: string | null = null;
+  const events = eventDefinitions.map((event, index) => {
+    const sequence = index + 1;
+    const eventHash = generateEventHash({
+      batchId: batch.id,
+      sequence,
+      previousHash,
+      ...event,
     });
+    const data = {
+      batchId: batch.id,
+      sequence,
+      previousHash,
+      eventHash,
+      ...event,
+    };
+    previousHash = eventHash;
+    return data;
+  });
 
-    // Idempotent: remove existing demo validation then recreate
-    await prisma.eudrValidation.deleteMany({
-      where: { farmId: demoFarmRow.id, evidenceHash },
-    });
+  await prisma.traceEvent.createMany({ data: events });
+  await prisma.batch.update({
+    where: { id: batch.id },
+    data: { integrityHash: previousHash },
+  });
 
-    const validation = await prisma.eudrValidation.create({
-      data: {
-        farmId: demoFarmRow.id,
-        status: validationStatus,
-        cutoffDate: CUTOFF_DATE,
-        hectaresDeforested: demoFarm.deforestedAreaHa,
-        ndviBefore: demoFarm.sentinel.ndviBefore,
-        ndviAfter: demoFarm.sentinel.ndviAfter,
-        satelliteImageBeforeUrl: null,
-        satelliteImageAfterUrl: null,
-        evidenceHash,
-        validUntil: validUntilDate(),
-        mapBiomasResult: demoFarm.mapBiomasAlerts.length > 0
-          ? { alerts: demoFarm.mapBiomasAlerts, source: 'MapBiomas Alerta Demo Cache' }
-          : Prisma.DbNull,
-        prodesResult: Prisma.DbNull,
-        hansenResult: Prisma.DbNull,
-      },
-    });
-
-    await prisma.farm.update({
-      where: { id: demoFarmRow.id },
-      data: {
-        lastValidationId: validation.id,
-        lastValidationStatus: validationStatus,
-        lastValidationHash: evidenceHash,
-        lastValidatedAt: validation.validatedAt,
-      },
-    });
-  }
-
-  console.log('Demo farms with validations:', EUDR_DEMO_CACHE.length);
-
-  await prisma.producer.upsert({
-    where: { document: '98765432100' },
-    update: { name: 'Rafael Costa Oliveira', phone: '11999880002' },
-    create: {
-      name: 'Rafael Costa Oliveira',
-      phone: '11999880002',
-      document: '98765432100',
+  console.log('Traceability seed created:', {
+    cooperativeId: cooperative.id,
+    producerId: producer.id,
+    farmId: farm.id,
+    batchId: batch.id,
+    batchCode: batch.code,
+    users: {
+      producer: producerUser.id,
+      cooperative: cooperativeUser.id,
+      operator: operatorUser.id,
+      admin: adminUser.id,
     },
   });
-  console.log('Producer 2 (colega) criado.');
-
-  const cooperative = await prisma.cooperative.upsert({
-    where: { document: '12345678000199' },
-    update: { slug: 'agro-centro-oeste' },
-    create: {
-      name: 'Cooperativa Agro Centro-Oeste',
-      document: '12345678000199',
-      slug: 'agro-centro-oeste',
-      city: 'Rio Verde',
-      state: 'GO',
-    },
-  });
-  console.log('Cooperative:', cooperative.id);
-}
-
-function toPrismaBiome(biome: string): Biome {
-  if (biome.includes('Amaz')) return Biome.AMAZON;
-  if (biome.includes('Mata')) return Biome.ATLANTIC_FOREST;
-  return Biome.CERRADO;
-}
-
-function toPrismaValidationStatus(status: string): ValidationStatus {
-  if (status === 'COMPLIANT') return ValidationStatus.COMPLIANT;
-  if (status === 'NON_COMPLIANT') return ValidationStatus.NON_COMPLIANT;
-  return ValidationStatus.NEEDS_REVIEW;
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((error) => {
+    console.error(error);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

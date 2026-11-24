@@ -1,18 +1,25 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { CreateFarmDto } from './dto/create-farm.dto';
 import { FarmDto } from './dto/farm.dto';
 import { ListFarmsResponseDto } from './dto/list-farms-response.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
-import { UpdateFarmStatusDto } from './dto/update-farm-status.dto';
 import { FarmsService } from './farms.service';
+import { UserRole } from '../../generated/prisma/enums';
+import type { AuthUser } from '../auth/auth-user.type';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('farms')
 export class FarmsController {
   constructor(private readonly farmsService: FarmsService) {}
 
   @Post()
-  create(@Body() createFarmDto: CreateFarmDto): Promise<FarmDto> {
-    return this.farmsService.create(createFarmDto);
+  @Roles(UserRole.PRODUCER, UserRole.ADMIN)
+  create(
+    @Body() createFarmDto: CreateFarmDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<FarmDto> {
+    return this.farmsService.create(createFarmDto, user);
   }
 
   @Get()
@@ -25,11 +32,4 @@ export class FarmsController {
     return this.farmsService.findOne(id);
   }
 
-  @Patch(':id/status')
-  updateStatus(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() updateFarmStatusDto: UpdateFarmStatusDto,
-  ): Promise<FarmDto> {
-    return this.farmsService.updateStatus(id, updateFarmStatusDto);
-  }
 }

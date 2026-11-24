@@ -14,11 +14,15 @@ export class BatchDto {
   unit!: string;
   harvestDate!: Date | null;
   status!: string;
-  cnftAddress!: string | null;
-  qrCodeUrl!: string | null;
-  mintTxHash!: string | null;
+  publicCode!: string;
+  isPublic!: boolean;
+  integrityHash!: string | null;
+  tokenAddress!: string | null;
+  tokenizedAt!: Date | null;
+  closedAt!: Date | null;
   farm!: FarmSummaryDto;
   createdAt!: Date;
+  updatedAt!: Date;
 
   static fromModel(batch: Batch & { farm: Farm }): BatchDto {
     return {
@@ -29,15 +33,19 @@ export class BatchDto {
       unit: batch.unit,
       harvestDate: batch.harvestDate,
       status: batch.status,
-      cnftAddress: batch.cnftAddress,
-      qrCodeUrl: batch.qrCodeUrl,
-      mintTxHash: batch.mintTxHash,
+      publicCode: batch.publicCode,
+      isPublic: batch.isPublic,
+      integrityHash: batch.integrityHash,
+      tokenAddress: batch.tokenAddress,
+      tokenizedAt: batch.tokenizedAt,
+      closedAt: batch.closedAt,
       farm: {
         name: batch.farm.name,
         latitude: batch.farm.latitude,
         longitude: batch.farm.longitude,
       },
       createdAt: batch.createdAt,
+      updatedAt: batch.updatedAt,
     };
   }
 }

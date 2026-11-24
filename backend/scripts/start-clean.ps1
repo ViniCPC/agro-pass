@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
   [int]$Port = 3000,
-  [switch]$Build,
-  [switch]$DisableTelegram
+  [switch]$Build
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,13 +47,8 @@ try {
 
   Stop-PortListeners -LocalPort $Port
 
-  if ($DisableTelegram) {
-    Write-Host "Starting backend on port $Port with TELEGRAM_ENABLED=false..."
-    cmd /c "set TELEGRAM_ENABLED=false&&set PORT=$Port&&npm run start:prod"
-  } else {
-    Write-Host "Starting backend on port $Port..."
-    cmd /c "set PORT=$Port&&npm run start:prod"
-  }
+  Write-Host "Starting backend on port $Port..."
+  cmd /c "set PORT=$Port&&npm run start:prod"
 
   if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

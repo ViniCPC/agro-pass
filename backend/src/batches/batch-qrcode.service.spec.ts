@@ -1,32 +1,35 @@
-import { NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { BatchQrCodeService } from './batch-qrcode.service';
 
-jest.mock('fs/promises', () => ({
-  mkdir: jest.fn().mockResolvedValue(undefined),
-  writeFile: jest.fn().mockResolvedValue(undefined),
-}));
-
 jest.mock('qrcode', () => ({
   toBuffer: jest.fn().mockResolvedValue(Buffer.from('fake-png')),
+  toDataURL: jest.fn().mockResolvedValue('data:image/png;base64,ZmFrZQ=='),
 }));
 
 describe('BatchQrCodeService', () => {
   let service: BatchQrCodeService;
   let batchFindUnique: jest.Mock;
-  let batchUpdate: jest.Mock;
+  const originalEnv = { ...process.env };
 
   beforeEach(async () => {
-    batchFindUnique = jest.fn();
-    batchUpdate = jest.fn().mockResolvedValue({});
+    batchFindUnique = jest.fn().mockResolvedValue({
+      id: 'batch-uuid',
+      code: 'AGP-2026-0001',
+      publicCode: 'public-passport-code',
+    });
 
     const module = await Test.createTestingModule({
       providers: [
         BatchQrCodeService,
         {
           provide: PrismaService,
-          useValue: { batch: { findUnique: batchFindUnique, update: batchUpdate } },
+          useValue: { batch: { findUnique: batchFindUnique } },
         },
       ],
     }).compile();
@@ -34,54 +37,50 @@ describe('BatchQrCodeService', () => {
     service = module.get(BatchQrCodeService);
   });
 
-  it('lança NotFoundException quando o lote não existe', async () => {
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    delete process.env.PUBLIC_APP_URL;
+  });
+
+  it('rejeita lote inexistente', async () => {
     batchFindUnique.mockResolvedValue(null);
-
-    await expect(service.generateQrCode('x')).rejects.toThrow(NotFoundException);
-  });
-
-  it('retorna qrCodeUrl, targetUrl, batchId e batchCode no caminho feliz', async () => {
-    batchFindUnique.mockResolvedValue({ id: 'batch-uuid', code: 'CAF-2026-0001', qrCodeUrl: null });
-
-    const result = await service.generateQrCode('batch-uuid');
-
-    expect(result.batchId).toBe('batch-uuid');
-    expect(result.batchCode).toBe('CAF-2026-0001');
-    expect(result.qrCodeUrl).toMatch(/^\/uploads\/qrcodes\//);
-    expect(result.targetUrl).toContain('CAF-2026-0001');
-  });
-
-  it('targetUrl usa PUBLIC_APP_URL do ambiente', async () => {
-    process.env.PUBLIC_APP_URL = 'https://app.agropass.com.br';
-    batchFindUnique.mockResolvedValue({ id: 'batch-uuid', code: 'CAF-2026-0001', qrCodeUrl: null });
-
-    const result = await service.generateQrCode('batch-uuid');
-
-    expect(result.targetUrl).toBe('https://app.agropass.com.br/trace/CAF-2026-0001');
-    delete process.env.PUBLIC_APP_URL;
-  });
-
-  it('usa localhost como fallback quando PUBLIC_APP_URL não está definido', async () => {
-    const saved = process.env.PUBLIC_APP_URL;
-    delete process.env.PUBLIC_APP_URL;
-    batchFindUnique.mockResolvedValue({ id: 'batch-uuid', code: 'CAF-2026-0001', qrCodeUrl: null });
-
-    const result = await service.generateQrCode('batch-uuid');
-
-    expect(result.targetUrl).toContain('localhost');
-    process.env.PUBLIC_APP_URL = saved;
-  });
-
-  it('persiste qrCodeUrl no banco após gerar a imagem', async () => {
-    batchFindUnique.mockResolvedValue({ id: 'batch-uuid', code: 'CAF-2026-0001', qrCodeUrl: null });
-
-    await service.generateQrCode('batch-uuid');
-
-    expect(batchUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'batch-uuid' },
-        data: expect.objectContaining({ qrCodeUrl: expect.stringMatching(/^\/uploads\/qrcodes\//) }),
-      }),
+    await expect(service.generateQrCode('x')).rejects.toThrow(
+      NotFoundException,
     );
+  });
+
+  it('gera o QR em memoria usando o codigo publico do passaporte', async () => {
+    const result = await service.generateQrCode('batch-uuid');
+
+    expect(result.batchCode).toBe('AGP-2026-0001');
+    expect(result.publicCode).toBe('public-passport-code');
+    expect(result.qrCodeUrl).toMatch(/^data:image\/png;base64,/);
+    expect(result.targetUrl).toBe(
+      'http://localhost:5173/trace/public-passport-code',
+    );
+    expect(QRCode.toDataURL).toHaveBeenCalledWith(
+      result.targetUrl,
+      expect.any(Object),
+    );
+  });
+
+  it('respeita PUBLIC_APP_URL e remove barra final', async () => {
+    process.env.PUBLIC_APP_URL = 'https://app.agropass.com.br/';
+
+    const result = await service.generateQrCode('batch-uuid');
+    expect(result.targetUrl).toBe(
+      'https://app.agropass.com.br/trace/public-passport-code',
+    );
+  });
+
+  it('recusa gerar QR com localhost em producao', async () => {
+    process.env.NODE_ENV = 'production';
+
+    await expect(service.generateQrCode('batch-uuid')).rejects.toThrow(
+      InternalServerErrorException,
+    );
+    await expect(
+      service.generatePrintSheetPdf('batch-uuid', 4),
+    ).rejects.toThrow(InternalServerErrorException);
   });
 });

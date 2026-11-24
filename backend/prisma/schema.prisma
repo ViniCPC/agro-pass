@@ -17,12 +17,28 @@ datasource db {
 // USUÁRIOS E ATORES
 // ============================================
 
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  producerId    String?      @unique
+  producer      Producer?    @relation(fields: [producerId], references: [id])
+  cooperativeId String?      @unique
+  cooperative   Cooperative? @relation(fields: [cooperativeId], references: [id])
+
+  recordedEvents TraceEvent[] @relation("RecordedEvents")
+}
+
 model Producer {
   id              String  @id @default(uuid())
   name            String
   phone           String  @unique
   document        String  @unique
-  telegramUserId  String? @unique
   walletAddress   String? @unique
   reputationScore Int     @default(0)
 
@@ -33,8 +49,8 @@ model Producer {
   updatedAt DateTime @updatedAt
 
   farms Farm[]
+  user  User?
 
-  @@index([telegramUserId])
   @@index([cooperativeId])
   @@index([document])
 }
@@ -46,7 +62,6 @@ model Cooperative {
   city          String
   state         String
   walletAddress String?         @unique
-  slug          String          @unique // pra deep links: t.me/AgroPassBot?start=coop_cooxupe
   inviteCode    String          @unique @default(uuid())
   plan          CooperativePlan @default(BASIC)
   monthlyFee    Float?
@@ -55,8 +70,8 @@ model Cooperative {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  producers   Producer[]
-  traceEvents TraceEvent[]
+  producers Producer[]
+  user      User?
 }
 
 model Exporter {
@@ -68,36 +83,6 @@ model Exporter {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  traceEvents TraceEvent[]
-}
-
-// ============================================
-// CONVERSAS TELEGRAM / GEMINI
-// ============================================
-
-model ConversationMessage {
-  id             String      @id @default(uuid())
-  telegramUserId String
-  role           MessageRole
-  content        String
-
-  createdAt DateTime @default(now())
-
-  @@index([telegramUserId, createdAt])
-}
-
-model CarDraft {
-  id             String   @id @default(uuid())
-  telegramUserId String   @unique
-  carData        Json
-  imageUrl       String?
-  imageFileHash  String?
-  expiresAt      DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@index([expiresAt])
 }
 
 // ============================================
@@ -116,24 +101,8 @@ model Farm {
 
   // Polígono real da propriedade (do SICAR)
   polygonGeoJson Json?
-  carRawJson     Json?
 
-  totalAreaHa        Float?
-  legalReserveAreaHa Float?
-  appAreaHa          Float?
-  consolidatedAreaHa Float?
-  biome              Biome?
-  demoCode           String?
-  isAmazonLegal      Boolean @default(false)
-
-  status FarmStatus @default(PENDING)
-
-  // Última validação EUDR
-  lastValidationId     String?           @unique
-  lastValidation       EudrValidation?   @relation("FarmLastValidation", fields: [lastValidationId], references: [id])
-  lastValidationStatus ValidationStatus?
-  lastValidationHash   String?
-  lastValidatedAt      DateTime?
+  totalAreaHa Float?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -141,49 +110,11 @@ model Farm {
   producerId String
   producer   Producer @relation(fields: [producerId], references: [id])
 
-  batches     Batch[]
-  documents   Document[]
-  validations EudrValidation[] @relation("FarmValidations")
+  batches   Batch[]
+  documents Document[]
 
   @@index([producerId])
   @@index([state])
-}
-
-// ============================================
-// VALIDAÇÃO EUDR (NOVO — coração do produto)
-// ============================================
-
-model EudrValidation {
-  id     String           @id @default(uuid())
-  status ValidationStatus
-
-  cutoffDate         DateTime @default("2020-12-31T00:00:00Z")
-  hectaresDeforested Float    @default(0)
-
-  // Resultado por fonte (JSON cru pra debug e auditoria)
-  mapBiomasResult Json?
-  prodesResult    Json?
-  hansenResult    Json?
-
-  // Evidências visuais
-  satelliteImageBeforeUrl String? // Sentinel-2 ~Dez/2020
-  satelliteImageAfterUrl  String? // Sentinel-2 atual
-  ndviBefore              Float?
-  ndviAfter               Float?
-
-  // Auditoria
-  evidenceHash String // sha256 de tudo combinado
-  validatedAt  DateTime @default(now())
-  validUntil   DateTime // 6 meses
-
-  farmId String
-  farm   Farm   @relation("FarmValidations", fields: [farmId], references: [id])
-
-  // Backref pra Farm.lastValidation
-  farmAsLast Farm? @relation("FarmLastValidation")
-
-  @@index([farmId])
-  @@index([status])
 }
 
 // ============================================
@@ -199,20 +130,21 @@ model Batch {
   harvestDate DateTime?
   status      BatchStatus @default(CREATED)
 
-  cnftAddress String? @unique
-  merkleTree  String?
-  metadataUri String?
-  qrCodeUrl   String?
-  mintTxHash  String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  publicCode    String    @unique
+  isPublic      Boolean   @default(false)
+  integrityHash String?
+  tokenAddress  String?
+  tokenizedAt   DateTime?
+  closedAt      DateTime?
 
   farmId String
   farm   Farm   @relation(fields: [farmId], references: [id])
 
   documents   Document[]
   traceEvents TraceEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([farmId])
   @@index([status])
@@ -223,20 +155,29 @@ model Batch {
 // ============================================
 
 model Document {
-  id        String       @id @default(uuid())
-  type      DocumentType
-  fileUrl   String
-  fileHash  String       @unique
-  createdAt DateTime     @default(now())
+  id           String       @id @default(uuid())
+  type         DocumentType
+  originalName String
+  storageKey   String       @unique
+  fileUrl      String
+  size         Int
+  mimeType     String
+  fileHash     String       @unique
+  // Only public documents can be downloaded from the public passport; the
+  // others show up there as hash-only evidence.
+  isPublic     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
 
-  farmId  String?
-  farm    Farm?   @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  batchId String?
-  batch   Batch?  @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  traceEvent TraceEvent?
+  farmId       String?
+  farm         Farm?       @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  batchId      String?
+  batch        Batch?      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  traceEventId String?
+  traceEvent   TraceEvent? @relation(fields: [traceEventId], references: [id], onDelete: Restrict)
 
   @@index([farmId])
   @@index([batchId])
+  @@index([traceEventId])
 }
 
 // ============================================
@@ -244,32 +185,36 @@ model Document {
 // ============================================
 
 model TraceEvent {
-  id   String         @id @default(uuid())
-  type TraceEventType
-
-  actorName     String
-  cooperativeId String?
-  cooperative   Cooperative? @relation(fields: [cooperativeId], references: [id])
-  exporterId    String?
-  exporter      Exporter?    @relation(fields: [exporterId], references: [id])
+  id       String         @id @default(uuid())
+  type     TraceEventType
+  sequence Int
 
   location  String?
   latitude  Float?
   longitude Float?
+  notes     String?
 
-  eventHash String? // sha256 dos campos
-  txHash    String? // tx Solana
-  customStageName String?
-  documentId String? @unique
-  document   Document? @relation(fields: [documentId], references: [id])
-
-  createdAt DateTime @default(now())
+  previousHash String?
+  eventHash    String
+  txHash       String?
 
   batchId String
-  batch   Batch  @relation(fields: [batchId], references: [id])
+  batch   Batch  @relation(fields: [batchId], references: [id], onDelete: Restrict)
 
+  recordedById String
+  recordedBy   User     @relation("RecordedEvents", fields: [recordedById], references: [id], onDelete: Restrict)
+  recordedAt   DateTime @default(now())
+
+  correctedEventId String?
+  correctedEvent   TraceEvent?  @relation("EventCorrections", fields: [correctedEventId], references: [id], onDelete: Restrict)
+  corrections      TraceEvent[] @relation("EventCorrections")
+  documents        Document[]
+
+  @@unique([batchId, sequence])
   @@index([batchId])
   @@index([type])
+  @@index([recordedById])
+  @@index([correctedEventId])
 }
 
 // ============================================
@@ -286,55 +231,36 @@ enum ProductType {
   WOOD
 }
 
-enum FarmStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 enum BatchStatus {
   CREATED
-  VERIFIED
-  MINTED
+  HARVESTED
+  RECEIVED
   IN_TRANSIT
-  EXPORTED
+  PROCESSED
+  DELIVERED
+  CLOSED
+  CANCELLED
 }
 
 enum DocumentType {
   CAR
   INVOICE
   WAREHOUSE_RECEIPT
-  ENVIRONMENTAL_REPORT
-  SATELLITE_IMAGE
   OTHER
 }
 
 enum TraceEventType {
   CREATED
   HARVESTED
-  RECEIVED_BY_COOPERATIVE
-  TRANSPORTED
+  RECEIVED
+  IN_TRANSIT
   PROCESSED
-  EXPORTED
+  DELIVERED
+  CLOSED
+  CANCELLED
   MINTED_ONCHAIN
-  EUDR_VALIDATED
-}
-
-enum Biome {
-  AMAZON
-  CERRADO
-  ATLANTIC_FOREST
-  CAATINGA
-  PAMPA
-  PANTANAL
-}
-
-enum ValidationStatus {
-  PENDING
-  COMPLIANT
-  NON_COMPLIANT
-  NEEDS_REVIEW
-  EXPIRED
+  DOCUMENT_ATTACHED
+  CORRECTION
 }
 
 enum CooperativePlan {
@@ -343,7 +269,9 @@ enum CooperativePlan {
   ENTERPRISE
 }
 
-enum MessageRole {
-  USER
-  MODEL
+enum UserRole {
+  PRODUCER
+  COOPERATIVE
+  OPERATOR
+  ADMIN
 }

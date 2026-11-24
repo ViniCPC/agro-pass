@@ -1,21 +1,37 @@
 import 'dotenv/config';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { hash } from 'bcryptjs';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { BatchStatus, UserRole } from '../generated/prisma/enums';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
-process.env.TELEGRAM_ENABLED = 'false';
-
-describe('PublicBatches (e2e)', () => {
+describe('Digital passport authentication and lifecycle (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
 
+  let cooperativeId: string;
   let producerId: string;
+  let otherProducerId: string;
   let farmId: string;
+  let otherFarmId: string;
   let batchId: string;
-  let batchCode: string;
+  let publicCode: string;
+
+  let producerToken: string;
+  let cooperativeToken: string;
+  let operatorToken: string;
+  let adminToken: string;
+  let producerUserId: string;
+  let uploadedFilePath: string | undefined;
+
+  const suffix = `${Date.now()}`;
+  const password = 'SenhaForte@2026';
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -24,129 +40,514 @@ describe('PublicBatches (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
     );
     await app.init();
 
     prisma = moduleFixture.get(PrismaService);
 
-    // Criar produtor
-    const producerRes = await request(app.getHttpServer())
-      .post('/producers')
-      .send({ name: 'João E2E', phone: '31999990001', document: '31999990001' })
-      .expect(201);
-    producerId = producerRes.body.id;
+    const cooperative = await prisma.cooperative.create({
+      data: {
+        name: 'Cooperativa E2E',
+        document: `coop-${suffix}`,
+        city: 'Rio Verde',
+        state: 'GO',
+      },
+    });
+    cooperativeId = cooperative.id;
 
-    // Criar fazenda
-    const farmRes = await request(app.getHttpServer())
-      .post('/farms')
-      .send({
+    const producer = await prisma.producer.create({
+      data: {
+        name: 'Produtor E2E',
+        phone: `64${suffix.slice(-9)}`,
+        document: `producer-${suffix}`,
+        cooperativeId,
+      },
+    });
+    producerId = producer.id;
+
+    const otherProducer = await prisma.producer.create({
+      data: {
+        name: 'Outro Produtor E2E',
+        phone: `65${suffix.slice(-9)}`,
+        document: `other-${suffix}`,
+      },
+    });
+    otherProducerId = otherProducer.id;
+
+    const farm = await prisma.farm.create({
+      data: {
         name: 'Fazenda E2E',
         city: 'Rio Verde',
         state: 'GO',
         latitude: -17.79,
         longitude: -50.93,
         producerId,
+      },
+    });
+    farmId = farm.id;
+
+    const otherFarm = await prisma.farm.create({
+      data: {
+        name: 'Fazenda de Outro Produtor',
+        city: 'Jatai',
+        state: 'GO',
+        latitude: -17.88,
+        longitude: -51.71,
+        producerId: otherProducerId,
+      },
+    });
+    otherFarmId = otherFarm.id;
+
+    const producerRegistration = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        name: 'Produtor Autenticado',
+        email: `producer-${suffix}@example.com`,
+        password,
+        role: UserRole.PRODUCER,
+        producerId,
       })
       .expect(201);
-    farmId = farmRes.body.id;
+    producerToken = producerRegistration.body.accessToken;
+    producerUserId = producerRegistration.body.user.id;
+    expect(producerRegistration.body).not.toHaveProperty('passwordHash');
+    expect(producerRegistration.body.user).not.toHaveProperty('passwordHash');
 
-    await prisma.farm.update({
-      where: { id: farmId },
-      data: { lastValidationStatus: 'COMPLIANT', status: 'APPROVED' },
+    cooperativeToken = (
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          name: 'Cooperativa Autenticada',
+          email: `cooperative-${suffix}@example.com`,
+          password,
+          role: UserRole.COOPERATIVE,
+          cooperativeId,
+        })
+        .expect(201)
+    ).body.accessToken;
+
+    operatorToken = (
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          name: 'Operador Autenticado',
+          email: `operator-${suffix}@example.com`,
+          password,
+          role: UserRole.OPERATOR,
+        })
+        .expect(201)
+    ).body.accessToken;
+
+    await prisma.user.create({
+      data: {
+        name: 'Administrador E2E',
+        email: `admin-${suffix}@example.com`,
+        passwordHash: await hash(password, 4),
+        role: UserRole.ADMIN,
+      },
     });
 
-    // Criar lote
-    const batchRes = await request(app.getHttpServer())
-      .post('/batches')
-      .send({ farmId, productType: 'COFFEE', quantity: 50, unit: 'sacas' })
-      .expect(201);
-    batchId = batchRes.body.id;
-    batchCode = batchRes.body.code;
+    adminToken = (
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: `admin-${suffix}@example.com`, password })
+        .expect(201)
+    ).body.accessToken;
   });
 
   afterAll(async () => {
-    if (prisma && batchId) {
-      await prisma.traceEvent.deleteMany({ where: { batchId } });
-      await prisma.batch.delete({ where: { id: batchId } });
+    if (prisma) {
+      if (batchId) {
+        await prisma.document.deleteMany({ where: { batchId } });
+        await prisma.traceEvent.deleteMany({ where: { batchId } });
+        await prisma.batch.deleteMany({ where: { id: batchId } });
+      }
+      await prisma.user.deleteMany({
+        where: { email: { endsWith: `-${suffix}@example.com` } },
+      });
+      await prisma.farm.deleteMany({
+        where: { id: { in: [farmId, otherFarmId].filter(Boolean) } },
+      });
+      await prisma.producer.deleteMany({
+        where: {
+          id: { in: [producerId, otherProducerId].filter(Boolean) },
+        },
+      });
+      await prisma.cooperative.deleteMany({ where: { id: cooperativeId } });
     }
-
-    if (prisma && farmId) {
-      await prisma.farm.delete({ where: { id: farmId } });
+    if (uploadedFilePath) {
+      await unlink(uploadedFilePath).catch(() => undefined);
     }
-
-    if (prisma && producerId) {
-      await prisma.producer.delete({ where: { id: producerId } });
-    }
-
     await app?.close();
   });
 
-  // ─── GET /public/batches/:code ────────────────────────────────────────
+  it('retorna 401 sem token e /auth/me retorna usuario sem senha', async () => {
+    await request(app.getHttpServer()).get('/batches').expect(401);
 
-  it('404 para código inexistente', () => {
-    return request(app.getHttpServer())
-      .get('/public/batches/NOTEXIST')
-      .expect(404);
-  });
-
-  it('200 com estrutura batch / blockchain / farm / traceEvents', async () => {
     const { body } = await request(app.getHttpServer())
-      .get(`/public/batches/${batchCode}`)
+      .get('/auth/me')
+      .set(auth(producerToken))
       .expect(200);
 
+    expect(body).toMatchObject({
+      id: producerUserId,
+      role: UserRole.PRODUCER,
+      producerId,
+    });
+    expect(body).not.toHaveProperty('password');
+    expect(body).not.toHaveProperty('passwordHash');
+  });
+
+  it('aplica papel e propriedade ao criar o lote', async () => {
+    await request(app.getHttpServer())
+      .post('/batches')
+      .set(auth(operatorToken))
+      .send({ farmId, productType: 'COFFEE', quantity: 50, unit: 'sacas' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .post('/batches')
+      .set(auth(producerToken))
+      .send({
+        farmId: otherFarmId,
+        productType: 'COFFEE',
+        quantity: 50,
+        unit: 'sacas',
+      })
+      .expect(403);
+
+    const { body } = await request(app.getHttpServer())
+      .post('/batches')
+      .set(auth(producerToken))
+      .send({ farmId, productType: 'COFFEE', quantity: 50, unit: 'sacas' })
+      .expect(201);
+
+    batchId = body.id;
+    publicCode = body.publicCode;
+    expect(body.code).toMatch(/^AGP-\d{4}-\d{4}$/);
+    expect(body.publicCode).toBe(body.code);
+    expect(body.farm.name).toBe('Fazenda E2E');
+  });
+
+  it('mantem passaporte privado ate um admin publica-lo', async () => {
+    await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}`)
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/visibility`)
+      .set(auth(producerToken))
+      .send({ isPublic: true })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/visibility`)
+      .set(auth(adminToken))
+      .send({ isPublic: true })
+      .expect(200);
+
+    const { body } = await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}`)
+      .expect(200);
     expect(body.batch).toMatchObject({
       id: batchId,
-      code: batchCode,
-      productType: 'COFFEE',
-      quantity: 50,
-      unit: 'sacas',
-      status: 'CREATED',
+      publicCode,
+      isPublic: true,
+      status: BatchStatus.CREATED,
     });
-
-    expect(body.blockchain).toMatchObject({
-      cnftAddress: null,
-      merkleTree: null,
-      metadataUri: null,
-      mintTxHash: null,
-    });
-
-    expect(body.farm).toMatchObject({
-      id: farmId,
-      name: 'Fazenda E2E',
-      city: 'Rio Verde',
-      state: 'GO',
-      producer: { name: 'João E2E' },
-    });
-
-    expect(Array.isArray(body.traceEvents)).toBe(true);
-    expect(body.traceEvents).toHaveLength(0);
-    expect(Array.isArray(body.documents)).toBe(true);
-    expect(body.documents).toHaveLength(0);
   });
 
-  it('traceEvents aparecem em ordem cronológica (ASC)', async () => {
-    // Adicionar dois eventos sequencialmente
-    await request(app.getHttpServer())
-      .post(`/batches/${batchId}/events`)
-      .send({ type: 'CREATED', actorName: 'Produtor E2E' })
+  it('anexa documento com metadados e cria um evento encadeado', async () => {
+    const fileContents = Buffer.from('comprovante auditavel do lote');
+    const { body: document } = await request(app.getHttpServer())
+      .post(`/batches/${batchId}/documents`)
+      .set(auth(cooperativeToken))
+      .field('type', 'INVOICE')
+      .attach('file', fileContents, {
+        filename: 'comprovante.pdf',
+        contentType: 'application/pdf',
+      })
       .expect(201);
 
-    await request(app.getHttpServer())
-      .post(`/batches/${batchId}/events`)
-      .send({ type: 'HARVESTED', actorName: 'Cooperativa E2E' })
-      .expect(201);
+    uploadedFilePath = join(
+      process.cwd(),
+      document.fileUrl.replace(/^\/uploads\//, 'uploads/'),
+    );
+    expect(document).toMatchObject({
+      type: 'INVOICE',
+      originalName: 'comprovante.pdf',
+      size: fileContents.length,
+      mimeType: 'application/pdf',
+      batchId,
+    });
+    expect(document.fileHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(document.traceEventId).toBeTruthy();
 
-    const { body } = await request(app.getHttpServer())
-      .get(`/public/batches/${batchCode}`)
+    const { body: events } = await request(app.getHttpServer())
+      .get(`/batches/${batchId}/events`)
+      .set(auth(producerToken))
       .expect(200);
 
-    expect(body.traceEvents).toHaveLength(2);
-    const [first, second] = body.traceEvents as Array<{ createdAt: string; type: string }>;
-    expect(new Date(first.createdAt).getTime()).toBeLessThanOrEqual(
-      new Date(second.createdAt).getTime(),
+    expect(events).toHaveLength(2);
+    expect(events.map((event: { sequence: number }) => event.sequence)).toEqual(
+      [1, 2],
     );
-    expect(first.type).toBe('CREATED');
-    expect(second.type).toBe('HARVESTED');
+    expect(events[0].previousHash).toBeNull();
+    expect(events[1]).toMatchObject({
+      type: 'DOCUMENT_ATTACHED',
+      previousHash: events[0].eventHash,
+      recordedById: expect.any(String),
+    });
+    expect(events[1].documents[0]).toMatchObject({
+      id: document.id,
+      mimeType: 'application/pdf',
+      size: fileContents.length,
+    });
+
+    const { body: integrity } = await request(app.getHttpServer())
+      .get(`/batches/${batchId}/events/integrity`)
+      .set(auth(producerToken))
+      .expect(200);
+    expect(integrity).toMatchObject({ valid: true, eventCount: 2 });
+    expect(integrity.finalHash).toBe(events[1].eventHash);
+
+    await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}/integrity`)
+      .expect(200)
+      .expect(({ body }) => expect(body.valid).toBe(true));
+
+    // Documents start restricted: the passport shows the hash, not the file.
+    expect(document.isPublic).toBe(false);
+    const findPublicDocument = (body: { documents: Array<{ id: string }> }) =>
+      body.documents.find((item) => item.id === document.id);
+
+    const { body: restricted } = await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}`)
+      .expect(200);
+    expect(findPublicDocument(restricted)).toMatchObject({
+      isPublic: false,
+      fileUrl: null,
+      originalName: null,
+      fileHash: document.fileHash,
+    });
+    expect(restricted.traceEvents[1].notes).toBeNull();
+    expect(JSON.stringify(restricted)).not.toContain('comprovante.pdf');
+
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/documents/${document.id}/visibility`)
+      .set(auth(producerToken))
+      .send({ isPublic: true })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/documents/${document.id}/visibility`)
+      .set(auth(cooperativeToken))
+      .send({ isPublic: true })
+      .expect(200)
+      .expect(({ body }) => expect(body.isPublic).toBe(true));
+
+    const { body: published } = await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}`)
+      .expect(200);
+    expect(findPublicDocument(published)).toMatchObject({
+      isPublic: true,
+      fileUrl: document.fileUrl,
+      originalName: 'comprovante.pdf',
+    });
+    // Visibility lives outside the hashed event, so the chain stays valid.
+    expect(published.integrity.valid).toBe(true);
+  });
+
+  it('registra uma correcao como novo evento sem alterar o original', async () => {
+    const { body: before } = await request(app.getHttpServer())
+      .get(`/batches/${batchId}/events`)
+      .set(auth(adminToken))
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/batches/${batchId}/events`)
+      .set(auth(producerToken))
+      .send({
+        type: 'CORRECTION',
+        notes: 'Tentativa sem permissao',
+        correctedEventId: before[0].id,
+      })
+      .expect(403);
+
+    const { body: correction } = await request(app.getHttpServer())
+      .post(`/batches/${batchId}/events`)
+      .set(auth(adminToken))
+      .send({
+        type: 'CORRECTION',
+        notes: 'Localizacao do registro original conferida manualmente.',
+        correctedEventId: before[0].id,
+      })
+      .expect(201);
+
+    expect(correction).toMatchObject({
+      type: 'CORRECTION',
+      sequence: 3,
+      previousHash: before[1].eventHash,
+      correctedEventId: before[0].id,
+    });
+    expect(correction.eventHash).toMatch(/^[a-f0-9]{64}$/);
+
+    const { body: original } = await request(app.getHttpServer())
+      .get(`/batches/${batchId}/events`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(original[0]).toEqual(before[0]);
+  });
+
+  it('rejeita transicao invalida e papel incorreto', async () => {
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/status`)
+      .set(auth(operatorToken))
+      .send({ status: BatchStatus.DELIVERED })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/status`)
+      .set(auth(operatorToken))
+      .send({ status: BatchStatus.HARVESTED })
+      .expect(403);
+  });
+
+  it('registra cada etapa com o usuario do JWT e fecha o passaporte', async () => {
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/status`)
+      .set(auth(producerToken))
+      .send({ status: BatchStatus.HARVESTED })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/batches/${batchId}/events`)
+      .set(auth(producerToken))
+      .send({
+        type: 'HARVESTED',
+        actorName: 'Nome Forjado',
+      })
+      .expect(400);
+
+    const stages = [
+      [BatchStatus.RECEIVED, cooperativeToken],
+      [BatchStatus.IN_TRANSIT, operatorToken],
+      [BatchStatus.PROCESSED, cooperativeToken],
+      [BatchStatus.DELIVERED, operatorToken],
+    ] as const;
+
+    for (const [status, token] of stages) {
+      await request(app.getHttpServer())
+        .patch(`/batches/${batchId}/status`)
+        .set(auth(token))
+        .send({ status })
+        .expect(200);
+    }
+
+    const closed = await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/close`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(closed.body.status).toBe(BatchStatus.CLOSED);
+    expect(closed.body.closedAt).toBeTruthy();
+
+    await request(app.getHttpServer())
+      .post(`/batches/${batchId}/events`)
+      .set(auth(operatorToken))
+      .send({ type: 'IN_TRANSIT' })
+      .expect(400);
+
+    const { body } = await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}`)
+      .expect(200);
+
+    expect(
+      body.traceEvents.map((event: { type: string }) => event.type),
+    ).toEqual([
+      'CREATED',
+      'DOCUMENT_ATTACHED',
+      'CORRECTION',
+      'HARVESTED',
+      'RECEIVED',
+      'IN_TRANSIT',
+      'PROCESSED',
+      'DELIVERED',
+      'CLOSED',
+    ]);
+    const producerActor = {
+      name: 'Produtor Autenticado',
+      role: UserRole.PRODUCER,
+    };
+    expect(body.traceEvents[0]).toMatchObject({
+      actorName: producerActor.name,
+      actor: producerActor,
+    });
+    expect(body.traceEvents[3]).toMatchObject({ actor: producerActor });
+    expect(body.integrity).toMatchObject({ valid: true, eventCount: 9 });
+
+    // Public passports never expose account identifiers or contact data.
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain(producerUserId);
+    expect(serialized).not.toContain('recordedById');
+    expect(serialized).not.toContain('@example.com');
+    expect(serialized).not.toContain(`producer-${suffix}`);
+  });
+
+  it('detecta adulteracao manual e nao oferece exclusao de eventos', async () => {
+    const events = await prisma.traceEvent.findMany({
+      where: { batchId },
+      orderBy: { sequence: 'asc' },
+    });
+    const target = events[1];
+
+    await request(app.getHttpServer())
+      .delete(`/batches/${batchId}/events/${target.id}`)
+      .set(auth(adminToken))
+      .expect(404);
+
+    await prisma.traceEvent.update({
+      where: { id: target.id },
+      data: { location: 'Local adulterado diretamente no banco' },
+    });
+
+    const { body: invalid } = await request(app.getHttpServer())
+      .get(`/batches/${batchId}/events/integrity`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(invalid.valid).toBe(false);
+    expect(invalid.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sequence: target.sequence,
+          code: 'INVALID_EVENT_HASH',
+        }),
+      ]),
+    );
+
+    await prisma.traceEvent.update({
+      where: { id: target.id },
+      data: { location: target.location },
+    });
+    await request(app.getHttpServer())
+      .get(`/batches/${batchId}/events/integrity`)
+      .set(auth(adminToken))
+      .expect(200)
+      .expect(({ body }) => expect(body.valid).toBe(true));
+  });
+
+  it('senha armazenada e hash, nunca texto puro', async () => {
+    const stored = await prisma.user.findUnique({
+      where: { id: producerUserId },
+      select: { passwordHash: true },
+    });
+
+    expect(stored?.passwordHash).toBeTruthy();
+    expect(stored?.passwordHash).not.toBe(password);
+    expect(stored?.passwordHash).toMatch(/^\$2[aby]\$/);
   });
 });

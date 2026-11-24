@@ -1,21 +1,57 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { BatchStatus } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventChainService } from '../event-chain/event-chain.service';
 import { BatchCodeService } from './batch-code.service';
+import { BatchAuthorizationService } from './batch-authorization.service';
+import { BatchLifecycleService } from './batch-lifecycle.service';
 import { BatchesService } from './batches.service';
+
+const AUTH_USER = {
+  sub: 'user-uuid',
+  name: 'Usuario Teste',
+  email: 'user@example.com',
+  role: 'ADMIN',
+  producerId: null,
+  cooperativeId: null,
+} as const;
+
+function makeFarm() {
+  return {
+    id: 'farm-uuid',
+    name: 'Fazenda Teste',
+    city: 'Rio Verde',
+    state: 'GO',
+    latitude: -17.79,
+    longitude: -50.93,
+    producer: { name: 'Produtor Teste' },
+  };
+}
 
 function makeBatch(overrides: Record<string, unknown> = {}) {
   return {
     id: 'batch-uuid',
-    code: 'CAF-2026-0001',
+    code: 'AGP-2026-0001',
+    publicCode: 'AGP-2026-0001',
     productType: 'COFFEE',
     quantity: 100,
     unit: 'sacas',
     harvestDate: null,
-    status: 'CREATED',
+    status: BatchStatus.CREATED,
+    isPublic: false,
+    integrityHash: 'hash-inicial',
+    tokenAddress: null,
+    tokenizedAt: null,
+    closedAt: null,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
-    farm: { name: 'Fazenda Test', latitude: -17.79, longitude: -50.93 },
+    farmId: 'farm-uuid',
+    farm: makeFarm(),
     ...overrides,
   };
 }
@@ -25,29 +61,50 @@ describe('BatchesService', () => {
   let farmFindUnique: jest.Mock;
   let batchCreate: jest.Mock;
   let batchFindUnique: jest.Mock;
+  let batchFindUniqueOrThrow: jest.Mock;
   let batchUpdate: jest.Mock;
-  let batchDelete: jest.Mock;
-  let $transaction: jest.Mock;
+  let batchFindMany: jest.Mock;
+  let batchCount: jest.Mock;
+  let transaction: jest.Mock;
   let generateCode: jest.Mock;
+  let appendEvent: jest.Mock;
+  let lockBatch: jest.Mock;
 
   beforeEach(async () => {
     farmFindUnique = jest.fn();
     batchCreate = jest.fn();
     batchFindUnique = jest.fn();
+    batchFindUniqueOrThrow = jest.fn();
     batchUpdate = jest.fn();
-    batchDelete = jest.fn();
-    generateCode = jest.fn().mockResolvedValue('CAF-2026-0001');
-    $transaction = jest
-      .fn()
-      .mockImplementation((arg: unknown) =>
-        Array.isArray(arg)
-          ? Promise.all(arg)
-          : (arg as (tx: unknown) => unknown)({}),
-      );
+    batchFindMany = jest.fn().mockResolvedValue([]);
+    batchCount = jest.fn().mockResolvedValue(0);
+    appendEvent = jest.fn();
+    lockBatch = jest.fn();
+    transaction = jest.fn((input) =>
+      typeof input === 'function'
+        ? input({
+            batch: {
+              create: batchCreate,
+              findUnique: batchFindUnique,
+              findUniqueOrThrow: batchFindUniqueOrThrow,
+              update: batchUpdate,
+            },
+          })
+        : Promise.all(input),
+    );
+    generateCode = jest.fn().mockResolvedValue('AGP-2026-0001');
 
     const module = await Test.createTestingModule({
       providers: [
         BatchesService,
+        BatchLifecycleService,
+        {
+          provide: BatchAuthorizationService,
+          useValue: {
+            assertCanCreate: jest.fn(),
+            assertCanTransition: jest.fn(),
+          },
+        },
         {
           provide: PrismaService,
           useValue: {
@@ -55,223 +112,315 @@ describe('BatchesService', () => {
             batch: {
               create: batchCreate,
               findUnique: batchFindUnique,
-              findMany: jest.fn().mockResolvedValue([]),
+              findUniqueOrThrow: batchFindUniqueOrThrow,
+              findMany: batchFindMany,
               update: batchUpdate,
-              delete: batchDelete,
-              count: jest.fn().mockResolvedValue(0),
+              count: batchCount,
             },
-            $transaction,
+            $transaction: transaction,
           },
         },
         { provide: BatchCodeService, useValue: { generate: generateCode } },
+        {
+          provide: EventChainService,
+          useValue: { appendInTransaction: appendEvent, lockBatch },
+        },
       ],
     }).compile();
 
     service = module.get(BatchesService);
   });
 
-  // ─── create ───────────────────────────────────────────────────────────────
-
   describe('create', () => {
-    it('lança NotFoundException quando a fazenda não existe', async () => {
+    it('rejeita uma propriedade inexistente', async () => {
       farmFindUnique.mockResolvedValue(null);
 
       await expect(
-        service.create({
-          farmId: 'f-1',
-          productType: 'COFFEE' as any,
-          quantity: 50,
-          unit: 'sacas',
-        }),
+        service.create(
+          {
+            farmId: 'farm-uuid',
+            productType: 'COFFEE' as never,
+            quantity: 50,
+            unit: 'sacas',
+          },
+          AUTH_USER as never,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('cria lote no caminho feliz', async () => {
-      farmFindUnique.mockResolvedValue({
-        id: 'f-1',
-        lastValidationStatus: 'COMPLIANT',
-      });
+    it('cria um passaporte associado a propriedade', async () => {
+      farmFindUnique.mockResolvedValue(makeFarm());
       batchCreate.mockResolvedValue(makeBatch());
+      batchFindUniqueOrThrow.mockResolvedValue(makeBatch());
 
-      const result = await service.create({
-        farmId: 'f-1',
-        productType: 'COFFEE' as any,
-        quantity: 100,
-        unit: 'sacas',
-      });
-
-      expect(result.code).toBe('CAF-2026-0001');
-      expect(result.productType).toBe('COFFEE');
-    });
-
-    it('retenta geração de código ao encontrar conflito único (P2002)', async () => {
-      farmFindUnique.mockResolvedValue({
-        id: 'f-1',
-        lastValidationStatus: 'COMPLIANT',
-      });
-      batchCreate
-        .mockRejectedValueOnce({ code: 'P2002' })
-        .mockResolvedValue(makeBatch({ code: 'CAF-2026-0002' }));
-
-      const result = await service.create({
-        farmId: 'f-1',
-        productType: 'COFFEE' as any,
-        quantity: 100,
-        unit: 'sacas',
-      });
-
-      expect(batchCreate).toHaveBeenCalledTimes(2);
-      expect(result.code).toBe('CAF-2026-0002');
-    });
-
-    it('propaga o erro após esgotar as 3 tentativas e chama create 3 vezes', async () => {
-      farmFindUnique.mockResolvedValue({
-        id: 'f-1',
-        lastValidationStatus: 'COMPLIANT',
-      });
-      batchCreate.mockRejectedValue({ code: 'P2002' });
-
-      await expect(
-        service.create({
-          farmId: 'f-1',
-          productType: 'COFFEE' as any,
+      const result = await service.create(
+        {
+          farmId: 'farm-uuid',
+          productType: 'COFFEE' as never,
           quantity: 100,
-          unit: 'sacas',
-        }),
-      ).rejects.toMatchObject({ code: 'P2002' });
+          unit: ' sacas ',
+        },
+        AUTH_USER as never,
+      );
 
-      expect(batchCreate).toHaveBeenCalledTimes(3);
-    });
-
-    it('trimeia o campo unit', async () => {
-      farmFindUnique.mockResolvedValue({
-        id: 'f-1',
-        lastValidationStatus: 'COMPLIANT',
-      });
-      batchCreate.mockResolvedValue(makeBatch({ unit: 'sacas' }));
-
-      await service.create({
-        farmId: 'f-1',
-        productType: 'COFFEE' as any,
-        quantity: 100,
-        unit: '  sacas  ',
-      });
-
+      expect(result.code).toBe('AGP-2026-0001');
+      expect(result.publicCode).toBe('AGP-2026-0001');
       expect(batchCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ unit: 'sacas' }),
+          data: expect.objectContaining({
+            farmId: 'farm-uuid',
+            code: 'AGP-2026-0001',
+            publicCode: 'AGP-2026-0001',
+            unit: 'sacas',
+          }),
+        }),
+      );
+      expect(appendEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          batchId: 'batch-uuid',
+          type: 'CREATED',
+          recordedById: 'user-uuid',
         }),
       );
     });
 
-    it('bloqueia criação quando a fazenda não está COMPLIANT', async () => {
-      farmFindUnique.mockResolvedValue({
-        id: 'f-1',
-        lastValidationStatus: 'NEEDS_REVIEW',
-      });
+    it('retenta quando o codigo colide', async () => {
+      farmFindUnique.mockResolvedValue(makeFarm());
+      batchCreate
+        .mockRejectedValueOnce({ code: 'P2002' })
+        .mockResolvedValue(makeBatch({ code: 'AGP-2026-0002' }));
+      batchFindUniqueOrThrow.mockResolvedValue(
+        makeBatch({ code: 'AGP-2026-0002' }),
+      );
 
-      await expect(
-        service.create({
-          farmId: 'f-1',
-          productType: 'COFFEE' as any,
+      const result = await service.create(
+        {
+          farmId: 'farm-uuid',
+          productType: 'COFFEE' as never,
           quantity: 100,
           unit: 'sacas',
-        }),
-      ).rejects.toThrow(BadRequestException);
+        },
+        AUTH_USER as never,
+      );
 
-      expect(batchCreate).not.toHaveBeenCalled();
-    });
-  });
-
-  // ─── findAll ──────────────────────────────────────────────────────────────
-
-  describe('findAll', () => {
-    it('retorna página com dados e paginação', async () => {
-      $transaction.mockResolvedValue([
-        [makeBatch(), makeBatch({ id: 'b-2' })],
-        2,
-      ]);
-
-      const result = await service.findAll(1, 10);
-
-      expect(result.data).toHaveLength(2);
-      expect(result.pagination.totalItems).toBe(2);
-      expect(result.pagination.totalPages).toBe(1);
+      expect(batchCreate).toHaveBeenCalledTimes(2);
+      expect(result.code).toBe('AGP-2026-0002');
     });
 
-    it('calcula totalPages corretamente', async () => {
-      $transaction.mockResolvedValue([[makeBatch()], 25]);
-
-      const result = await service.findAll(1, 10);
-
-      expect(result.pagination.totalPages).toBe(3);
-    });
-
-    it('retorna totalPages mínimo 1 quando sem registros', async () => {
-      $transaction.mockResolvedValue([[], 0]);
-
-      const result = await service.findAll(1, 10);
-
-      expect(result.pagination.totalPages).toBe(1);
-    });
-  });
-
-  // ─── findOne ──────────────────────────────────────────────────────────────
-
-  describe('findOne', () => {
-    it('retorna batch existente', async () => {
-      batchFindUnique.mockResolvedValue(makeBatch());
-
-      const result = await service.findOne('batch-uuid');
-
-      expect(result.id).toBe('batch-uuid');
-      expect(result.code).toBe('CAF-2026-0001');
-    });
-
-    it('lança NotFoundException quando batch não existe', async () => {
-      batchFindUnique.mockResolvedValue(null);
-
-      await expect(service.findOne('x')).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  // ─── updateStatus ─────────────────────────────────────────────────────────
-
-  describe('updateStatus', () => {
-    it('atualiza status corretamente', async () => {
-      batchFindUnique.mockResolvedValue({ id: 'batch-uuid' });
-      batchUpdate.mockResolvedValue(makeBatch({ status: 'VERIFIED' }));
-
-      const result = await service.updateStatus('batch-uuid', {
-        status: 'VERIFIED' as any,
-      });
-
-      expect(result.status).toBe('VERIFIED');
-    });
-
-    it('lança NotFoundException quando batch não existe', async () => {
-      batchFindUnique.mockResolvedValue(null);
+    it('retorna conflito apos tres colisoes', async () => {
+      farmFindUnique.mockResolvedValue(makeFarm());
+      batchCreate.mockRejectedValue({ code: 'P2002' });
 
       await expect(
-        service.updateStatus('x', { status: 'VERIFIED' as any }),
-      ).rejects.toThrow(NotFoundException);
+        service.create(
+          {
+            farmId: 'farm-uuid',
+            productType: 'COFFEE' as never,
+            quantity: 100,
+            unit: 'sacas',
+          },
+          AUTH_USER as never,
+        ),
+      ).rejects.toThrow(ConflictException);
+      expect(batchCreate).toHaveBeenCalledTimes(3);
     });
   });
 
-  // ─── remove ───────────────────────────────────────────────────────────────
+  it('lista lotes com paginacao', async () => {
+    transaction.mockResolvedValue([[makeBatch()], 21]);
 
-  describe('remove', () => {
-    it('remove batch existente sem erro', async () => {
-      batchFindUnique.mockResolvedValue({ id: 'batch-uuid' });
-      batchDelete.mockResolvedValue({});
+    const result = await service.findAll(2, 10);
 
-      await expect(service.remove('batch-uuid')).resolves.toBeUndefined();
+    expect(result.data).toHaveLength(1);
+    expect(result.pagination).toMatchObject({
+      page: 2,
+      limit: 10,
+      totalItems: 21,
+      totalPages: 3,
+    });
+  });
+
+  it('consulta um lote por id', async () => {
+    batchFindUnique.mockResolvedValue(makeBatch());
+    await expect(service.findOne('batch-uuid')).resolves.toMatchObject({
+      id: 'batch-uuid',
+      code: 'AGP-2026-0001',
+    });
+  });
+
+  it('retorna 404 ao consultar lote inexistente', async () => {
+    batchFindUnique.mockResolvedValue(null);
+    await expect(service.findOne('x')).rejects.toThrow(NotFoundException);
+  });
+
+  describe('lifecycle', () => {
+    it('aplica a proxima transicao e registra a etapa na linha do tempo', async () => {
+      batchFindUnique.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.CREATED,
+        integrityHash: 'hash-inicial',
+      });
+      batchUpdate.mockResolvedValue(
+        makeBatch({ status: BatchStatus.HARVESTED }),
+      );
+      batchFindUniqueOrThrow
+        .mockResolvedValueOnce({
+          id: 'batch-uuid',
+          status: BatchStatus.CREATED,
+          farm: makeFarm(),
+        })
+        .mockResolvedValueOnce(makeBatch({ status: BatchStatus.HARVESTED }));
+
+      const result = await service.updateStatus(
+        'batch-uuid',
+        { status: BatchStatus.HARVESTED },
+        AUTH_USER as never,
+      );
+
+      expect(result.status).toBe(BatchStatus.HARVESTED);
+      expect(batchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: BatchStatus.HARVESTED,
+          }),
+        }),
+      );
+      expect(appendEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ type: 'HARVESTED' }),
+      );
     });
 
-    it('lança NotFoundException quando batch não existe', async () => {
-      batchFindUnique.mockResolvedValue(null);
+    it('rejeita salto de CREATED para DELIVERED', async () => {
+      batchFindUnique.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.CREATED,
+        integrityHash: null,
+      });
+      batchFindUniqueOrThrow.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.CREATED,
+        farm: makeFarm(),
+      });
 
-      await expect(service.remove('x')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateStatus(
+          'batch-uuid',
+          { status: BatchStatus.DELIVERED },
+          AUTH_USER as never,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(batchUpdate).not.toHaveBeenCalled();
     });
+
+    it('cancela um lote ativo', async () => {
+      batchFindUnique.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.RECEIVED,
+        integrityHash: null,
+      });
+      batchUpdate.mockResolvedValue(
+        makeBatch({ status: BatchStatus.CANCELLED }),
+      );
+      batchFindUniqueOrThrow
+        .mockResolvedValueOnce({
+          id: 'batch-uuid',
+          status: BatchStatus.RECEIVED,
+          farm: makeFarm(),
+        })
+        .mockResolvedValueOnce(makeBatch({ status: BatchStatus.CANCELLED }));
+
+      await expect(
+        service.cancel('batch-uuid', AUTH_USER as never),
+      ).resolves.toMatchObject({
+        status: BatchStatus.CANCELLED,
+      });
+    });
+
+    it('fecha apenas um lote entregue e define closedAt', async () => {
+      batchFindUnique.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.DELIVERED,
+        integrityHash: null,
+      });
+      batchUpdate.mockResolvedValue(
+        makeBatch({ status: BatchStatus.CLOSED, closedAt: new Date() }),
+      );
+      batchFindUniqueOrThrow
+        .mockResolvedValueOnce({
+          id: 'batch-uuid',
+          status: BatchStatus.DELIVERED,
+          farm: makeFarm(),
+        })
+        .mockResolvedValueOnce(
+          makeBatch({ status: BatchStatus.CLOSED, closedAt: new Date() }),
+        );
+
+      await service.close('batch-uuid', AUTH_USER as never);
+
+      expect(batchUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: BatchStatus.CLOSED,
+            closedAt: expect.any(Date),
+          }),
+        }),
+      );
+    });
+
+    it('nao reabre lote encerrado', async () => {
+      batchFindUnique.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.CLOSED,
+        integrityHash: null,
+      });
+      batchFindUniqueOrThrow.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.CLOSED,
+        farm: makeFarm(),
+      });
+
+      await expect(
+        service.updateStatus(
+          'batch-uuid',
+          { status: BatchStatus.IN_TRANSIT },
+          AUTH_USER as never,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('informa somente as transicoes permitidas', async () => {
+      batchFindUnique.mockResolvedValue({
+        id: 'batch-uuid',
+        status: BatchStatus.HARVESTED,
+        integrityHash: null,
+      });
+
+      await expect(
+        service.getAllowedTransitions('batch-uuid'),
+      ).resolves.toEqual({
+        currentStatus: BatchStatus.HARVESTED,
+        allowedTransitions: [BatchStatus.RECEIVED, BatchStatus.CANCELLED],
+      });
+    });
+  });
+
+  it('torna o passaporte publico ou privado, inclusive depois do fechamento', async () => {
+    batchFindUnique.mockResolvedValue({
+      id: 'batch-uuid',
+      status: BatchStatus.CLOSED,
+      integrityHash: 'hash-final',
+    });
+    batchUpdate.mockResolvedValue(makeBatch({ isPublic: true }));
+
+    const result = await service.updateVisibility('batch-uuid', {
+      isPublic: true,
+    });
+
+    expect(result.isPublic).toBe(true);
+    expect(batchUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { isPublic: true } }),
+    );
   });
 });

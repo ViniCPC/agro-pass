@@ -12,14 +12,20 @@ import {
 } from '@metaplex-foundation/mpl-bubblegum';
 import { publicKey } from '@metaplex-foundation/umi';
 import bs58 from 'bs58';
+import { BatchStatus, TraceEventType } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { AuthUser } from '../../auth/auth-user.type';
+import { EventChainService } from '../../event-chain/event-chain.service';
 import { createUmiClient } from '../umi.client';
 
 @Injectable()
 export class BubblegumService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventChain: EventChainService,
+  ) {}
 
-  async mintBatchCnft(batchId: string) {
+  async mintBatchCnft(batchId: string, user: AuthUser) {
     const batch = await this.prisma.batch.findUnique({
       where: { id: batchId },
       include: {
@@ -35,7 +41,16 @@ export class BubblegumService {
       throw new NotFoundException('Batch not found');
     }
 
-    if (batch.cnftAddress || batch.mintTxHash) {
+    if (
+      batch.status === BatchStatus.CLOSED ||
+      batch.status === BatchStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Batch with status ${batch.status} cannot be tokenized`,
+      );
+    }
+
+    if (batch.tokenAddress || batch.tokenizedAt) {
       throw new BadRequestException('Batch already has a minted cNFT');
     }
 
@@ -50,7 +65,7 @@ export class BubblegumService {
       keypairPath,
     });
 
-    const metadataUri = `${publicBackendUrl}/public/batches/${batch.code}/metadata.json`;
+    const metadataUri = `${publicBackendUrl}/public/batches/${batch.publicCode}/metadata.json`;
 
     const baseMetadata = {
       name: `AgroPass Batch ${batch.code}`,
@@ -100,30 +115,40 @@ export class BubblegumService {
 
     const txHash = bs58.encode(signature);
 
-    let cnftAddress: string | null = null;
+    let tokenAddress: string | null = null;
 
     try {
       const leaf = await parseLeafFromMintV2Transaction(umi, signature);
-      cnftAddress = leaf.id.toString();
+      tokenAddress = leaf.id.toString();
     } catch {
-      cnftAddress = null;
+      tokenAddress = null;
     }
 
-    const updatedBatch = await this.prisma.batch.update({
-      where: { id: batch.id },
-      data: {
-        cnftAddress,
-        metadataUri,
-        mintTxHash: txHash,
-        merkleTree: merkleTreeAddress,
-      },
+    const tokenizedAt = new Date();
+    const updatedBatch = await this.prisma.$transaction(async (transaction) => {
+      await this.eventChain.lockBatch(transaction, batch.id);
+      await transaction.batch.update({
+        where: { id: batch.id },
+        data: { tokenAddress, tokenizedAt },
+      });
+
+      await this.eventChain.appendInTransaction(transaction, {
+        batchId: batch.id,
+        type: TraceEventType.MINTED_ONCHAIN,
+        recordedById: user.sub,
+        recordedAt: tokenizedAt,
+        txHash,
+      });
+
+      return transaction.batch.findUniqueOrThrow({ where: { id: batch.id } });
     });
 
     return {
       message: 'cNFT minted successfully',
       batchId: updatedBatch.id,
       batchCode: updatedBatch.code,
-      cnftAddress,
+      tokenAddress,
+      tokenizedAt,
       metadataUri,
       mintTxHash: txHash,
       merkleTree: merkleTreeAddress,

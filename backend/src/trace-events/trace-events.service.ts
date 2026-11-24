@@ -1,6 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { TraceEventType } from '../../generated/prisma/enums';
+import { BatchAuthorizationService } from '../batches/batch-authorization.service';
+import type { AuthUser } from '../auth/auth-user.type';
 import { PrismaService } from '../prisma/prisma.service';
-import { EventHashService } from './event-hash.service';
+import { EventChainService } from '../event-chain/event-chain.service';
 import { CreateTraceEventDto } from './dto/create-trace-event.dto';
 import { TraceEventDto } from './dto/trace-event.dto';
 
@@ -8,100 +15,75 @@ import { TraceEventDto } from './dto/trace-event.dto';
 export class TraceEventsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventHash: EventHashService,
+    private readonly eventChain: EventChainService,
+    private readonly authorization: BatchAuthorizationService,
   ) {}
 
-  async create(batchId: string, dto: CreateTraceEventDto): Promise<TraceEventDto> {
-    const batch = await this.prisma.batch.findUnique({ where: { id: batchId } });
-    if (!batch) throw new NotFoundException('Lote nao encontrado.');
-
-    let linkedDocumentId: string | null = null;
-    if (dto.documentId) {
-      const document = await this.prisma.document.findUnique({
-        where: { id: dto.documentId },
-        select: { id: true, batchId: true },
-      });
-
-      if (!document) {
-        throw new NotFoundException('Documento nao encontrado.');
-      }
-
-      if (document.batchId !== batchId) {
-        throw new BadRequestException(
-          'Documento informado nao pertence ao lote selecionado.',
-        );
-      }
-
-      linkedDocumentId = document.id;
-    }
-
-    const now = new Date();
-    const customStageName = dto.customStageName?.trim() || null;
-
-    const hash = this.eventHash.generate({
-      batchId,
-      type: dto.type,
-      actorName: dto.actorName,
-      location: dto.location,
-      latitude: dto.latitude,
-      longitude: dto.longitude,
-      cooperativeId: dto.cooperativeId,
-      exporterId: dto.exporterId,
-      customStageName,
-      createdAt: now,
-    });
-
-    const event = await this.prisma.traceEvent.create({
-      data: {
-        type: dto.type,
-        actorName: dto.actorName,
-        cooperativeId: dto.cooperativeId ?? null,
-        exporterId: dto.exporterId ?? null,
-        location: dto.location ?? null,
-        latitude: dto.latitude ?? null,
-        longitude: dto.longitude ?? null,
-        eventHash: hash,
-        customStageName,
-        documentId: linkedDocumentId,
-        batchId,
-        createdAt: now,
-      },
+  async create(
+    batchId: string,
+    dto: CreateTraceEventDto,
+    user: AuthUser,
+  ): Promise<TraceEventDto> {
+    const batch = await this.prisma.batch.findUnique({
+      where: { id: batchId },
       include: {
-        document: {
+        farm: {
           select: {
-            id: true,
-            type: true,
-            fileUrl: true,
-            fileHash: true,
-            createdAt: true,
+            producerId: true,
+            producer: { select: { cooperativeId: true } },
           },
         },
       },
+    });
+    if (!batch) throw new NotFoundException('Lote nao encontrado.');
+    if (dto.type !== TraceEventType.CORRECTION) {
+      throw new BadRequestException(
+        'Etapas do ciclo devem ser registradas pela transicao de status.',
+      );
+    }
+
+    this.authorization.assertCanAddEvent(batch, dto.type, user);
+
+    if (!dto.notes?.trim() || !dto.correctedEventId) {
+      throw new BadRequestException(
+        'Uma correcao exige justificativa e o evento que esta sendo corrigido.',
+      );
+    }
+
+    const event = await this.eventChain.append({
+      batchId,
+      type: dto.type,
+      recordedById: user.sub,
+      location: dto.location,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+      notes: dto.notes,
+      documentIds: dto.documentIds,
+      correctedEventId: dto.correctedEventId,
     });
 
     return TraceEventDto.fromModel(event);
   }
 
   async findAllByBatch(batchId: string): Promise<TraceEventDto[]> {
-    const batch = await this.prisma.batch.findUnique({ where: { id: batchId } });
+    const batch = await this.prisma.batch.findUnique({
+      where: { id: batchId },
+    });
     if (!batch) throw new NotFoundException('Lote nao encontrado.');
 
     const events = await this.prisma.traceEvent.findMany({
       where: { batchId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { sequence: 'asc' },
       include: {
-        document: {
-          select: {
-            id: true,
-            type: true,
-            fileUrl: true,
-            fileHash: true,
-            createdAt: true,
-          },
-        },
+        recordedBy: { select: { id: true, name: true, role: true } },
+        documents: { orderBy: { createdAt: 'asc' } },
       },
     });
 
-    return events.map(TraceEventDto.fromModel);
+    return events.map((event) => TraceEventDto.fromModel(event));
+  }
+
+  verifyIntegrity(batchId: string) {
+    return this.eventChain.verify(batchId);
   }
 }

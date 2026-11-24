@@ -6,7 +6,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE "TraceEvent", "Document", "Batch", "EudrValidation", "Farm", "Producer", "Cooperative" RESTART IDENTITY CASCADE',
+    'TRUNCATE "TraceEvent", "Document", "Batch", "Farm", "User", "Producer", "Cooperative", "Exporter" RESTART IDENTITY CASCADE',
   );
   console.log('Banco de dados limpo com sucesso.');
 }

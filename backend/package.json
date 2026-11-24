@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -17,33 +17,32 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
+    "test:e2e": "node test/run-e2e.mjs",
+    "test:e2e:db:up": "docker compose -f ../docker-compose.test.yml up -d --wait",
+    "test:e2e:db:down": "docker compose -f ../docker-compose.test.yml down -v",
     "seed": "tsx --require dotenv/config prisma/seed.ts",
     "start:clean": "powershell -ExecutionPolicy Bypass -File scripts/start-clean.ps1",
     "solana:create-wallet": "tsx src/scripts/create-devnet-wallet.ts",
     "solana:airdrop": "tsx src/scripts/request-devnet-airdrop.ts",
     "solana:create-tree": "tsx src/scripts/create-merkle-tree.ts",
-    "smoke:test": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1",
-    "demo:satellite": "tsx --require dotenv/config src/scripts/update-satellite-images.ts"
+    "smoke:test": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config prisma/seed.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.94.0",
-    "@google/earthengine": "^1.7.25",
-    "@google/generative-ai": "^0.21.0",
     "@metaplex-foundation/mpl-bubblegum": "^5.0.2",
     "@metaplex-foundation/umi": "^1.5.1",
     "@metaplex-foundation/umi-bundle-defaults": "^1.5.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.1.19",
     "@nestjs/swagger": "^11.2.1",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@solana/web3.js": "^1.98.4",
-    "@turf/turf": "^7.3.5",
+    "bcryptjs": "^3.0.3",
     "bs58": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -52,12 +51,10 @@
     "papaparse": "^5.5.3",
     "pdfkit": "^0.18.0",
     "pg": "^8.20.0",
-    "puppeteer": "^24.42.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "swagger-ui-express": "^5.0.1",
-    "telegraf": "^4.16.3"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

@@ -1,12 +1,13 @@
 import { Type } from 'class-transformer';
 import {
   IsEnum,
+  IsArray,
   IsLatitude,
   IsLongitude,
-  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
+  ArrayUnique,
   MaxLength,
 } from 'class-validator';
 import { TraceEventType } from '../../../generated/prisma/enums';
@@ -14,19 +15,6 @@ import { TraceEventType } from '../../../generated/prisma/enums';
 export class CreateTraceEventDto {
   @IsEnum(TraceEventType)
   type!: TraceEventType;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  actorName!: string;
-
-  @IsUUID()
-  @IsOptional()
-  cooperativeId?: string;
-
-  @IsUUID()
-  @IsOptional()
-  exporterId?: string;
 
   @IsString()
   @IsOptional()
@@ -45,10 +33,16 @@ export class CreateTraceEventDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(140)
-  customStageName?: string;
+  @MaxLength(2000)
+  notes?: string;
+
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  documentIds?: string[];
 
   @IsUUID()
   @IsOptional()
-  documentId?: string;
+  correctedEventId?: string;
 }

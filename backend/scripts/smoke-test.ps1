@@ -60,8 +60,8 @@ try {
   }
 
   if (-not (Test-ApiAvailable -BaseUrl $ApiBaseUrl)) {
-    Write-Host "2) Subindo backend (TELEGRAM_ENABLED=false)..."
-    $serverCmd = "set TELEGRAM_ENABLED=false&&npm run start:prod"
+    Write-Host "2) Subindo backend..."
+    $serverCmd = "npm run start:prod"
     $serverProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $serverCmd -WorkingDirectory $backendPath -PassThru -WindowStyle Hidden
     $startedByScript = $true
     Wait-ApiReady -BaseUrl $ApiBaseUrl
@@ -93,18 +93,10 @@ try {
     latitude = -17.79
     longitude = -50.93
     carNumber = "GO-5218805-SMOKE$carSuffix"
-    biome = "CERRADO"
     producerId = $producer.id
   }
 
-  Write-Host "6) Rodando validacao EUDR MOCK..."
-  $eudr = Invoke-Json -Method "POST" -Url "$ApiBaseUrl/eudr/farms/$($farm.id)/validate" -Body @{
-    mode = "MOCK"
-    mockHectaresDeforested = 0
-    notes = "Smoke test automatico"
-  }
-
-  Write-Host "7) Criando lote..."
+  Write-Host "6) Criando lote..."
   $batch = Invoke-Json -Method "POST" -Url "$ApiBaseUrl/batches" -Body @{
     farmId = $farm.id
     productType = "COFFEE"
@@ -112,7 +104,7 @@ try {
     unit = "sacas"
   }
 
-  Write-Host "8) Enviando documento CAR no lote..."
+  Write-Host "7) Enviando documento CAR no lote..."
   $randomBytes = New-Object byte[] 64
   [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($randomBytes)
   [IO.File]::WriteAllBytes($tempImagePath, $randomBytes)
@@ -128,10 +120,10 @@ try {
     throw "Upload do documento CAR falhou. Resposta: $documentJson"
   }
 
-  Write-Host "9) Validando lote..."
+  Write-Host "8) Validando lote..."
   $batchValidation = Invoke-Json -Method "PATCH" -Url "$ApiBaseUrl/batches/$($batch.id)/validate"
 
-  Write-Host "10) Consultando endpoint publico..."
+  Write-Host "9) Consultando endpoint publico..."
   $publicBatch = Invoke-Json -Method "GET" -Url "$ApiBaseUrl/public/batches/$($batch.code)"
   $metadata = Invoke-Json -Method "GET" -Url "$ApiBaseUrl/public/batches/$($batch.code)/metadata.json"
 
@@ -141,8 +133,6 @@ try {
   Write-Host ("farmId: " + $farm.id)
   Write-Host ("batchId: " + $batch.id)
   Write-Host ("batchCode: " + $batch.code)
-  Write-Host ("eudrStatus: " + $eudr.status)
-  Write-Host ("farmStatus: " + $eudr.farmStatus)
   Write-Host ("batchStatus: " + $batchValidation.status)
   Write-Host ("uploadedDocumentId: " + $documentResponse.id)
   Write-Host ("publicEndpoint: $ApiBaseUrl/public/batches/$($batch.code)")

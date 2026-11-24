@@ -4,7 +4,10 @@ import { ListProducersResponseDto } from './dto/list-producers-response.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { ProducerDto } from './dto/producer.dto';
 import { ProducersService } from './producers.service';
+import { UserRole } from '../../generated/prisma/enums';
+import { Roles } from '../auth/decorators/roles.decorator';
 
+@Roles(UserRole.COOPERATIVE, UserRole.ADMIN)
 @Controller('producers')
 export class ProducersController {
   constructor(private readonly producersService: ProducersService) {}

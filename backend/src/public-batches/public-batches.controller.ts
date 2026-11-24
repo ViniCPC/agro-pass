@@ -1,7 +1,9 @@
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicBatchesService } from './public-batches.service';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller('public/batches')
 export class PublicBatchesController {
   constructor(
@@ -14,15 +16,19 @@ export class PublicBatchesController {
     return this.publicBatchesService.findByCode(code);
   }
 
+  @Get(':code/integrity')
+  verifyIntegrity(@Param('code') code: string) {
+    return this.publicBatchesService.verifyIntegrity(code);
+  }
+
   @Get(':code/metadata.json')
   async getBatchMetadata(@Param('code') code: string) {
-    const batch = await this.prisma.batch.findUnique({
-      where: { code },
+    const batch = await this.prisma.batch.findFirst({
+      where: { publicCode: code, isPublic: true },
       include: {
         farm: {
           include: {
             producer: true,
-            lastValidation: true,
           },
         },
       },
@@ -38,7 +44,6 @@ export class PublicBatchesController {
       description:
         'Digital product passport for agricultural traceability and proof of origin.',
       image: 'https://placehold.co/600x600/png?text=AgroPass',
-      latestEvidenceHash: batch.farm.lastValidation?.evidenceHash ?? null,
       attributes: [
         {
           trait_type: 'Batch Code',
@@ -67,14 +72,6 @@ export class PublicBatchesController {
         {
           trait_type: 'Producer',
           value: batch.farm.producer.name,
-        },
-        {
-          trait_type: 'EUDR Status',
-          value: batch.farm.lastValidation?.status ?? 'PENDING',
-        },
-        {
-          trait_type: 'Latest Evidence Hash',
-          value: batch.farm.lastValidation?.evidenceHash ?? 'NONE',
         },
       ],
       properties: {

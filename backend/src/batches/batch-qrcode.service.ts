@@ -1,11 +1,9 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,43 +13,45 @@ type QrGenerationResult = {
   targetUrl: string;
   batchId: string;
   batchCode: string;
+  publicCode: string;
 };
 
 const ALLOWED_PRINT_COPIES = [4, 8, 16] as const;
 type AllowedPrintCopies = (typeof ALLOWED_PRINT_COPIES)[number];
 
+const DEV_PUBLIC_APP_URL = 'http://localhost:5173';
+
 @Injectable()
 export class BatchQrCodeService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // The image is rendered on demand and returned inline instead of being
+  // written to local disk: nothing is lost when the container is redeployed,
+  // and the QR always encodes the currently configured public URL.
   async generateQrCode(batchId: string): Promise<QrGenerationResult> {
     const batch = await this.prisma.batch.findUnique({
       where: { id: batchId },
-      select: { id: true, code: true, qrCodeUrl: true },
+      select: { id: true, code: true, publicCode: true },
     });
 
     if (!batch) {
       throw new NotFoundException('Lote nao encontrado.');
     }
 
-    const targetUrl = this.buildTraceTargetUrl(batch.code);
-
-    const uploadDir = join(process.cwd(), 'uploads', 'qrcodes');
-    await mkdir(uploadDir, { recursive: true });
-
-    const fileName = `${batchId}-${randomUUID()}.png`;
-    const filePath = join(uploadDir, fileName);
-    const qrCodeUrl = `/uploads/qrcodes/${fileName}`;
-
-    const buffer = await QRCode.toBuffer(targetUrl, { type: 'png', width: 400 });
-    await writeFile(filePath, buffer);
-
-    await this.prisma.batch.update({
-      where: { id: batchId },
-      data: { qrCodeUrl },
+    const targetUrl = this.buildTraceTargetUrl(batch.publicCode);
+    const qrCodeUrl = await QRCode.toDataURL(targetUrl, {
+      width: 400,
+      margin: 2,
+      errorCorrectionLevel: 'M',
     });
 
-    return { qrCodeUrl, targetUrl, batchId: batch.id, batchCode: batch.code };
+    return {
+      qrCodeUrl,
+      targetUrl,
+      batchId: batch.id,
+      batchCode: batch.code,
+      publicCode: batch.publicCode,
+    };
   }
 
   async generatePrintSheetPdf(
@@ -67,21 +67,17 @@ export class BatchQrCodeService {
     const copies = copiesRaw as AllowedPrintCopies;
     const batch = await this.prisma.batch.findUnique({
       where: { id: batchId },
-      select: { id: true, code: true, qrCodeUrl: true },
+      select: { id: true, code: true, publicCode: true },
     });
 
     if (!batch) {
       throw new NotFoundException('Lote nao encontrado.');
     }
 
-    let qrCodeUrl = batch.qrCodeUrl;
-    if (!qrCodeUrl) {
-      const generated = await this.generateQrCode(batch.id);
-      qrCodeUrl = generated.qrCodeUrl;
-    }
-
-    const qrImagePath = join(process.cwd(), qrCodeUrl.replace(/^\//, ''));
-    const qrBuffer = await readFile(qrImagePath);
+    const qrBuffer = await QRCode.toBuffer(
+      this.buildTraceTargetUrl(batch.publicCode),
+      { type: 'png', width: 400 },
+    );
 
     return this.renderPrintSheetPdf({
       batchCode: batch.code,
@@ -90,9 +86,23 @@ export class BatchQrCodeService {
     });
   }
 
-  private buildTraceTargetUrl(batchCode: string): string {
-    const baseUrl = process.env.PUBLIC_APP_URL ?? 'http://localhost:5173';
-    return `${baseUrl}/trace/${encodeURIComponent(batchCode)}`;
+  private buildTraceTargetUrl(publicCode: string): string {
+    return `${this.resolvePublicAppUrl()}/trace/${encodeURIComponent(publicCode)}`;
+  }
+
+  // A printed label cannot be fixed later, so production refuses to encode a
+  // fallback localhost URL instead of silently printing broken QR codes.
+  private resolvePublicAppUrl(): string {
+    const configured = process.env.PUBLIC_APP_URL?.trim().replace(/\/+$/, '');
+    if (configured) return configured;
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new InternalServerErrorException(
+        'PUBLIC_APP_URL nao configurado: defina a URL publica do frontend antes de gerar QR Codes.',
+      );
+    }
+
+    return DEV_PUBLIC_APP_URL;
   }
 
   private renderPrintSheetPdf({

@@ -12,79 +12,61 @@ describe('BatchCodeService', () => {
     const module = await Test.createTestingModule({
       providers: [
         BatchCodeService,
-        { provide: PrismaService, useValue: { batch: { findMany: batchFindMany } } },
+        {
+          provide: PrismaService,
+          useValue: { batch: { findMany: batchFindMany } },
+        },
       ],
     }).compile();
 
     service = module.get(BatchCodeService);
   });
 
-  it('gera código 0001 quando não há lotes existentes', async () => {
+  it('gera AGP-YYYY-0001 quando nao ha lotes no ano', async () => {
     const year = new Date().getFullYear();
-    const code = await service.generate('COFFEE' as any);
-    expect(code).toBe(`CAF-${year}-0001`);
+    await expect(service.generate()).resolves.toBe(`AGP-${year}-0001`);
   });
 
-  it('incrementa a sequência a partir do maior código existente', async () => {
-    const year = new Date().getFullYear();
+  it('usa o ano da colheita quando informado', async () => {
+    await expect(service.generate(new Date('2026-07-15'))).resolves.toBe(
+      'AGP-2026-0001',
+    );
+  });
+
+  it('incrementa a maior sequencia existente', async () => {
     batchFindMany.mockResolvedValue([
-      { code: `CAF-${year}-0003` },
-      { code: `CAF-${year}-0001` },
-      { code: `CAF-${year}-0002` },
+      { code: 'AGP-2026-0003' },
+      { code: 'AGP-2026-0001' },
+      { code: 'AGP-2026-0002' },
     ]);
 
-    const code = await service.generate('COFFEE' as any);
-    expect(code).toBe(`CAF-${year}-0004`);
-  });
-
-  it('usa o ano do harvestDate quando fornecido', async () => {
-    const code = await service.generate('SOY' as any, new Date('2024-07-15'));
-    expect(code).toBe('SOJ-2024-0001');
-  });
-
-  it('usa o ano corrente quando harvestDate não é fornecido', async () => {
-    const year = new Date().getFullYear();
-    const code = await service.generate('CATTLE' as any);
-    expect(code.startsWith(`GAD-${year}-`)).toBe(true);
-  });
-
-  it.each([
-    ['COFFEE', 'CAF'],
-    ['SOY', 'SOJ'],
-    ['CATTLE', 'GAD'],
-    ['COCOA', 'CAC'],
-    ['PALM_OIL', 'PAL'],
-    ['RUBBER', 'BOR'],
-    ['WOOD', 'MAD'],
-  ])('usa prefixo correto para %s → %s', async (productType, expectedPrefix) => {
-    const code = await service.generate(productType as any);
-    expect(code.split('-')[0]).toBe(expectedPrefix);
-  });
-
-  it('ignora entradas com sequência NaN e começa em 0001', async () => {
-    const year = new Date().getFullYear();
-    batchFindMany.mockResolvedValue([{ code: `CAF-${year}-INVALIDO` }]);
-
-    const code = await service.generate('COFFEE' as any);
-    expect(code).toBe(`CAF-${year}-0001`);
-  });
-
-  it('formata a sequência com 4 dígitos (zero-padded)', async () => {
-    const year = new Date().getFullYear();
-    batchFindMany.mockResolvedValue([{ code: `CAF-${year}-0009` }]);
-
-    const code = await service.generate('COFFEE' as any);
-    expect(code).toBe(`CAF-${year}-0010`);
-  });
-
-  it('busca apenas códigos com o prefixo correto do produto+ano', async () => {
-    const year = new Date().getFullYear();
-    await service.generate('COFFEE' as any);
-
-    expect(batchFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { code: { startsWith: `CAF-${year}-` } },
-      }),
+    await expect(service.generate(new Date('2026-01-01'))).resolves.toBe(
+      'AGP-2026-0004',
     );
+  });
+
+  it('ignora sufixos que nao sejam numericos', async () => {
+    batchFindMany.mockResolvedValue([{ code: 'AGP-2026-INVALIDO' }]);
+
+    await expect(service.generate(new Date('2026-01-01'))).resolves.toBe(
+      'AGP-2026-0001',
+    );
+  });
+
+  it('mantem a sequencia com quatro digitos', async () => {
+    batchFindMany.mockResolvedValue([{ code: 'AGP-2026-0009' }]);
+
+    await expect(service.generate(new Date('2026-01-01'))).resolves.toBe(
+      'AGP-2026-0010',
+    );
+  });
+
+  it('consulta somente codigos do ano solicitado', async () => {
+    await service.generate(new Date('2026-01-01'));
+
+    expect(batchFindMany).toHaveBeenCalledWith({
+      where: { code: { startsWith: 'AGP-2026-' } },
+      select: { code: true },
+    });
   });
 });

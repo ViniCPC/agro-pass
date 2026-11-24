@@ -1,16 +1,20 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ValidationStatus } from '../../generated/prisma/enums';
+import { BatchStatus, TraceEventType } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import type { AuthUser } from '../auth/auth-user.type';
+import { EventChainService } from '../event-chain/event-chain.service';
+import { BatchAuthorizationService } from './batch-authorization.service';
 import { BatchCodeService } from './batch-code.service';
+import { BatchLifecycleService } from './batch-lifecycle.service';
 import { BatchDto } from './dto/batch.dto';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { ListBatchesResponseDto } from './dto/list-batches-response.dto';
 import { UpdateBatchStatusDto } from './dto/update-batch-status.dto';
+import { UpdateBatchVisibilityDto } from './dto/update-batch-visibility.dto';
 
 const MAX_CODE_GENERATION_ATTEMPTS = 3;
 
@@ -19,48 +23,62 @@ export class BatchesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly batchCodeService: BatchCodeService,
+    private readonly lifecycle: BatchLifecycleService,
+    private readonly authorization: BatchAuthorizationService,
+    private readonly eventChain: EventChainService,
   ) {}
 
-  async create(dto: CreateBatchDto): Promise<BatchDto> {
+  async create(dto: CreateBatchDto, user: AuthUser): Promise<BatchDto> {
     const farm = await this.findFarmOrThrow(dto.farmId);
-
-    if (farm.lastValidationStatus !== ValidationStatus.COMPLIANT) {
-      throw new BadRequestException(
-        'Esta fazenda ainda nao possui validacao EUDR aprovada para criacao de lote.',
-      );
-    }
-
+    this.authorization.assertCanCreate(farm.producerId, user);
     const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : undefined;
 
     for (let attempt = 1; attempt <= MAX_CODE_GENERATION_ATTEMPTS; attempt++) {
-      const code = await this.batchCodeService.generate(
-        dto.productType,
-        harvestDate,
-      );
+      const code = await this.batchCodeService.generate(harvestDate);
+      const createdAt = new Date();
 
       try {
-        const batch = await this.prisma.batch.create({
-          data: {
-            code,
-            productType: dto.productType,
-            quantity: dto.quantity,
-            unit: dto.unit.trim(),
-            harvestDate: harvestDate ?? null,
-            farmId: dto.farmId,
-          },
-          include: { farm: true },
+        const batch = await this.prisma.$transaction(async (transaction) => {
+          const created = await transaction.batch.create({
+            data: {
+              code,
+              publicCode: code,
+              productType: dto.productType,
+              quantity: dto.quantity,
+              unit: dto.unit.trim(),
+              harvestDate: harvestDate ?? null,
+              farmId: dto.farmId,
+              createdAt,
+            },
+          });
+
+          await this.eventChain.appendInTransaction(transaction, {
+            batchId: created.id,
+            type: TraceEventType.CREATED,
+            recordedById: user.sub,
+            recordedAt: createdAt,
+            location: `${farm.city}, ${farm.state}`,
+            latitude: farm.latitude,
+            longitude: farm.longitude,
+          });
+
+          return transaction.batch.findUniqueOrThrow({
+            where: { id: created.id },
+            include: { farm: true },
+          });
         });
 
         return BatchDto.fromModel(batch);
       } catch (error) {
-        if (
-          attempt < MAX_CODE_GENERATION_ATTEMPTS &&
-          this.isUniqueConstraintError(error)
-        ) {
-          continue;
+        if (!this.isUniqueConstraintError(error)) {
+          throw error;
         }
 
-        throw error;
+        if (attempt === MAX_CODE_GENERATION_ATTEMPTS) {
+          throw new ConflictException(
+            'Nao foi possivel gerar um codigo unico para o lote.',
+          );
+        }
       }
     }
 
@@ -106,30 +124,107 @@ export class BatchesService {
     return BatchDto.fromModel(batch);
   }
 
-  async updateStatus(id: string, dto: UpdateBatchStatusDto): Promise<BatchDto> {
+  async updateStatus(
+    id: string,
+    dto: UpdateBatchStatusDto,
+    user: AuthUser,
+  ): Promise<BatchDto> {
+    return this.transitionTo(id, dto.status, user);
+  }
+
+  async cancel(id: string, user: AuthUser): Promise<BatchDto> {
+    return this.transitionTo(id, BatchStatus.CANCELLED, user);
+  }
+
+  async close(id: string, user: AuthUser): Promise<BatchDto> {
+    return this.transitionTo(id, BatchStatus.CLOSED, user);
+  }
+
+  async updateVisibility(
+    id: string,
+    dto: UpdateBatchVisibilityDto,
+  ): Promise<BatchDto> {
     await this.findBatchOrThrow(id);
 
     const updated = await this.prisma.batch.update({
       where: { id },
-      data: { status: dto.status },
+      data: { isPublic: dto.isPublic },
       include: { farm: true },
     });
 
     return BatchDto.fromModel(updated);
   }
 
-  async remove(id: string): Promise<void> {
-    await this.findBatchOrThrow(id);
-    await this.prisma.batch.delete({ where: { id } });
+  async getAllowedTransitions(id: string) {
+    const batch = await this.findBatchOrThrow(id);
+
+    return {
+      currentStatus: batch.status,
+      allowedTransitions: this.lifecycle.getAllowedTransitions(batch.status),
+    };
   }
 
-  private async findFarmOrThrow(farmId: string): Promise<{
-    id: string;
-    lastValidationStatus: ValidationStatus | null;
-  }> {
+  private async transitionTo(
+    id: string,
+    nextStatus: BatchStatus,
+    user: AuthUser,
+  ): Promise<BatchDto> {
+    const updated = await this.prisma.$transaction(async (transaction) => {
+      await this.eventChain.lockBatch(transaction, id);
+      const batch = await transaction.batch.findUniqueOrThrow({
+        where: { id },
+        select: {
+          id: true,
+          status: true,
+          farm: {
+            select: {
+              producerId: true,
+              producer: { select: { cooperativeId: true } },
+            },
+          },
+        },
+      });
+
+      this.lifecycle.assertCanTransition(batch.status, nextStatus);
+      this.authorization.assertCanTransition(batch, nextStatus, user);
+
+      const changedAt = new Date();
+      await transaction.batch.update({
+        where: { id },
+        data: {
+          status: nextStatus,
+          closedAt: nextStatus === BatchStatus.CLOSED ? changedAt : undefined,
+        },
+      });
+
+      await this.eventChain.appendInTransaction(transaction, {
+        batchId: id,
+        type: nextStatus,
+        recordedById: user.sub,
+        recordedAt: changedAt,
+      });
+
+      return transaction.batch.findUniqueOrThrow({
+        where: { id },
+        include: { farm: true },
+      });
+    });
+
+    return BatchDto.fromModel(updated);
+  }
+
+  private async findFarmOrThrow(farmId: string) {
     const farm = await this.prisma.farm.findUnique({
       where: { id: farmId },
-      select: { id: true, lastValidationStatus: true },
+      select: {
+        id: true,
+        city: true,
+        state: true,
+        latitude: true,
+        longitude: true,
+        producerId: true,
+        producer: { select: { name: true, cooperativeId: true } },
+      },
     });
 
     if (!farm) {
@@ -139,15 +234,27 @@ export class BatchesService {
     return farm;
   }
 
-  private async findBatchOrThrow(id: string): Promise<void> {
+  private async findBatchOrThrow(id: string) {
     const batch = await this.prisma.batch.findUnique({
       where: { id },
-      select: { id: true },
+      select: {
+        id: true,
+        status: true,
+        integrityHash: true,
+        farm: {
+          select: {
+            producerId: true,
+            producer: { select: { cooperativeId: true } },
+          },
+        },
+      },
     });
 
     if (!batch) {
       throw new NotFoundException('Lote nao encontrado.');
     }
+
+    return batch;
   }
 
   private isUniqueConstraintError(error: unknown): boolean {

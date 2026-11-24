@@ -1,16 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
+import { UserRole } from '../../generated/prisma/enums';
+import type { AuthUser } from '../auth/auth-user.type';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFarmDto } from './dto/create-farm.dto';
 import { FarmDto } from './dto/farm.dto';
 import { ListFarmsResponseDto } from './dto/list-farms-response.dto';
-import { UpdateFarmStatusDto } from './dto/update-farm-status.dto';
 
 @Injectable()
 export class FarmsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createFarmDto: CreateFarmDto): Promise<FarmDto> {
+  async create(createFarmDto: CreateFarmDto, user: AuthUser): Promise<FarmDto> {
+    if (
+      user.role !== UserRole.ADMIN &&
+      user.producerId !== createFarmDto.producerId
+    ) {
+      throw new ForbiddenException(
+        'Produtor so pode cadastrar propriedades para a propria conta.',
+      );
+    }
+
     const farm = await this.prisma.farm.create({
       data: {
         name: createFarmDto.name.trim(),
@@ -20,13 +30,7 @@ export class FarmsService {
         longitude: createFarmDto.longitude,
         carNumber: createFarmDto.carNumber?.trim() || null,
         polygonGeoJson: this.toNullableJsonInput(createFarmDto.polygonGeoJson),
-        carRawJson: this.toNullableJsonInput(createFarmDto.carRawJson),
         totalAreaHa: createFarmDto.totalAreaHa ?? null,
-        legalReserveAreaHa: createFarmDto.legalReserveAreaHa ?? null,
-        appAreaHa: createFarmDto.appAreaHa ?? null,
-        consolidatedAreaHa: createFarmDto.consolidatedAreaHa ?? null,
-        biome: createFarmDto.biome ?? null,
-        isAmazonLegal: createFarmDto.isAmazonLegal ?? false,
         producerId: createFarmDto.producerId,
       },
     });
@@ -70,21 +74,6 @@ export class FarmsService {
       producerName: farm.producer.name,
       cooperativeName: farm.producer.cooperative?.name ?? null,
     });
-  }
-
-  async updateStatus(id: string, dto: UpdateFarmStatusDto): Promise<FarmDto> {
-    const farm = await this.prisma.farm.findUnique({ where: { id } });
-
-    if (!farm) {
-      throw new NotFoundException('Fazenda não encontrada.');
-    }
-
-    const updated = await this.prisma.farm.update({
-      where: { id: farm.id },
-      data: { status: dto.status },
-    });
-
-    return FarmDto.fromModel(updated);
   }
 
   private toNullableJsonInput(value: object | null | undefined) {

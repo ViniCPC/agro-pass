@@ -14,4 +14,4 @@ RUN mkdir -p uploads
 EXPOSE 3000
 
 # Roda migrations pendentes antes de iniciar o servidor
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]

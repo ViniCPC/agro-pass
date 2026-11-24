@@ -11,9 +11,8 @@ export class QrPdfService {
   async generateBatchQrPdf(input: {
     batchCode: string;
     publicTraceUrl: string;
-    evidenceHash?: string;
-    cnftAddress?: string;
-    mintTxHash?: string;
+    integrityHash?: string;
+    tokenAddress?: string;
   }) {
     const outputDir = this.resolveOutputDir();
     fs.mkdirSync(outputDir, { recursive: true });
@@ -34,16 +33,12 @@ export class QrPdfService {
       doc.fontSize(14).text(`Código do lote: ${input.batchCode}`);
       doc.text(`Link público: ${input.publicTraceUrl}`);
 
-      if (input.evidenceHash) {
-        doc.text(`Hash de evidência: ${input.evidenceHash}`);
+      if (input.integrityHash) {
+        doc.text(`Hash de integridade: ${input.integrityHash}`);
       }
 
-      if (input.cnftAddress) {
-        doc.text(`Endereço cNFT: ${input.cnftAddress}`);
-      }
-
-      if (input.mintTxHash) {
-        doc.text(`TX Solana: ${input.mintTxHash}`);
+      if (input.tokenAddress) {
+        doc.text(`Endereço do token: ${input.tokenAddress}`);
       }
 
       doc.moveDown();

@@ -1,28 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import type { ProductType } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
-
-const CODE_PREFIX: Record<ProductType, string> = {
-  COFFEE: 'CAF',
-  SOY: 'SOJ',
-  CATTLE: 'GAD',
-  COCOA: 'CAC',
-  PALM_OIL: 'PAL',
-  RUBBER: 'BOR',
-  WOOD: 'MAD',
-};
 
 @Injectable()
 export class BatchCodeService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async generate(
-    productType: ProductType,
-    harvestDate?: Date,
-  ): Promise<string> {
-    const prefix = CODE_PREFIX[productType];
-    const year = (harvestDate ?? new Date()).getFullYear();
-    const codePrefix = `${prefix}-${year}-`;
+  async generate(harvestDate?: Date): Promise<string> {
+    const year = (harvestDate ?? new Date()).getUTCFullYear();
+    const codePrefix = `AGP-${year}-`;
 
     const existingCodes = await this.prisma.batch.findMany({
       where: { code: { startsWith: codePrefix } },

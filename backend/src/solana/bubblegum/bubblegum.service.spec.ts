@@ -1,24 +1,37 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { BatchStatus } from '../../../generated/prisma/enums';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventChainService } from '../../event-chain/event-chain.service';
 import { BubblegumService } from './bubblegum.service';
 
-const MOCK_TX_BYTES = new Uint8Array([1, 2, 3, 4]);
 const MOCK_TX_HASH = 'mock-tx-hash-base58';
-const MOCK_CNFT_ADDRESS = 'mock-cnft-address';
+const MOCK_TOKEN_ADDRESS = 'mock-token-address';
+const AUTH_USER = {
+  sub: 'admin-uuid',
+  name: 'Admin',
+  email: 'admin@example.com',
+  role: 'ADMIN',
+  producerId: null,
+  cooperativeId: null,
+} as const;
 
 jest.mock('@metaplex-foundation/mpl-bubblegum', () => ({
+  TokenStandard: { NonFungible: 0 },
+  TokenProgramVersion: { Original: 0 },
+  mintV1: jest.fn(),
   mintV2: jest.fn().mockReturnValue({
-    sendAndConfirm: jest.fn().mockResolvedValue({ signature: new Uint8Array([1, 2, 3, 4]) }),
+    sendAndConfirm: jest.fn().mockResolvedValue({
+      signature: new Uint8Array([1, 2, 3, 4]),
+    }),
   }),
   parseLeafFromMintV2Transaction: jest.fn().mockResolvedValue({
-    id: { toString: () => MOCK_CNFT_ADDRESS },
+    id: { toString: () => MOCK_TOKEN_ADDRESS },
   }),
 }));
 
 jest.mock('@metaplex-foundation/umi', () => ({
-  publicKey: jest.fn((v: string) => v),
-  none: jest.fn(() => null),
+  publicKey: jest.fn((value: string) => value),
 }));
 
 jest.mock('bs58', () => ({
@@ -35,13 +48,15 @@ jest.mock('../umi.client', () => ({
 function makeBatch(overrides: Record<string, unknown> = {}) {
   return {
     id: 'batch-uuid',
-    code: 'CAF-2026-0001',
-    cnftAddress: null,
-    mintTxHash: null,
+    code: 'AGP-2026-0001',
+    publicCode: 'AGP-2026-0001',
+    status: BatchStatus.CREATED,
+    tokenAddress: null,
+    tokenizedAt: null,
     farm: {
       id: 'farm-uuid',
-      name: 'Fazenda Test',
-      producer: { id: 'producer-uuid', name: 'João' },
+      name: 'Fazenda Teste',
+      producer: { id: 'producer-uuid', name: 'Joao' },
     },
     ...overrides,
   };
@@ -51,25 +66,38 @@ describe('BubblegumService', () => {
   let service: BubblegumService;
   let batchFindUnique: jest.Mock;
   let batchUpdate: jest.Mock;
-
-  const ENV_VARS = {
-    SOLANA_RPC_URL: 'https://api.devnet.solana.com',
-    SOLANA_TREASURY_KEYPAIR_PATH: '/path/to/keypair.json',
-    SOLANA_MERKLE_TREE: 'TreeAddress123',
-  };
+  let batchFindUniqueOrThrow: jest.Mock;
+  let appendEvent: jest.Mock;
 
   beforeEach(async () => {
     batchFindUnique = jest.fn();
     batchUpdate = jest.fn();
-
-    Object.entries(ENV_VARS).forEach(([k, v]) => { process.env[k] = v; });
+    batchFindUniqueOrThrow = jest.fn();
+    appendEvent = jest.fn();
+    process.env.SOLANA_RPC_URL = 'https://api.devnet.solana.com';
+    process.env.SOLANA_TREASURY_KEYPAIR_PATH = '/path/keypair.json';
+    process.env.SOLANA_MERKLE_TREE = 'TreeAddress123';
 
     const module = await Test.createTestingModule({
       providers: [
         BubblegumService,
         {
           provide: PrismaService,
-          useValue: { batch: { findUnique: batchFindUnique, update: batchUpdate } },
+          useValue: {
+            batch: { findUnique: batchFindUnique, update: batchUpdate },
+            $transaction: jest.fn((callback) =>
+              callback({
+                batch: {
+                  update: batchUpdate,
+                  findUniqueOrThrow: batchFindUniqueOrThrow,
+                },
+              }),
+            ),
+          },
+        },
+        {
+          provide: EventChainService,
+          useValue: { lockBatch: jest.fn(), appendInTransaction: appendEvent },
         },
       ],
     }).compile();
@@ -78,102 +106,71 @@ describe('BubblegumService', () => {
   });
 
   afterEach(() => {
-    Object.keys(ENV_VARS).forEach((k) => delete process.env[k]);
-  });
-
-  // ─── guard clauses ────────────────────────────────────────────────────────
-
-  it('lança NotFoundException quando o lote não existe', async () => {
-    batchFindUnique.mockResolvedValue(null);
-
-    await expect(service.mintBatchCnft('x')).rejects.toThrow(NotFoundException);
-  });
-
-  it('lança BadRequestException quando lote já foi mintado (cnftAddress)', async () => {
-    batchFindUnique.mockResolvedValue(makeBatch({ cnftAddress: 'existing-address' }));
-
-    await expect(service.mintBatchCnft('batch-uuid')).rejects.toThrow(BadRequestException);
-  });
-
-  it('lança BadRequestException quando lote já foi mintado (mintTxHash)', async () => {
-    batchFindUnique.mockResolvedValue(makeBatch({ mintTxHash: 'existing-tx' }));
-
-    await expect(service.mintBatchCnft('batch-uuid')).rejects.toThrow(BadRequestException);
-  });
-
-  it('lança BadRequestException quando SOLANA_RPC_URL não está configurado', async () => {
     delete process.env.SOLANA_RPC_URL;
-    batchFindUnique.mockResolvedValue(makeBatch());
-
-    await expect(service.mintBatchCnft('batch-uuid')).rejects.toThrow(BadRequestException);
-  });
-
-  it('lança BadRequestException quando SOLANA_MERKLE_TREE não está configurado', async () => {
+    delete process.env.SOLANA_TREASURY_KEYPAIR_PATH;
     delete process.env.SOLANA_MERKLE_TREE;
-    batchFindUnique.mockResolvedValue(makeBatch());
-
-    await expect(service.mintBatchCnft('batch-uuid')).rejects.toThrow(BadRequestException);
-  });
-
-  it('lança BadRequestException quando SOLANA_MERKLE_TREE é o valor placeholder', async () => {
-    process.env.SOLANA_MERKLE_TREE = 'ENDERECO_DA_TREE_AQUI';
-    batchFindUnique.mockResolvedValue(makeBatch());
-
-    await expect(service.mintBatchCnft('batch-uuid')).rejects.toThrow(BadRequestException);
-  });
-
-  // ─── happy path ───────────────────────────────────────────────────────────
-
-  it('retorna resultado com batchId, batchCode, cnftAddress e mintTxHash', async () => {
-    batchFindUnique.mockResolvedValue(makeBatch());
-    batchUpdate.mockResolvedValue({
-      id: 'batch-uuid',
-      code: 'CAF-2026-0001',
-      cnftAddress: MOCK_CNFT_ADDRESS,
-      metadataUri: 'https://mock/metadata.json',
-      mintTxHash: MOCK_TX_HASH,
-      merkleTree: 'TreeAddress123',
-    });
-
-    const result = await service.mintBatchCnft('batch-uuid');
-
-    expect(result.batchId).toBe('batch-uuid');
-    expect(result.batchCode).toBe('CAF-2026-0001');
-    expect(result.mintTxHash).toBe(MOCK_TX_HASH);
-    expect(result.merkleTree).toBe('TreeAddress123');
-  });
-
-  it('persiste cnftAddress, metadataUri, mintTxHash e merkleTree no banco', async () => {
-    batchFindUnique.mockResolvedValue(makeBatch());
-    batchUpdate.mockResolvedValue({ id: 'batch-uuid', code: 'CAF-2026-0001' });
-
-    await service.mintBatchCnft('batch-uuid');
-
-    expect(batchUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'batch-uuid' },
-        data: expect.objectContaining({
-          mintTxHash: MOCK_TX_HASH,
-          merkleTree: 'TreeAddress123',
-        }),
-      }),
-    );
-  });
-
-  it('usa PUBLIC_BACKEND_URL na metadataUri quando configurado', async () => {
-    process.env.PUBLIC_BACKEND_URL = 'https://api.agropass.com.br';
-    batchFindUnique.mockResolvedValue(makeBatch());
-    batchUpdate.mockResolvedValue({ id: 'batch-uuid', code: 'CAF-2026-0001' });
-
-    await service.mintBatchCnft('batch-uuid');
-
-    expect(batchUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          metadataUri: 'https://api.agropass.com.br/public/batches/CAF-2026-0001/metadata.json',
-        }),
-      }),
-    );
     delete process.env.PUBLIC_BACKEND_URL;
+  });
+
+  it('rejeita lote inexistente', async () => {
+    batchFindUnique.mockResolvedValue(null);
+    await expect(
+      service.mintBatchCnft('x', AUTH_USER as never),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it.each([BatchStatus.CLOSED, BatchStatus.CANCELLED])(
+    'rejeita tokenizacao de lote %s',
+    async (status) => {
+      batchFindUnique.mockResolvedValue(makeBatch({ status }));
+      await expect(
+        service.mintBatchCnft('batch-uuid', AUTH_USER as never),
+      ).rejects.toThrow(BadRequestException);
+    },
+  );
+
+  it('rejeita lote ja tokenizado', async () => {
+    batchFindUnique.mockResolvedValue(
+      makeBatch({ tokenAddress: 'existing-token' }),
+    );
+    await expect(
+      service.mintBatchCnft('batch-uuid', AUTH_USER as never),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('persiste token e registra o evento on-chain', async () => {
+    batchFindUnique.mockResolvedValue(makeBatch());
+    batchUpdate.mockResolvedValue(
+      makeBatch({ tokenAddress: MOCK_TOKEN_ADDRESS, tokenizedAt: new Date() }),
+    );
+    batchFindUniqueOrThrow.mockResolvedValue(
+      makeBatch({ tokenAddress: MOCK_TOKEN_ADDRESS, tokenizedAt: new Date() }),
+    );
+
+    const result = await service.mintBatchCnft(
+      'batch-uuid',
+      AUTH_USER as never,
+    );
+
+    expect(result.tokenAddress).toBe(MOCK_TOKEN_ADDRESS);
+    expect(result.metadataUri).toContain(
+      '/public/batches/AGP-2026-0001/metadata.json',
+    );
+    expect(batchUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tokenAddress: MOCK_TOKEN_ADDRESS,
+          tokenizedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(appendEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        type: 'MINTED_ONCHAIN',
+        txHash: MOCK_TX_HASH,
+        recordedById: 'admin-uuid',
+      }),
+    );
   });
 });

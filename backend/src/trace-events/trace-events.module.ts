@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
+import { BatchesModule } from '../batches/batches.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { EventChainModule } from '../event-chain/event-chain.module';
 import { TraceEventsController } from './trace-events.controller';
 import { TraceEventsService } from './trace-events.service';
-import { EventHashService } from './event-hash.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, EventChainModule, BatchesModule],
   controllers: [TraceEventsController],
-  providers: [TraceEventsService, EventHashService],
+  providers: [TraceEventsService],
   exports: [TraceEventsService],
 })
 export class TraceEventsModule {}

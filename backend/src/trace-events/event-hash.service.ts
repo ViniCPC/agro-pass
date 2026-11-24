@@ -2,17 +2,20 @@ import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import type { TraceEventType } from '../../generated/prisma/enums';
 
-interface EventHashInput {
+export interface EventHashInput {
   batchId: string;
+  sequence: number;
   type: TraceEventType;
-  actorName: string;
+  recordedById: string;
+  recordedAt: Date;
   location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
-  cooperativeId?: string | null;
-  exporterId?: string | null;
-  customStageName?: string | null;
-  createdAt: Date;
+  notes?: string | null;
+  previousHash?: string | null;
+  documentHashes?: string[];
+  txHash?: string | null;
+  correctedEventId?: string | null;
 }
 
 @Injectable()
@@ -20,15 +23,18 @@ export class EventHashService {
   generate(input: EventHashInput): string {
     const payload = JSON.stringify({
       batchId: input.batchId,
+      sequence: input.sequence,
       type: input.type,
-      actorName: input.actorName,
+      recordedById: input.recordedById,
+      recordedAt: input.recordedAt.toISOString(),
       location: input.location ?? null,
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
-      cooperativeId: input.cooperativeId ?? null,
-      exporterId: input.exporterId ?? null,
-      customStageName: input.customStageName ?? null,
-      createdAt: input.createdAt.toISOString(),
+      notes: input.notes ?? null,
+      previousHash: input.previousHash ?? null,
+      documentHashes: [...(input.documentHashes ?? [])].sort(),
+      txHash: input.txHash ?? null,
+      correctedEventId: input.correctedEventId ?? null,
     });
 
     return createHash('sha256').update(payload).digest('hex');

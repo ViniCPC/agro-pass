@@ -1,7 +1,5 @@
 import { Type } from 'class-transformer';
 import {
-  IsBoolean,
-  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsObject,
@@ -12,7 +10,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Biome } from '../../../generated/prisma/enums';
 
 export class CreateFarmDto {
   @IsString()
@@ -50,37 +47,10 @@ export class CreateFarmDto {
   @IsOptional()
   polygonGeoJson?: object;
 
-  @IsObject()
-  @IsOptional()
-  carRawJson?: object;
-
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
   totalAreaHa?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  legalReserveAreaHa?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  appAreaHa?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  consolidatedAreaHa?: number;
-
-  @IsEnum(Biome)
-  @IsOptional()
-  biome?: Biome;
-
-  @IsBoolean()
-  @IsOptional()
-  isAmazonLegal?: boolean;
 
   @IsUUID()
   @IsNotEmpty()
