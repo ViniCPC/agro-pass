@@ -1,9 +1,21 @@
 import type { Batch, Farm } from '../../../generated/prisma/client';
+import { explorerAddressUrl, explorerTxUrl } from '../../blockchain/explorer';
 
 class FarmSummaryDto {
   name!: string;
   latitude!: number;
   longitude!: number;
+}
+
+class BlockchainProofDto {
+  status!: string;
+  network!: string | null;
+  proofHash!: string | null;
+  txHash!: string | null;
+  attempts!: number;
+  error!: string | null;
+  explorerTxUrl!: string | null;
+  explorerTokenUrl!: string | null;
 }
 
 export class BatchDto {
@@ -20,6 +32,7 @@ export class BatchDto {
   tokenAddress!: string | null;
   tokenizedAt!: Date | null;
   closedAt!: Date | null;
+  blockchain!: BlockchainProofDto;
   farm!: FarmSummaryDto;
   createdAt!: Date;
   updatedAt!: Date;
@@ -39,6 +52,22 @@ export class BatchDto {
       tokenAddress: batch.tokenAddress,
       tokenizedAt: batch.tokenizedAt,
       closedAt: batch.closedAt,
+      blockchain: {
+        status: batch.tokenizationStatus,
+        network: batch.blockchainNetwork,
+        proofHash: batch.proofHash,
+        txHash: batch.tokenTxHash,
+        attempts: batch.tokenizationAttempts,
+        error: batch.tokenizationError,
+        explorerTxUrl: explorerTxUrl(
+          batch.blockchainNetwork,
+          batch.tokenTxHash,
+        ),
+        explorerTokenUrl: explorerAddressUrl(
+          batch.blockchainNetwork,
+          batch.tokenAddress,
+        ),
+      },
       farm: {
         name: batch.farm.name,
         latitude: batch.farm.latitude,

@@ -133,9 +133,20 @@ model Batch {
   publicCode    String    @unique
   isPublic      Boolean   @default(false)
   integrityHash String?
-  tokenAddress  String?
-  tokenizedAt   DateTime?
   closedAt      DateTime?
+
+  // Blockchain proof: one cNFT per batch, minted after closing, carrying the
+  // final chain hash. Kept on the batch (not as an event) because a closed
+  // chain is immutable.
+  tokenizationStatus    TokenizationStatus @default(NONE)
+  tokenizationAttempts  Int                @default(0)
+  tokenizationStartedAt DateTime?
+  tokenizationError     String?
+  proofHash             String?
+  tokenAddress          String?
+  tokenTxHash           String?            @unique
+  tokenizedAt           DateTime?
+  blockchainNetwork     String?
 
   farmId String
   farm   Farm   @relation(fields: [farmId], references: [id])
@@ -240,6 +251,13 @@ enum BatchStatus {
   DELIVERED
   CLOSED
   CANCELLED
+}
+
+enum TokenizationStatus {
+  NONE
+  PENDING
+  CONFIRMED
+  FAILED
 }
 
 enum DocumentType {

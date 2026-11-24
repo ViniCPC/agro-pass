@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -17,7 +19,10 @@ import { UserRole } from '../../generated/prisma/enums';
 import type { AuthUser } from '../auth/auth-user.type';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { BubblegumService } from '../solana/bubblegum/bubblegum.service';
+import {
+  BatchTokenizationService,
+  type TokenizationResult,
+} from '../blockchain/batch-tokenization.service';
 import { BatchDocumentsService } from './batch-documents.service';
 import { BatchQrCodeService } from './batch-qrcode.service';
 import { BatchesService } from './batches.service';
@@ -37,7 +42,7 @@ export class BatchesController {
     private readonly batchesService: BatchesService,
     private readonly batchDocumentsService: BatchDocumentsService,
     private readonly batchQrCodeService: BatchQrCodeService,
-    private readonly bubblegumService: BubblegumService,
+    private readonly tokenization: BatchTokenizationService,
   ) {}
 
   @Post()
@@ -171,9 +176,15 @@ export class BatchesController {
     return this.batchesService.updateVisibility(id, dto);
   }
 
-  @Post(':id/mint')
+  // Closing a batch already registers its proof in the background; this
+  // endpoint retries after a failure. Idempotent: a confirmed batch returns
+  // its existing proof and is never minted twice.
+  @Post(':id/tokenize')
+  @HttpCode(HttpStatus.OK)
   @Roles(UserRole.ADMIN)
-  async mintBatch(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.bubblegumService.mintBatchCnft(id, user);
+  tokenize(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<TokenizationResult> {
+    return this.tokenization.tokenize(id);
   }
 }

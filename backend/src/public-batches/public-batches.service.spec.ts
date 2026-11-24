@@ -31,8 +31,12 @@ function makeBatch() {
     harvestDate: null,
     status: 'HARVESTED',
     integrityHash: 'hash-2',
+    tokenizationStatus: 'NONE',
+    proofHash: null,
     tokenAddress: null,
+    tokenTxHash: null,
     tokenizedAt: null,
+    blockchainNetwork: null,
     closedAt: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -171,8 +175,14 @@ describe('PublicBatchesService', () => {
       integrityHash: 'hash-2',
     });
     expect(result.blockchain).toEqual({
+      status: 'NONE',
+      network: null,
+      proofHash: null,
       tokenAddress: null,
+      txHash: null,
       tokenizedAt: null,
+      explorerTxUrl: null,
+      explorerTokenUrl: null,
     });
     expect(result.traceEvents).toHaveLength(2);
     expect(result.traceEvents[0].actor).toEqual({
@@ -237,5 +247,59 @@ describe('PublicBatchesService', () => {
     expect(attachment.notes).toBeNull();
     expect(attachment.customStageName).toBeNull();
     expect(JSON.stringify(result)).not.toContain('cpf-12345678901');
+  });
+});
+
+describe('PublicBatchesService blockchain proof', () => {
+  it('exibe o hash ancorado e um link verificavel no explorer', async () => {
+    const proofHash = 'e'.repeat(64);
+    const module = await Test.createTestingModule({
+      providers: [
+        PublicBatchesService,
+        {
+          provide: PrismaService,
+          useValue: {
+            batch: {
+              findFirst: jest.fn().mockResolvedValue({
+                ...makeBatch(),
+                status: 'CLOSED',
+                integrityHash: proofHash,
+                tokenizationStatus: 'CONFIRMED',
+                proofHash,
+                tokenAddress: 'Asset111',
+                tokenTxHash: 'Tx111',
+                tokenizedAt: new Date('2026-02-01T00:00:00Z'),
+                blockchainNetwork: 'devnet',
+              }),
+            },
+            document: { findMany: jest.fn().mockResolvedValue([]) },
+          },
+        },
+        {
+          provide: EventChainService,
+          useValue: {
+            verify: jest.fn().mockResolvedValue({
+              valid: true,
+              eventCount: 2,
+              finalHash: proofHash,
+              errors: [],
+            }),
+          },
+        },
+      ],
+    }).compile();
+
+    const result = await module
+      .get(PublicBatchesService)
+      .findByCode('AGP-2026-0001');
+
+    expect(result.blockchain).toMatchObject({
+      status: 'CONFIRMED',
+      proofHash,
+      explorerTxUrl: 'https://explorer.solana.com/tx/Tx111?cluster=devnet',
+      explorerTokenUrl:
+        'https://explorer.solana.com/address/Asset111?cluster=devnet',
+    });
+    expect(result.blockchain.proofHash).toBe(result.integrity.finalHash);
   });
 });

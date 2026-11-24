@@ -9,6 +9,8 @@ import { App } from 'supertest/types';
 import { BatchStatus, UserRole } from '../generated/prisma/enums';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { BLOCKCHAIN_PROOF_PROVIDER } from '../src/blockchain/blockchain-proof.provider';
+import type { LocalProofProvider } from '../src/blockchain/local-proof.provider';
 
 describe('Digital passport authentication and lifecycle (e2e)', () => {
   let app: INestApplication<App>;
@@ -32,6 +34,22 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
   const suffix = `${Date.now()}`;
   const password = 'SenhaForte@2026';
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+  const proofProvider = () =>
+    app.get<LocalProofProvider>(BLOCKCHAIN_PROOF_PROVIDER);
+
+  // Closing registers the proof in the background: poll until it settles.
+  async function waitForTokenization(status: string) {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const response = await request(app.getHttpServer())
+        .get(`/batches/${batchId}`)
+        .set(auth(adminToken))
+        .expect(200);
+      const batch = response.body as { blockchain: { status: string } };
+      if (batch.blockchain.status === status) return response.body;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error(`Tokenizacao nao chegou a ${status}`);
+  }
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -449,6 +467,11 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
         .expect(200);
     }
 
+    // Solana is down while the batch closes: closing must succeed anyway.
+    const outage = jest
+      .spyOn(proofProvider(), 'register')
+      .mockRejectedValue(new Error('Solana indisponivel (simulado)'));
+
     const closed = await request(app.getHttpServer())
       .patch(`/batches/${batchId}/close`)
       .set(auth(adminToken))
@@ -496,6 +519,69 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
     expect(serialized).not.toContain('recordedById');
     expect(serialized).not.toContain('@example.com');
     expect(serialized).not.toContain(`producer-${suffix}`);
+
+    // The failed proof is recorded on the batch, which stays closed and intact.
+    const failed = await waitForTokenization('FAILED');
+    expect(failed).toMatchObject({
+      status: BatchStatus.CLOSED,
+      tokenAddress: null,
+      blockchain: {
+        status: 'FAILED',
+        attempts: 3,
+        proofHash: null,
+        error: expect.stringContaining('Solana indisponivel'),
+      },
+    });
+    outage.mockRestore();
+
+    await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}/integrity`)
+      .expect(200)
+      .expect(({ body }) => expect(body).toMatchObject({ valid: true, eventCount: 9 }));
+  });
+
+  it('registra a prova uma unica vez, com o mesmo hash exibido no passaporte', async () => {
+    const register = jest.spyOn(proofProvider(), 'register');
+
+    await request(app.getHttpServer())
+      .post(`/batches/${batchId}/tokenize`)
+      .set(auth(producerToken))
+      .expect(403);
+
+    const { body: proof } = await request(app.getHttpServer())
+      .post(`/batches/${batchId}/tokenize`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(proof).toMatchObject({
+      status: 'CONFIRMED',
+      network: 'local',
+      txHash: expect.stringMatching(/^local-tx-/),
+      tokenAddress: expect.stringMatching(/^local-token-/),
+      tokenizedAt: expect.any(String),
+    });
+
+    // Retrying a confirmed batch returns the same proof and never mints again.
+    const { body: again } = await request(app.getHttpServer())
+      .post(`/batches/${batchId}/tokenize`)
+      .set(auth(adminToken))
+      .expect(200);
+    expect(again.txHash).toBe(proof.txHash);
+    expect(register).toHaveBeenCalledTimes(1);
+
+    const sentHash = register.mock.calls[0][0].chainHash;
+    const { body: passport } = await request(app.getHttpServer())
+      .get(`/public/batches/${publicCode}`)
+      .expect(200);
+    expect(passport.blockchain).toMatchObject({
+      status: 'CONFIRMED',
+      proofHash: sentHash,
+      txHash: proof.txHash,
+    });
+    expect(passport.integrity.finalHash).toBe(sentHash);
+    expect(passport.batch.integrityHash).toBe(sentHash);
+    // The proof lives on the batch: the closed chain gains no event.
+    expect(passport.traceEvents.at(-1).type).toBe('CLOSED');
+    register.mockRestore();
   });
 
   it('detecta adulteracao manual e nao oferece exclusao de eventos', async () => {

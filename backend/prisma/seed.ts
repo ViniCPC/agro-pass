@@ -5,6 +5,7 @@ import {
   BatchStatus,
   PrismaClient,
   ProductType,
+  TokenizationStatus,
   TraceEventType,
   UserRole,
 } from '../generated/prisma/client';
@@ -182,6 +183,17 @@ async function main() {
       isPublic: true,
       integrityHash: null,
       status: BatchStatus.RECEIVED,
+      closedAt: null,
+      // The chain is rebuilt below, so any previous proof no longer applies.
+      tokenizationStatus: TokenizationStatus.NONE,
+      tokenizationAttempts: 0,
+      tokenizationStartedAt: null,
+      tokenizationError: null,
+      proofHash: null,
+      tokenAddress: null,
+      tokenTxHash: null,
+      tokenizedAt: null,
+      blockchainNetwork: null,
     },
     create: {
       code: 'AGP-2026-0001',

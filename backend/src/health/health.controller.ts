@@ -12,7 +12,9 @@ export class HealthController {
   async check(@Res({ passthrough: true }) response: Response) {
     const result = await this.healthService.check();
 
-    if (result.status !== 'ok') {
+    // Only the database makes the API unavailable. Solana being down is
+    // reported as "degraded": passports keep working and proofs are retried.
+    if (result.services.database.status !== 'ok') {
       response.status(HttpStatus.SERVICE_UNAVAILABLE);
     }
 

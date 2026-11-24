@@ -3,6 +3,7 @@ import { TraceEventType } from '../../generated/prisma/enums';
 import type { DocumentType, UserRole } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventChainService } from '../event-chain/event-chain.service';
+import { explorerAddressUrl, explorerTxUrl } from '../blockchain/explorer';
 
 // Public coordinates keep ~1 km of precision: enough to show the region of
 // origin without pinpointing the producer's property.
@@ -154,8 +155,12 @@ export class PublicBatchesService {
         publicCode: true,
         isPublic: true,
         integrityHash: true,
+        tokenizationStatus: true,
+        proofHash: true,
         tokenAddress: true,
+        tokenTxHash: true,
         tokenizedAt: true,
+        blockchainNetwork: true,
         closedAt: true,
         createdAt: true,
         updatedAt: true,
@@ -242,9 +247,23 @@ export class PublicBatchesService {
         updatedAt: batch.updatedAt,
       },
 
+      // proofHash is the exact value anchored on-chain (it is also in the
+      // transaction memo), so the passport can compare it with the chain.
       blockchain: {
+        status: batch.tokenizationStatus,
+        network: batch.blockchainNetwork,
+        proofHash: batch.proofHash,
         tokenAddress: batch.tokenAddress,
+        txHash: batch.tokenTxHash,
         tokenizedAt: batch.tokenizedAt,
+        explorerTxUrl: explorerTxUrl(
+          batch.blockchainNetwork,
+          batch.tokenTxHash,
+        ),
+        explorerTokenUrl: explorerAddressUrl(
+          batch.blockchainNetwork,
+          batch.tokenAddress,
+        ),
       },
 
       farm: {

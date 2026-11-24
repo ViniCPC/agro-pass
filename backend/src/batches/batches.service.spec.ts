@@ -11,6 +11,7 @@ import { BatchCodeService } from './batch-code.service';
 import { BatchAuthorizationService } from './batch-authorization.service';
 import { BatchLifecycleService } from './batch-lifecycle.service';
 import { BatchesService } from './batches.service';
+import { BatchTokenizationService } from '../blockchain/batch-tokenization.service';
 
 const AUTH_USER = {
   sub: 'user-uuid',
@@ -69,6 +70,7 @@ describe('BatchesService', () => {
   let generateCode: jest.Mock;
   let appendEvent: jest.Mock;
   let lockBatch: jest.Mock;
+  let scheduleAfterClose: jest.Mock;
 
   beforeEach(async () => {
     farmFindUnique = jest.fn();
@@ -80,6 +82,7 @@ describe('BatchesService', () => {
     batchCount = jest.fn().mockResolvedValue(0);
     appendEvent = jest.fn();
     lockBatch = jest.fn();
+    scheduleAfterClose = jest.fn();
     transaction = jest.fn((input) =>
       typeof input === 'function'
         ? input({
@@ -124,6 +127,10 @@ describe('BatchesService', () => {
         {
           provide: EventChainService,
           useValue: { appendInTransaction: appendEvent, lockBatch },
+        },
+        {
+          provide: BatchTokenizationService,
+          useValue: { scheduleAfterClose },
         },
       ],
     }).compile();
@@ -367,6 +374,29 @@ describe('BatchesService', () => {
           }),
         }),
       );
+      // The proof is registered only once the closing has committed.
+      expect(scheduleAfterClose).toHaveBeenCalledWith('batch-uuid');
+      expect(scheduleAfterClose.mock.invocationCallOrder[0]).toBeGreaterThan(
+        transaction.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('nao registra prova ao avancar etapas intermediarias', async () => {
+      batchFindUniqueOrThrow
+        .mockResolvedValueOnce({
+          id: 'batch-uuid',
+          status: BatchStatus.CREATED,
+          farm: makeFarm(),
+        })
+        .mockResolvedValueOnce(makeBatch({ status: BatchStatus.HARVESTED }));
+
+      await service.updateStatus(
+        'batch-uuid',
+        { status: BatchStatus.HARVESTED },
+        AUTH_USER as never,
+      );
+
+      expect(scheduleAfterClose).not.toHaveBeenCalled();
     });
 
     it('nao reabre lote encerrado', async () => {

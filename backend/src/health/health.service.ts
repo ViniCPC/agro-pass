@@ -1,5 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Connection } from '@solana/web3.js';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { clusterApiUrl, Connection } from '@solana/web3.js';
+import {
+  BLOCKCHAIN_CONFIG,
+  isSolanaNetwork,
+  type BlockchainConfig,
+} from '../blockchain/blockchain.config';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_SOLANA_TIMEOUT_MS = 3_000;
@@ -31,7 +36,10 @@ export class HealthService {
   private solanaConnection: Connection | null = null;
   private solanaRpcUrl: string | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(BLOCKCHAIN_CONFIG) private readonly blockchain: BlockchainConfig,
+  ) {}
 
   async check(): Promise<HealthCheckResult> {
     const startedAt = Date.now();
@@ -73,6 +81,17 @@ export class HealthService {
   }
 
   private async checkSolana(): Promise<ServiceHealth> {
+    if (!this.blockchain.enabled) {
+      return {
+        status: 'ok',
+        message: 'BLOCKCHAIN_ENABLED=false (check ignorado)',
+      };
+    }
+
+    if (this.blockchain.provider === 'local') {
+      return { status: 'ok', message: 'Provider local (sem rede)' };
+    }
+
     if (!this.isSolanaHealthCheckEnabled()) {
       return {
         status: 'ok',
@@ -80,12 +99,16 @@ export class HealthService {
       };
     }
 
-    const rpcUrl = process.env.SOLANA_RPC_URL;
+    const rpcUrl =
+      process.env.SOLANA_RPC_URL?.trim() ||
+      (isSolanaNetwork(this.blockchain.network)
+        ? clusterApiUrl(this.blockchain.network)
+        : null);
 
     if (!rpcUrl) {
       return {
         status: 'error',
-        message: 'SOLANA_RPC_URL is not configured',
+        message: `BLOCKCHAIN_NETWORK invalida: ${this.blockchain.network}`,
       };
     }
 

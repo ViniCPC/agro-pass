@@ -7,6 +7,7 @@ import { BatchStatus, TraceEventType } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthUser } from '../auth/auth-user.type';
 import { EventChainService } from '../event-chain/event-chain.service';
+import { BatchTokenizationService } from '../blockchain/batch-tokenization.service';
 import { BatchAuthorizationService } from './batch-authorization.service';
 import { BatchCodeService } from './batch-code.service';
 import { BatchLifecycleService } from './batch-lifecycle.service';
@@ -26,6 +27,7 @@ export class BatchesService {
     private readonly lifecycle: BatchLifecycleService,
     private readonly authorization: BatchAuthorizationService,
     private readonly eventChain: EventChainService,
+    private readonly tokenization: BatchTokenizationService,
   ) {}
 
   async create(dto: CreateBatchDto, user: AuthUser): Promise<BatchDto> {
@@ -209,6 +211,12 @@ export class BatchesService {
         include: { farm: true },
       });
     });
+
+    // Only after the closing transaction has committed: the on-chain proof is
+    // registered in the background and can never roll the closing back.
+    if (nextStatus === BatchStatus.CLOSED) {
+      this.tokenization.scheduleAfterClose(id);
+    }
 
     return BatchDto.fromModel(updated);
   }

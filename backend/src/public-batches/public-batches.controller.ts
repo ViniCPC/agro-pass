@@ -73,6 +73,12 @@ export class PublicBatchesController {
           trait_type: 'Producer',
           value: batch.farm.producer.name,
         },
+        {
+          // Closed batches anchor this hash; before the proof is confirmed
+          // it equals the current final chain hash.
+          trait_type: 'Chain Hash',
+          value: batch.proofHash ?? batch.integrityHash ?? '',
+        },
       ],
       properties: {
         category: 'image',

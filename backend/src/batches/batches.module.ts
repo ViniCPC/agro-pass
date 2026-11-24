@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
-import { SolanaModule } from '../solana/solana.module';
+import { BlockchainModule } from '../blockchain/blockchain.module';
 import { EventChainModule } from '../event-chain/event-chain.module';
 import { StorageModule } from '../storage/storage.module';
 import { BatchCodeService } from './batch-code.service';
@@ -12,7 +12,7 @@ import { BatchesController } from './batches.controller';
 import { BatchesService } from './batches.service';
 
 @Module({
-  imports: [PrismaModule, EventChainModule, StorageModule, SolanaModule],
+  imports: [PrismaModule, EventChainModule, StorageModule, BlockchainModule],
   controllers: [BatchesController],
   providers: [
     BatchesService,

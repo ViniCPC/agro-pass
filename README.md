@@ -82,13 +82,18 @@ PUBLIC_APP_URL=http://localhost:5173
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-Para habilitar a Solana devnet:
+A prova em blockchain vem desligada (`BLOCKCHAIN_ENABLED=false`) e a API funciona por completo sem ela. Para registrar provas na Solana devnet:
 
 ```env
+BLOCKCHAIN_ENABLED=true
+BLOCKCHAIN_NETWORK=devnet
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_TREASURY_KEYPAIR_PATH=./keys/treasury-devnet.json
 SOLANA_MERKLE_TREE=
+PUBLIC_BACKEND_URL=https://api.seudominio.com
 ```
+
+Para desenvolver sem rede, use `BLOCKCHAIN_PROVIDER=local`: as provas ficam em memória e os testes e2e sempre usam esse provider.
 
 No frontend, copie `frontend/.env.example` para `frontend/.env.local`. `VITE_API_URL` aponta para a API (padrão `http://localhost:3000`) e `VITE_PUBLIC_APP_URL` define o domínio gravado nos QR Codes.
 
@@ -145,7 +150,7 @@ Usuários produtores informam um `producerId`; cooperativas informam um `coopera
 | `POST` | `/batches/:id/events` | Registrar uma correção auditável (`CORRECTION`) |
 | `POST` | `/batches/:id/qrcode` | Gerar QR Code do código público (data URL, sem gravar em disco) |
 | `GET` | `/batches/:id/qrcode/print-sheet?copies=4\|8\|16` | Folha PDF de etiquetas |
-| `POST` | `/batches/:id/mint` | Tokenizar o passaporte |
+| `POST` | `/batches/:id/tokenize` | Repetir o registro da prova de um lote encerrado (idempotente, admin) |
 | `GET` | `/public/batches/:publicCode` | Consultar passaporte público sem login |
 | `GET` | `/public/batches/:publicCode/integrity` | Verificar a cadeia de um passaporte público sem login |
 
@@ -163,6 +168,16 @@ No detalhe do lote, o QR, o PNG e a folha PDF (4, 8 ou 16 etiquetas, com pré-vi
 - O host estático precisa devolver `index.html` em qualquer rota. `frontend/public/_redirects` (Netlify, Cloudflare Pages) e `frontend/vercel.json` (Vercel) já fazem isso; em outro host, configure o equivalente.
 
 Para testar o QR no celular durante o desenvolvimento, rode `npm run dev:lan` no frontend e abra o app pelo IP da máquina. Um QR que aponta para `localhost` só abre no próprio computador, e a tela avisa quando isso acontece.
+
+### Prova em blockchain
+
+Cada lote tem um único cNFT, que funciona como seu passaporte on-chain. Os eventos ficam no PostgreSQL, cada um com seu hash. Ao **encerrar** o lote, a API registra na Solana o hash final da cadeia: o cNFT é mintado com um memo `agropass:v1:<código público>:<hash>` na mesma transação. O hash fica legível no Solana Explorer e o passaporte mostra o mesmo valor, comparado com o hash final da cadeia.
+
+- **Não altera o lote.** O registro acontece em segundo plano depois do encerramento. A prova é gravada no lote (rede, hash, endereço, transação e horário), nunca como evento novo, porque a cadeia encerrada é imutável. Uma falha da Solana marca a prova como `FAILED`, e o lote continua encerrado e íntegro.
+- **Nunca minta duas vezes.** Um claim atômico no banco garante um único registro por vez. Um lote `CONFIRMED` devolve a prova existente. Antes de cada tentativa, o provider procura na rede um memo do lote, o que cobre uma queda entre o envio e a gravação.
+- **Retry.** São até `BLOCKCHAIN_MAX_ATTEMPTS` tentativas com backoff exponencial. Erros de configuração não são repetidos. Depois de uma falha, um admin repete pelo detalhe do lote ou por `POST /batches/:id/tokenize`.
+- **Integridade.** A API recusa ancorar uma cadeia que não passa na verificação de integridade.
+- **Provider plugável.** `BlockchainProofProvider` tem dois adaptadores: `SolanaProofProvider` (Bubblegum) e `LocalProofProvider` (em memória, para testes). Com a Solana fora do ar, `/health` responde `degraded` com status 200; só o banco gera 503.
 
 ### Modo demonstração
 
