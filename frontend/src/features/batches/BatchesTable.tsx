@@ -2,6 +2,7 @@ import { Package } from 'lucide-react'
 import { DataTable } from '@/components/DataTable'
 import { EmptyState } from '@/components/EmptyState'
 import type { Batch } from '@/types/api'
+import { formatHarvestDate } from '@/features/trace/trace.utils'
 import { BatchBlockchainCell } from './BatchBlockchainCell'
 import { BatchProductCell } from './BatchProductCell'
 import { BatchQrCell } from './BatchQrCell'
@@ -69,7 +70,7 @@ export function BatchesTable({ batches }: BatchesTableProps) {
             <BatchBlockchainCell proof={batch.blockchain} />
           </td>
           <td className={`${TD} text-xs tabular-nums text-[var(--color-ink-muted)]`}>
-            {batch.harvestDate ? formatDate(batch.harvestDate) : '-'}
+            {formatHarvestDate(batch.harvestDate)}
           </td>
           <td className={`${TD} text-xs tabular-nums text-[var(--color-ink-subtle)]`}>
             {formatDate(batch.createdAt)}

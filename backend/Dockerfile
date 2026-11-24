@@ -5,13 +5,13 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate
 RUN npm run build
 
-# Diretório para uploads em runtime (montado como volume em produção)
+# Uploaded documents. Mount a persistent disk here in production.
 RUN mkdir -p uploads
 
+ENV NODE_ENV=production
 EXPOSE 3000
 
-# Roda migrations pendentes antes de iniciar o servidor
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+# Applies migrations and adds missing demo fixtures without rewriting data.
+CMD ["sh", "-c", "npx prisma migrate deploy && if [ \"$SEED_DEMO\" = \"true\" ]; then npm run seed; fi && exec node dist/src/main.js"]

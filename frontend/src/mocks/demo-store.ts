@@ -1,28 +1,45 @@
 import type { CreateBatchInput } from '@/api/batchesApi'
+import { nextStatus } from '@/features/batches/lifecycle'
+import { sha256Hex } from '@/lib/sha256'
 import type {
   Batch,
   BatchBlockchainProof,
+  BatchStatus,
+  Farm,
   PublicBatch,
   PublicTraceEvent,
 } from '@/types/api'
 import { buildDemoChain, type DemoChain, type DemoEventSpec } from './demo-chain'
 import {
+  cooperativeActor,
+  DEMO_ADMIN_ACTOR,
   DEMO_CODE_PREFIX,
+  DEMO_LOGISTICS_ACTOR,
   DEMO_SEED,
   producerActor,
   type DemoBatch,
   type DemoBatchRecord,
+  type DemoProof,
 } from './demo-seed'
+import type { DemoActor } from './demo-chain'
 import { MOCK_FARMS } from './farms.mock'
 
 export { DEMO_SHOWCASE_CODE } from './demo-seed'
 
 const CREATED_BATCHES_KEY = 'agropass.demo.createdBatches'
+const PROGRESS_KEY = 'agropass.demo.progress'
 
-// Demo batches are created, not closed, so they never carry a proof.
 interface StoredDemoBatch {
   batch: DemoBatch
   farmId: string
+}
+
+// Stages, visibility and proof recorded during the demo, applied on top of
+// both the bundled and the created batches.
+interface DemoProgress {
+  stages: Array<{ status: BatchStatus; at: string }>
+  isPublic?: boolean
+  proof?: DemoProof
 }
 
 export function isDemoPublicCode(code: string) {
@@ -49,11 +66,66 @@ function writeStored(items: StoredDemoBatch[]) {
   }
 }
 
+function readProgress(): Record<string, DemoProgress> {
+  try {
+    const raw = window.localStorage.getItem(PROGRESS_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : {}
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, DemoProgress>) : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeProgress(progress: Record<string, DemoProgress>) {
+  try {
+    window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress))
+  } catch {
+    // Storage blocked: the change lasts until the page reloads.
+  }
+}
+
 export function clearDemoData() {
   try {
     window.localStorage.removeItem(CREATED_BATCHES_KEY)
+    window.localStorage.removeItem(PROGRESS_KEY)
   } catch {
     // Nothing persisted.
+  }
+}
+
+// Who records each stage, like the roles enforced by the API.
+function stageActor(status: BatchStatus, farm: Farm): DemoActor {
+  if (status === 'HARVESTED') return producerActor(farm)
+  if (status === 'RECEIVED' || status === 'PROCESSED') return cooperativeActor(farm)
+  if (status === 'IN_TRANSIT' || status === 'DELIVERED') return DEMO_LOGISTICS_ACTOR
+  return DEMO_ADMIN_ACTOR
+}
+
+function applyProgress(record: DemoBatchRecord, progress: DemoProgress | undefined): DemoBatchRecord {
+  if (!progress) return record
+  const last = progress.stages.at(-1)
+  const proof = progress.proof ?? record.proof
+
+  return {
+    ...record,
+    proof,
+    batch: {
+      ...record.batch,
+      status: last?.status ?? record.batch.status,
+      isPublic: progress.isPublic ?? record.batch.isPublic,
+      updatedAt: last?.at ?? record.batch.updatedAt,
+      closedAt: last?.status === 'CLOSED' ? last.at : record.batch.closedAt,
+      tokenAddress: proof?.tokenAddress ?? record.batch.tokenAddress,
+      tokenizedAt: proof?.at ?? record.batch.tokenizedAt,
+    },
+    events: [
+      ...record.events,
+      ...progress.stages.map((stage) => ({
+        type: stage.status,
+        actor: stageActor(stage.status, record.farm),
+        at: stage.at,
+      })),
+    ],
   }
 }
 
@@ -94,7 +166,10 @@ function allRecords(): DemoBatchRecord[] {
     .map(toRecord)
     .filter((record): record is DemoBatchRecord => record !== null)
     .reverse()
-  return [...created, ...DEMO_SEED]
+  const progress = readProgress()
+  return [...created, ...DEMO_SEED].map((record) =>
+    applyProgress(record, progress[record.batch.id]),
+  )
 }
 
 // Like the API: the anchored hash is the final hash of the closed chain.
@@ -241,4 +316,46 @@ export function createDemoBatch(input: CreateBatchInput): Batch {
   writeStored([...readStored(), stored])
   // If storage is blocked the batch only lives for this response.
   return findDemoBatch(id) ?? withIntegrity(toRecord(stored)!)
+}
+
+function updateProgress(batchId: string, change: (entry: DemoProgress) => void) {
+  const progress = readProgress()
+  const entry = progress[batchId] ?? { stages: [] }
+  change(entry)
+  progress[batchId] = entry
+  writeProgress(progress)
+}
+
+// Records the next lifecycle stage. Closing also registers a demo proof with
+// the final chain hash, as the API does in the background.
+export function advanceDemoBatch(batchId: string, status: BatchStatus): Batch {
+  const record = allRecords().find((item) => item.batch.id === batchId)
+  if (!record) throw new Error('Lote não encontrado na demonstração.')
+  if (nextStatus(record.batch.status) !== status) {
+    throw new Error(`Transição de ${record.batch.status} para ${status} não permitida.`)
+  }
+
+  const at = new Date().toISOString()
+  updateProgress(batchId, (entry) => {
+    entry.stages.push({ status, at })
+    if (status === 'CLOSED') {
+      const digest = sha256Hex(`${batchId}:${at}`)
+      entry.proof = {
+        network: 'devnet',
+        txHash: `demo-tx-${digest.slice(0, 48)}`,
+        tokenAddress: `demo-token-${digest.slice(48)}`,
+        at,
+      }
+    }
+  })
+
+  return findDemoBatch(batchId)!
+}
+
+export function setDemoBatchVisibility(batchId: string, isPublic: boolean): Batch {
+  if (!findDemoBatch(batchId)) throw new Error('Lote não encontrado na demonstração.')
+  updateProgress(batchId, (entry) => {
+    entry.isPublic = isPublic
+  })
+  return findDemoBatch(batchId)!
 }

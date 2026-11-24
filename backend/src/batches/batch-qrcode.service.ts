@@ -54,10 +54,7 @@ export class BatchQrCodeService {
     };
   }
 
-  async generatePrintSheetPdf(
-    batchId: string,
-    copiesRaw = 8,
-  ): Promise<Buffer> {
+  async generatePrintSheetPdf(batchId: string, copiesRaw = 8): Promise<Buffer> {
     if (!ALLOWED_PRINT_COPIES.includes(copiesRaw as AllowedPrintCopies)) {
       throw new BadRequestException(
         'Parametro copies invalido. Use 4, 8 ou 16.',
@@ -121,7 +118,7 @@ export class BatchQrCodeService {
       });
 
       const chunks: Buffer[] = [];
-      doc.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      doc.on('data', (chunk: Uint8Array) => chunks.push(Buffer.from(chunk)));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
@@ -141,7 +138,8 @@ export class BatchQrCodeService {
       doc.moveDown(0.8);
 
       const headerBottomY = doc.y + 4;
-      const availableHeight = pageHeight - (headerBottomY - doc.page.margins.top);
+      const availableHeight =
+        pageHeight - (headerBottomY - doc.page.margins.top);
 
       const { columns, rows } = this.getSheetLayout(copies);
       const gap = 10;

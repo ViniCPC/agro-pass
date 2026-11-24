@@ -2,12 +2,13 @@ import {
   LayoutDashboard,
   Sprout,
   Package,
-  Link2,
+  ScanLine,
   Zap,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { AppLogo } from '@/components/AppLogo'
 import { cn } from '@/lib/utils'
+import { DEMO_SHOWCASE_CODE } from '@/mocks/demo-store'
 import { SidebarItem } from './SidebarItem'
 
 const mainNav = [
@@ -16,8 +17,9 @@ const mainNav = [
   { to: '/batches', icon: Package, label: 'Lotes' },
 ] as const
 
-const comingSoonNav = [
-  { icon: Link2, label: 'Blockchain' },
+// The bundled example passport opens without login or API.
+const secondaryNav = [
+  { to: `/trace/${DEMO_SHOWCASE_CODE}`, icon: ScanLine, label: 'Passaporte de exemplo' },
 ] as const
 
 interface SidebarProps {
@@ -39,8 +41,8 @@ export function Sidebar({ onNavigate, mobile = false }: SidebarProps) {
 
         <div className="my-2 border-t border-[var(--color-border-soft)]" />
 
-        {comingSoonNav.map((item) => (
-          <SidebarItem key={item.label} icon={item.icon} label={item.label} soon />
+        {secondaryNav.map((item) => (
+          <SidebarItem key={item.to} {...item} onClick={onNavigate} />
         ))}
       </nav>
 
@@ -58,7 +60,7 @@ export function Sidebar({ onNavigate, mobile = false }: SidebarProps) {
           }
         >
           <Zap size={16} strokeWidth={2} className="shrink-0" />
-          Pagina publica
+          Página pública
         </NavLink>
       </div>
     </aside>

@@ -82,7 +82,7 @@ describe('FarmsService', () => {
     it('cria fazenda no caminho feliz', async () => {
       farmCreate.mockResolvedValue(makeFarm());
 
-      const result = await service.create(BASE_CREATE_DTO, ADMIN_USER as never);
+      const result = await service.create(BASE_CREATE_DTO, ADMIN_USER);
 
       expect(result.id).toBe('farm-uuid');
       expect(result.name).toBe('Fazenda Test');
@@ -91,12 +91,15 @@ describe('FarmsService', () => {
     it('normaliza estado, nome e cidade', async () => {
       farmCreate.mockResolvedValue(makeFarm());
 
-      await service.create({
-        ...BASE_CREATE_DTO,
-        name: '  Fazenda Test  ',
-        city: '  Rio Verde  ',
-        state: 'go',
-      }, ADMIN_USER as never);
+      await service.create(
+        {
+          ...BASE_CREATE_DTO,
+          name: '  Fazenda Test  ',
+          city: '  Rio Verde  ',
+          state: 'go',
+        },
+        ADMIN_USER,
+      );
 
       expect(farmCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -112,10 +115,7 @@ describe('FarmsService', () => {
     it('transforma CAR vazio em null', async () => {
       farmCreate.mockResolvedValue(makeFarm());
 
-      await service.create(
-        { ...BASE_CREATE_DTO, carNumber: '' },
-        ADMIN_USER as never,
-      );
+      await service.create({ ...BASE_CREATE_DTO, carNumber: '' }, ADMIN_USER);
 
       expect(farmCreate).toHaveBeenCalledWith(
         expect.objectContaining({

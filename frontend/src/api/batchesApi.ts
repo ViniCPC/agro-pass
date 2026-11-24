@@ -1,5 +1,6 @@
 import type {
   Batch,
+  BatchStatus,
   PaginatedResponse,
   PaginationParams,
   ProductType,
@@ -27,6 +28,13 @@ export const batchesApi = {
 
   create: (payload: CreateBatchInput) =>
     api.post<Batch>('/batches', payload),
+
+  // Records the next lifecycle stage; CLOSED also triggers the blockchain proof.
+  updateStatus: (id: string, status: BatchStatus) =>
+    api.patch<Batch>(`/batches/${id}/status`, { status }),
+
+  setVisibility: (id: string, isPublic: boolean) =>
+    api.patch<Batch>(`/batches/${id}/visibility`, { isPublic }),
 
   // Closing a batch registers its proof automatically; this retries after a
   // failure (admin only). Idempotent: never mints twice.

@@ -23,9 +23,7 @@ export class BatchLifecycleService {
     }
 
     const forward = FORWARD_TRANSITION[currentStatus];
-    return forward
-      ? [forward, BatchStatus.CANCELLED]
-      : [BatchStatus.CANCELLED];
+    return forward ? [forward, BatchStatus.CANCELLED] : [BatchStatus.CANCELLED];
   }
 
   canTransition(currentStatus: BatchStatus, nextStatus: BatchStatus): boolean {

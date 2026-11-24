@@ -60,10 +60,11 @@ export function CreateBatchForm({
         />
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+          <label htmlFor="batch-product" className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
             Produto
           </label>
           <select
+            id="batch-product"
             value={values.productType}
             disabled={isSubmitting}
             onChange={(event) =>
@@ -85,10 +86,11 @@ export function CreateBatchForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+            <label htmlFor="batch-quantity" className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
               Quantidade
             </label>
             <input
+              id="batch-quantity"
               type="number"
               min={1}
               value={values.quantity}
@@ -103,10 +105,11 @@ export function CreateBatchForm({
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+            <label htmlFor="batch-unit" className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
               Unidade
             </label>
             <input
+              id="batch-unit"
               type="text"
               value={values.unit}
               disabled={isSubmitting}
@@ -121,10 +124,11 @@ export function CreateBatchForm({
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+          <label htmlFor="batch-harvest-date" className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
             Data da colheita
           </label>
           <input
+            id="batch-harvest-date"
             type="date"
             value={values.harvestDate}
             disabled={isSubmitting}

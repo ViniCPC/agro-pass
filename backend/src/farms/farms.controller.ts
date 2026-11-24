@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CreateFarmDto } from './dto/create-farm.dto';
 import { FarmDto } from './dto/farm.dto';
 import { ListFarmsResponseDto } from './dto/list-farms-response.dto';
@@ -31,5 +39,4 @@ export class FarmsController {
   findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<FarmDto> {
     return this.farmsService.findOne(id);
   }
-
 }

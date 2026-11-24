@@ -20,7 +20,8 @@ export function resolveAssetUrl(pathOrUrl: string | null | undefined) {
 // open the production passport after the next deploy.
 export function getPublicAppUrl() {
   if (CONFIGURED_PUBLIC_APP_URL) return CONFIGURED_PUBLIC_APP_URL
-  return typeof window === 'undefined' ? '' : window.location.origin
+  const basePath = import.meta.env.BASE_URL.replace(/\/+$/, '')
+  return typeof window === 'undefined' ? basePath : `${window.location.origin}${basePath}`
 }
 
 export function getPublicTraceLink(publicCode: string) {

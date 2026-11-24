@@ -1,4 +1,8 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { hash } from 'bcryptjs';
@@ -24,8 +28,14 @@ describe('AuthService', () => {
   let service: AuthService;
   let userCreate: jest.Mock;
   let userFindUnique: jest.Mock;
+  const originalEnv = process.env;
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
 
   beforeEach(async () => {
+    process.env = { ...originalEnv, NODE_ENV: 'test' };
     userCreate = jest.fn();
     userFindUnique = jest.fn();
 
@@ -52,12 +62,29 @@ describe('AuthService', () => {
     service = module.get(AuthService);
   });
 
+  it('desabilita cadastro livre em producao por padrao', async () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.ALLOW_PUBLIC_REGISTRATION;
+    await expect(
+      service.register({
+        name: 'Produtor',
+        email: 'produtor@example.com',
+        password: 'senha-segura',
+        role: UserRole.PRODUCER,
+        producerId: 'producer-uuid',
+      }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(userCreate).not.toHaveBeenCalled();
+  });
+
   it('armazena hash e nunca retorna senha no cadastro', async () => {
     let storedPassword = '';
-    userCreate.mockImplementation(({ data }: { data: { passwordHash: string } }) => {
-      storedPassword = data.passwordHash;
-      return safeUser();
-    });
+    userCreate.mockImplementation(
+      ({ data }: { data: { passwordHash: string } }) => {
+        storedPassword = data.passwordHash;
+        return safeUser();
+      },
+    );
 
     const result = await service.register({
       name: 'Produtor Teste',

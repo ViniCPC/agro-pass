@@ -58,7 +58,7 @@ describe('BatchDocumentsService lifecycle guard', () => {
       await expect(
         service.addDocument(
           'batch-uuid',
-          { type: 'INVOICE' as never },
+          { type: 'INVOICE' },
           ADMIN_USER as never,
           undefined,
         ),

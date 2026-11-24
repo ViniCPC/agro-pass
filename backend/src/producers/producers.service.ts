@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProducerDto } from './dto/create-producer.dto';
 import { ListProducersResponseDto } from './dto/list-producers-response.dto';
@@ -18,15 +22,25 @@ export class ProducersService {
         data: { name, phone, document },
       });
       return ProducerDto.fromModel(producer);
-    } catch (e: any) {
-      if (e?.code === 'P2002') {
-        throw new ConflictException('Já existe um produtor com este documento.');
+    } catch (e: unknown) {
+      if (
+        typeof e === 'object' &&
+        e !== null &&
+        'code' in e &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Já existe um produtor com este documento.',
+        );
       }
       throw e;
     }
   }
 
-  async findAll(page: number, limit: number): Promise<ListProducersResponseDto> {
+  async findAll(
+    page: number,
+    limit: number,
+  ): Promise<ListProducersResponseDto> {
     const skip = (page - 1) * limit;
 
     const [producers, totalItems] = await this.prisma.$transaction([

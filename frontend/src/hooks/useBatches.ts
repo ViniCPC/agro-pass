@@ -41,5 +41,23 @@ export function useBatch(id: string | null) {
     enabled: Boolean(id),
     staleTime: isDemoMode ? 0 : 30_000,
     retry: isDemoMode ? false : 1,
+    refetchInterval: (query) => proofPollInterval(query.state.data),
   })
+}
+
+// The proof is registered in the background after closing: keep polling while
+// it is pending, and briefly right after closing (the close response can come
+// back before the registration has started). With the blockchain disabled the
+// status stays NONE and polling stops after that window.
+const JUST_CLOSED_WINDOW_MS = 30_000
+
+function proofPollInterval(batch: Batch | undefined) {
+  if (!batch) return false
+  if (batch.blockchain.status === 'PENDING') return 2_000
+  const justClosed =
+    batch.status === 'CLOSED' &&
+    batch.blockchain.status === 'NONE' &&
+    batch.closedAt !== null &&
+    Date.now() - new Date(batch.closedAt).getTime() < JUST_CLOSED_WINDOW_MS
+  return justClosed ? 1_500 : false
 }

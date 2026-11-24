@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { UserRole } from '../../generated/prisma/enums';
 import type { AuthUser } from '../auth/auth-user.type';

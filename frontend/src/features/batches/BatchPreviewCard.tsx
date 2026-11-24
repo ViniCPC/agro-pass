@@ -1,6 +1,7 @@
 import { Package } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 import type { Farm } from '@/types/api'
+import { formatHarvestDate } from '@/features/trace/trace.utils'
 import {
   PRODUCT_OPTIONS,
   type CreateBatchFormValues,
@@ -35,9 +36,7 @@ export function BatchPreviewCard({
   const farmLabel = selectedFarm
     ? `${selectedFarm.name} - ${selectedFarm.state}`
     : '-'
-  const harvestLabel = values.harvestDate
-    ? new Date(values.harvestDate).toLocaleDateString('pt-BR')
-    : '-'
+  const harvestLabel = formatHarvestDate(values.harvestDate)
 
   return (
     <aside className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-page)] p-5 shadow-[var(--shadow-card)]">

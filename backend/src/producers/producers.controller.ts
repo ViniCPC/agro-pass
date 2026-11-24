@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CreateProducerDto } from './dto/create-producer.dto';
 import { ListProducersResponseDto } from './dto/list-producers-response.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
@@ -18,7 +26,9 @@ export class ProducersController {
   }
 
   @Get()
-  findAll(@Query() query: PaginationQueryDto): Promise<ListProducersResponseDto> {
+  findAll(
+    @Query() query: PaginationQueryDto,
+  ): Promise<ListProducersResponseDto> {
     return this.producersService.findAll(query.page, query.limit);
   }
 

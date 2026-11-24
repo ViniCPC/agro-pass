@@ -16,8 +16,11 @@ import { BatchAuthorizationService } from './batch-authorization.service';
 import { DocumentDto } from './dto/document.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 
-const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
-const MAX_FILE_SIZE_IN_BYTES = 5 * 1024 * 1024;
+import { detectMimeType } from '../common/file-signature';
+import {
+  ALLOWED_UPLOAD_MIME_TYPES,
+  MAX_UPLOAD_SIZE_IN_BYTES,
+} from './document-upload.constants';
 
 @Injectable()
 export class BatchDocumentsService {
@@ -47,19 +50,23 @@ export class BatchDocumentsService {
       size: file.size,
     });
 
-    const existingDocument = await this.prisma.document.findUnique({
-      where: { fileHash: storedFile.hash },
-    });
-
-    if (existingDocument) {
-      await this.fileStorage.delete(storedFile.key);
-      throw new ConflictException(
-        'Este documento ja foi enviado anteriormente.',
-      );
-    }
-
     try {
+      const existingDocument = await this.prisma.document.findUnique({
+        where: { fileHash: storedFile.hash },
+      });
+      if (existingDocument) {
+        throw new ConflictException(
+          'Este documento ja foi enviado anteriormente.',
+        );
+      }
       const document = await this.prisma.$transaction(async (transaction) => {
+        // Closing and attaching documents must serialize on the same row.
+        await this.eventChain.lockBatch(transaction, batchId);
+        const current = await transaction.batch.findUniqueOrThrow({
+          where: { id: batchId },
+          select: { status: true },
+        });
+        this.lifecycle.assertMutable(current.status);
         const created = await transaction.document.create({
           data: {
             type: dto.type,
@@ -112,6 +119,17 @@ export class BatchDocumentsService {
     return documents.map((document) => DocumentDto.fromModel(document));
   }
 
+  async getPrivateFile(batchId: string, documentId: string, user: AuthUser) {
+    const batch = await this.findBatchOrThrow(batchId);
+    this.authorization.assertCanManageDocuments(batch, user);
+    const document = await this.prisma.document.findFirst({
+      where: { id: documentId, batchId },
+      select: { storageKey: true, mimeType: true },
+    });
+    if (!document) throw new NotFoundException('Documento nao encontrado.');
+    return document;
+  }
+
   // Visibility is not part of the hashed event, so it can change after the
   // passport is closed without breaking the chain.
   async updateVisibility(
@@ -147,15 +165,22 @@ export class BatchDocumentsService {
       throw new BadRequestException('Arquivo obrigatorio.');
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.mimetype)) {
       throw new BadRequestException(
         'Tipo de arquivo invalido. Envie PDF, JPG ou PNG.',
       );
     }
 
-    if (file.size > MAX_FILE_SIZE_IN_BYTES) {
+    if (file.size > MAX_UPLOAD_SIZE_IN_BYTES) {
       throw new BadRequestException(
         'Arquivo muito grande. Maximo permitido: 5MB.',
+      );
+    }
+
+    // The declared type is client input: the bytes must agree with it.
+    if (detectMimeType(file.buffer) !== file.mimetype) {
+      throw new BadRequestException(
+        'O conteudo do arquivo nao corresponde a um PDF, JPG ou PNG valido.',
       );
     }
   }

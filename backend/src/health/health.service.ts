@@ -64,18 +64,21 @@ export class HealthService {
 
   private async checkDatabase(): Promise<ServiceHealth> {
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.withTimeout(
+        this.prisma.$queryRaw`SELECT 1`,
+        3000,
+        'Database health check timed out',
+      );
 
       return {
         status: 'ok',
       };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Database error';
-      this.logger.warn(`Database health check failed: ${message}`);
+    } catch {
+      this.logger.warn('Database health check failed');
 
       return {
         status: 'error',
-        message,
+        message: 'Banco de dados indisponivel.',
       };
     }
   }
@@ -127,14 +130,12 @@ export class HealthService {
         status: 'ok',
         version,
       };
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Solana RPC error';
-      this.logger.warn(`Solana health check failed: ${message}`);
+    } catch {
+      this.logger.warn('Solana health check failed');
 
       return {
         status: 'error',
-        message,
+        message: 'Solana RPC indisponivel.',
       };
     }
   }

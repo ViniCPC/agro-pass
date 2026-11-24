@@ -32,6 +32,14 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      process.env.ALLOW_PUBLIC_REGISTRATION !== 'true'
+    ) {
+      throw new ForbiddenException(
+        'Cadastro publico desabilitado neste ambiente.',
+      );
+    }
     await this.validateAssociation(dto);
 
     const email = dto.email.trim().toLowerCase();
@@ -47,9 +55,7 @@ export class AuthService {
           producerId:
             dto.role === UserRole.PRODUCER ? dto.producerId : undefined,
           cooperativeId:
-            dto.role === UserRole.COOPERATIVE
-              ? dto.cooperativeId
-              : undefined,
+            dto.role === UserRole.COOPERATIVE ? dto.cooperativeId : undefined,
         },
         select: SAFE_USER_SELECT,
       });

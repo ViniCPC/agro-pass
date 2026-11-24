@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  // Sub-path deploys (GitHub Pages serves the demo at /agro-pass/).
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

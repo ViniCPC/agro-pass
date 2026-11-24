@@ -5,9 +5,10 @@ import { LoadingState } from '@/components/LoadingState'
 import { PageContainer } from '@/components/PageContainer'
 import { StatusBadge } from '@/components/StatusBadge'
 import { BatchBlockchainProofPanel } from '@/features/batches/BatchBlockchainProofPanel'
+import { BatchLifecyclePanel } from '@/features/batches/BatchLifecyclePanel'
 import { BatchQrCard } from '@/features/qr/BatchQrCard'
 import { TraceTimeline } from '@/features/trace/TraceTimeline'
-import { PRODUCT_LABEL, formatDate, formatQuantity } from '@/features/trace/trace.utils'
+import { PRODUCT_LABEL, formatHarvestDate, formatQuantity } from '@/features/trace/trace.utils'
 import { useDemoMode } from '@/contexts/demo-context'
 import { useBatch } from '@/hooks/useBatches'
 import { useBatchEvents } from '@/hooks/useBatchEvents'
@@ -102,7 +103,7 @@ export function BatchDetailPage() {
               <OverviewField label="Data da colheita">
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarDays size={13} />
-                  {formatDate(batch.harvestDate)}
+                  {formatHarvestDate(batch.harvestDate)}
                 </span>
               </OverviewField>
               <OverviewField label="Código público">
@@ -123,6 +124,8 @@ export function BatchDetailPage() {
               </OverviewField>
             </div>
           </section>
+
+          <BatchLifecyclePanel batch={batch} />
 
           <BatchBlockchainProofPanel batch={batch} />
 

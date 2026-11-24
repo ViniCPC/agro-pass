@@ -20,10 +20,11 @@ export function FarmSelector({
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+      <label htmlFor="batch-farm" className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
         Fazenda de origem
       </label>
       <select
+        id="batch-farm"
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}

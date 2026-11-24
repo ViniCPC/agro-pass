@@ -1,25 +1,12 @@
 import { AlertTriangle, CheckCircle2, Clock, ExternalLink, Link2, Loader2, RotateCw } from 'lucide-react'
-import { ApiError } from '@/api/client'
 import { useAuth } from '@/contexts/auth-context'
 import { useDemoMode } from '@/contexts/demo-context'
 import { TimelineHashInline } from '@/features/trace/TimelineHashInline'
 import { networkLabel } from '@/features/trace/solana'
 import { formatDateTime } from '@/features/trace/trace.utils'
 import { useTokenizeBatch } from '@/hooks/useCreateBatch'
+import { apiErrorMessage } from '@/lib/api-error'
 import type { Batch } from '@/types/api'
-
-function errorMessage(error: unknown) {
-  if (error instanceof ApiError) {
-    try {
-      const body = JSON.parse(error.message) as { message?: string | string[] }
-      const message = Array.isArray(body.message) ? body.message.join(' ') : body.message
-      if (message) return message
-    } catch {
-      // Not a JSON body.
-    }
-  }
-  return error instanceof Error ? error.message : 'Não foi possível registrar a prova.'
-}
 
 function StatusLine({ batch }: { batch: Batch }) {
   const { status, attempts, error } = batch.blockchain
@@ -119,7 +106,7 @@ export function BatchBlockchainProofPanel({ batch }: { batch: Batch }) {
           </button>
           {tokenize.isError && (
             <p className="rounded-md bg-[var(--color-red-50)] px-3 py-2 text-xs text-[var(--color-red-700)]">
-              {errorMessage(tokenize.error)}
+              {apiErrorMessage(tokenize.error, 'Não foi possível registrar a prova.')}
             </p>
           )}
         </div>

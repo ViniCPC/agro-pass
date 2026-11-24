@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+  DATABASE_URL: postgresql://agro_pass_test:agro_pass_test@localhost:55432/agro_pass_test
+  JWT_SECRET: ci-only-secret
+
+jobs:
+  backend:
+    name: Backend · lint, build, unit e e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: agro_pass_test
+          POSTGRES_PASSWORD: agro_pass_test
+          POSTGRES_DB: agro_pass_test
+        ports: ['55432:5432']
+        options: >-
+          --health-cmd "pg_isready -U agro_pass_test -d agro_pass_test"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Instalação limpa
+        run: npm ci
+      - name: Prisma generate
+        run: npx prisma generate
+      - name: Auditoria de dependencias de producao
+        run: npm audit --omit=dev --audit-level=high
+      - name: Lint
+        run: npm run lint:check
+      - name: Build
+        run: npm run build
+      - name: Testes unitários
+        run: npm test
+      - name: Testes E2E (migrations + PostgreSQL temporário)
+        run: npm run test:e2e
+
+  frontend:
+    name: Frontend · lint, testes de componentes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Instalação limpa
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Testes de componentes
+        run: npm test
+      - name: Auditoria de dependencias de producao
+        run: npm audit --omit=dev --audit-level=high
+      - name: Build (inclui typecheck)
+        run: npm run build
+
+  e2e:
+    name: E2E do fluxo principal (Playwright)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: agro_pass_test
+          POSTGRES_PASSWORD: agro_pass_test
+          POSTGRES_DB: agro_pass_test
+        ports: ['55432:5432']
+        options: >-
+          --health-cmd "pg_isready -U agro_pass_test -d agro_pass_test"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: API · build, migrations e seed de demonstração
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+          npx prisma migrate deploy
+          npm run seed
+          npm run seed
+      - name: Frontend · build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Navegador do Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Login → lote → etapas → encerrar → QR → passaporte
+        working-directory: frontend
+        run: npx playwright test
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7

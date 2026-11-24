@@ -1,6 +1,7 @@
 import { getAccessToken } from '@/auth/auth-storage'
 
-const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000'
+// An empty value (e.g. an unset CI variable) also falls back to the default.
+const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3000'
 export const API_BASE_URL = BASE_URL
 
 class ApiError extends Error {

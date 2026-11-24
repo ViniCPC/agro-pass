@@ -21,7 +21,11 @@ export class CooperativesController {
   constructor(private readonly cooperativesService: CooperativesService) {}
 
   @Post(':id/producers/import')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 1024 * 1024, files: 1, fields: 0 },
+    }),
+  )
   async importProducers(
     @Param('id') cooperativeId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -31,10 +35,7 @@ export class CooperativesController {
       throw new BadRequestException('CSV file is required');
     }
 
-    if (
-      user.role !== UserRole.ADMIN &&
-      user.cooperativeId !== cooperativeId
-    ) {
+    if (user.role !== UserRole.ADMIN && user.cooperativeId !== cooperativeId) {
       throw new ForbiddenException(
         'Cooperativa so pode importar produtores para a propria conta.',
       );

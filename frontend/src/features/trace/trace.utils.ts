@@ -15,6 +15,18 @@ export function formatDate(value: string | null) {
   })
 }
 
+// Harvest is a calendar date, serialized at UTC midnight by the API.
+// Converting it to the visitor's timezone changes the day in Brazil.
+export function formatHarvestDate(value: string | null) {
+  if (!value) return '-'
+  return new Date(value).toLocaleDateString('pt-BR', {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 export function formatDateTime(value: string) {
   return new Date(value).toLocaleString('pt-BR', {
     day: '2-digit',

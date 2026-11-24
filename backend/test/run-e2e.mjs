@@ -9,6 +9,10 @@ const env = {
   DATABASE_URL: process.env.TEST_DATABASE_URL ?? TEST_DATABASE_URL,
 };
 
+if (!new URL(env.DATABASE_URL).pathname.toLowerCase().includes('test')) {
+  throw new Error('O E2E precisa de um banco exclusivo com test no nome.');
+}
+
 function run(modulePath, args, nodeArgs = []) {
   const result = spawnSync(process.execPath, [...nodeArgs, modulePath, ...args], {
     cwd: backendRoot,

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '@/components/StatusBadge'
 import type { Batch } from '@/types/api'
+import { formatHarvestDate } from '@/features/trace/trace.utils'
 
 const PRODUCT_LABEL: Record<string, string> = {
   COFFEE: 'Cafe',
@@ -10,15 +11,6 @@ const PRODUCT_LABEL: Record<string, string> = {
   PALM_OIL: 'Palma',
   RUBBER: 'Borracha',
   WOOD: 'Madeira',
-}
-
-function formatDate(value: string | null) {
-  if (!value) return '-'
-  return new Date(value).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
 }
 
 interface BatchCardProps {
@@ -48,7 +40,7 @@ export function BatchCard({ batch }: BatchCardProps) {
         </div>
         <div>
           <p className="uppercase tracking-wide text-[10px] text-[var(--color-ink-subtle)]">Colheita</p>
-          <p>{formatDate(batch.harvestDate)}</p>
+          <p>{formatHarvestDate(batch.harvestDate)}</p>
         </div>
       </div>
 

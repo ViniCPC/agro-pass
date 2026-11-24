@@ -4,6 +4,7 @@ import {
   BATCH_STATUS_LABEL,
   PRODUCT_LABEL,
   formatDate,
+  formatHarvestDate,
   formatQuantity,
 } from './trace.utils'
 
@@ -36,7 +37,7 @@ export function TraceBatchSummary({ data }: { data: PublicBatch }) {
         <SummaryField label="Quantidade" value={formatQuantity(batch.quantity, batch.unit)} />
         <SummaryField label="Status atual" value={BATCH_STATUS_LABEL[batch.status] ?? batch.status} />
         <SummaryField label="Data de criação" value={formatDate(batch.createdAt)} />
-        <SummaryField label="Colheita" value={formatDate(batch.harvestDate)} />
+        <SummaryField label="Colheita" value={formatHarvestDate(batch.harvestDate)} />
         {batch.closedAt && <SummaryField label="Encerrado em" value={formatDate(batch.closedAt)} />}
         <SummaryField label="Última atualização" value={formatDate(batch.updatedAt)} />
       </dl>

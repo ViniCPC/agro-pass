@@ -63,6 +63,12 @@ export class CooperativesService {
       },
     );
 
+    if (parsed.data.length > 1000) {
+      throw new BadRequestException(
+        'Importacao limitada a 1000 produtores por arquivo.',
+      );
+    }
+
     if (parsed.errors.length > 0) {
       throw new BadRequestException({
         message: 'CSV invalido',

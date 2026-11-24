@@ -3,9 +3,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { jwtSecret } from './jwt.config';
 
-export const JWT_SECRET =
-  process.env.JWT_SECRET ?? 'agropass-development-secret-change-me';
+export const JWT_SECRET = jwtSecret();
 
 @Module({
   imports: [

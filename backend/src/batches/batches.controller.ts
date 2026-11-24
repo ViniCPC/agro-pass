@@ -15,6 +15,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
+import { NotFoundException } from '@nestjs/common';
+import { resolve, sep } from 'path';
 import { UserRole } from '../../generated/prisma/enums';
 import type { AuthUser } from '../auth/auth-user.type';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -35,6 +37,7 @@ import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpdateBatchStatusDto } from './dto/update-batch-status.dto';
 import { UpdateBatchVisibilityDto } from './dto/update-batch-visibility.dto';
 import { UpdateDocumentVisibilityDto } from './dto/update-document-visibility.dto';
+import { UPLOAD_LIMITS } from './document-upload.constants';
 
 @Controller('batches')
 export class BatchesController {
@@ -71,7 +74,7 @@ export class BatchesController {
 
   @Post(':id/documents')
   @Roles(UserRole.COOPERATIVE, UserRole.ADMIN)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: UPLOAD_LIMITS }))
   addDocument(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() uploadDocumentDto: UploadDocumentDto,
@@ -91,6 +94,34 @@ export class BatchesController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<DocumentDto[]> {
     return this.batchDocumentsService.findDocuments(id);
+  }
+
+  @Get(':id/documents/:documentId/file')
+  @Roles(UserRole.COOPERATIVE, UserRole.ADMIN)
+  async downloadDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('documentId', ParseUUIDPipe) documentId: string,
+    @CurrentUser() user: AuthUser,
+    @Res() response: Response,
+  ) {
+    const document = await this.batchDocumentsService.getPrivateFile(
+      id,
+      documentId,
+      user,
+    );
+    const root = resolve(process.cwd(), 'uploads');
+    const file = resolve(root, document.storageKey);
+    if (!file.startsWith(`${root}${sep}`)) throw new NotFoundException();
+    response.setHeader('Content-Type', document.mimeType);
+    response.setHeader('Cache-Control', 'private, no-store');
+    response.setHeader('Content-Disposition', 'attachment');
+    return new Promise<void>((accept, reject) => {
+      response.sendFile(file, (error) =>
+        error
+          ? reject(new NotFoundException('Arquivo indisponivel.'))
+          : accept(),
+      );
+    });
   }
 
   @Patch(':id/documents/:documentId/visibility')

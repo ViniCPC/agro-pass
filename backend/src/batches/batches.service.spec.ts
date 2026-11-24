@@ -146,7 +146,7 @@ describe('BatchesService', () => {
         service.create(
           {
             farmId: 'farm-uuid',
-            productType: 'COFFEE' as never,
+            productType: 'COFFEE',
             quantity: 50,
             unit: 'sacas',
           },
@@ -163,11 +163,11 @@ describe('BatchesService', () => {
       const result = await service.create(
         {
           farmId: 'farm-uuid',
-          productType: 'COFFEE' as never,
+          productType: 'COFFEE',
           quantity: 100,
           unit: ' sacas ',
         },
-        AUTH_USER as never,
+        AUTH_USER,
       );
 
       expect(result.code).toBe('AGP-2026-0001');
@@ -204,11 +204,11 @@ describe('BatchesService', () => {
       const result = await service.create(
         {
           farmId: 'farm-uuid',
-          productType: 'COFFEE' as never,
+          productType: 'COFFEE',
           quantity: 100,
           unit: 'sacas',
         },
-        AUTH_USER as never,
+        AUTH_USER,
       );
 
       expect(batchCreate).toHaveBeenCalledTimes(2);
@@ -223,7 +223,7 @@ describe('BatchesService', () => {
         service.create(
           {
             farmId: 'farm-uuid',
-            productType: 'COFFEE' as never,
+            productType: 'COFFEE',
             quantity: 100,
             unit: 'sacas',
           },
@@ -282,7 +282,7 @@ describe('BatchesService', () => {
       const result = await service.updateStatus(
         'batch-uuid',
         { status: BatchStatus.HARVESTED },
-        AUTH_USER as never,
+        AUTH_USER,
       );
 
       expect(result.status).toBe(BatchStatus.HARVESTED);
@@ -364,7 +364,7 @@ describe('BatchesService', () => {
           makeBatch({ status: BatchStatus.CLOSED, closedAt: new Date() }),
         );
 
-      await service.close('batch-uuid', AUTH_USER as never);
+      await service.close('batch-uuid', AUTH_USER);
 
       expect(batchUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -393,7 +393,7 @@ describe('BatchesService', () => {
       await service.updateStatus(
         'batch-uuid',
         { status: BatchStatus.HARVESTED },
-        AUTH_USER as never,
+        AUTH_USER,
       );
 
       expect(scheduleAfterClose).not.toHaveBeenCalled();

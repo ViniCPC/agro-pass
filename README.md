@@ -1,12 +1,42 @@
 # AgroPass
 
+[![CI](https://github.com/ViniCPC/agro-pass/actions/workflows/ci.yml/badge.svg)](https://github.com/ViniCPC/agro-pass/actions/workflows/ci.yml)
+[![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)](LICENSE)
+
 Plataforma full-stack de passaportes digitais para rastreabilidade agrícola. Cada lote possui um passaporte único, uma linha do tempo auditável, documentos, código público, QR Code e prova opcional na Solana.
+
+**Veja em um minuto:** abra `/demo`, clique em **Entrar na demo**, consulte um lote e abra **Folha PDF** ou **Ver passaporte de exemplo**. A demonstração funciona sem API ou cadastro, com dados fictícios e provas simuladas identificadas na tela.
+
+**Publicação pendente:** os workflows e o Blueprint estão preparados, mas os endereços de produção ainda precisam ser provisionados e verificados. O [endereço previsto da demo no Pages](https://vinicpc.github.io/agro-pass/demo) só estará disponível após habilitar Pages e publicar `main` com CI aprovado. Consulte o [guia de deploy](docs/deploy.md).
+
+![Fluxo da demonstração](docs/assets/fluxo-demo.gif)
+
+| Gestão de lotes | Passaporte público |
+| --- | --- |
+| ![Dashboard](docs/assets/dashboard.png) | ![Passaporte](docs/assets/passaporte-desktop.png) |
+
+[Etiquetas para impressão](docs/assets/etiquetas.png) · [Visualização no celular](docs/assets/passaporte-mobile.png)
+
+## Arquitetura e tecnologias
+
+```mermaid
+flowchart LR
+  Browser[React 19 + TypeScript + Vite] --> API[NestJS 11 / JWT / guards]
+  Browser --> Demo[Demo local / sem API]
+  API --> Prisma[Prisma 7]
+  Prisma --> DB[(PostgreSQL 16)]
+  API --> Disk[FileStorage / disco persistente]
+  API -. prova opcional .-> Solana[Solana / Bubblegum]
+  CI[GitHub Actions] --> Tests[Jest + Vitest + Playwright]
+```
+
+Tailwind CSS, TanStack Query e React Router compõem a interface. Os eventos são encadeados com SHA-256; autenticação usa JWT e senhas bcrypt. O backend e o frontend têm builds separados.
 
 ## Domínio principal
 
 - produtores, cooperativas e propriedades de origem;
 - lotes com código `AGP-YYYY-NNNN`;
-- eventos assinados pelo usuário autenticado;
+- eventos atribuídos ao usuário autenticado;
 - documentos vinculados à propriedade, lote ou etapa;
 - passaportes públicos consultáveis sem autenticação;
 - prova digital por cNFT na Solana;
@@ -18,7 +48,7 @@ O ciclo de um lote é:
 CREATED → HARVESTED → RECEIVED → IN_TRANSIT → PROCESSED → DELIVERED → CLOSED
 ```
 
-Um lote ativo também pode ser cancelado. Lotes `CLOSED` ou `CANCELLED` não recebem documentos, transições, tokenização ou etapas comuns; somente um administrador pode acrescentar uma correção auditável sem alterar o evento original.
+Um lote ativo também pode ser cancelado. Lotes `CLOSED` ou `CANCELLED` não recebem documentos, transições ou etapas comuns; somente um administrador pode acrescentar uma correção auditável sem alterar o evento original. A prova opcional é registrada após o encerramento e pode ser repetida em caso de falha.
 
 ## Papéis e permissões
 
@@ -129,7 +159,7 @@ Rotas internas esperam `Authorization: Bearer <token>`.
 | `POST` | `/auth/login` | Obter JWT |
 | `GET` | `/auth/me` | Consultar o usuário autenticado |
 
-Usuários produtores informam um `producerId`; cooperativas informam um `cooperativeId`. Administradores não podem ser criados pelo cadastro público.
+Usuários produtores informam um `producerId`; cooperativas informam um `cooperativeId`. Administradores não podem ser criados pelo cadastro público. Em produção, o cadastro livre é bloqueado por padrão: validar um ID existente não comprova a identidade do titular. `ALLOW_PUBLIC_REGISTRATION=true` é uma opção para ambientes controlados, até existir um fluxo de convite.
 
 ## Passaporte digital
 
@@ -145,6 +175,7 @@ Usuários produtores informam um `producerId`; cooperativas informam um `coopera
 | `PATCH` | `/batches/:id/visibility` | Tornar passaporte público ou privado |
 | `POST` | `/batches/:id/documents` | Anexar documento (campo opcional `isPublic`, padrão `false`) |
 | `PATCH` | `/batches/:id/documents/:documentId/visibility` | Liberar ou restringir o arquivo no passaporte público |
+| `GET` | `/batches/:id/documents/:documentId/file` | Download autenticado para administrador ou cooperativa responsável |
 | `GET` | `/batches/:id/events` | Consultar a linha do tempo em ordem sequencial |
 | `GET` | `/batches/:id/events/integrity` | Verificar toda a cadeia de hashes |
 | `POST` | `/batches/:id/events` | Registrar uma correção auditável (`CORRECTION`) |
@@ -181,11 +212,20 @@ Cada lote tem um único cNFT, que funciona como seu passaporte on-chain. Os even
 
 ### Modo demonstração
 
-"Entrar na demo" em `/demo` ativa o modo demonstração, que fica salvo no `localStorage` e funciona sem backend. O lote `DEMO-2025-0001` percorre todas as etapas, com documentos e registro on-chain, e seus hashes são SHA-256 reais calculados como na API. "Ver passaporte de exemplo" abre `/trace/DEMO-2025-0001` em qualquer aparelho, com ou sem o modo ativo. Lotes criados durante a demo ficam só no navegador em que foram criados. "Sair da demo" apaga esses dados.
+"Entrar na demo" em `/demo` ativa o modo demonstração, que fica salvo no `localStorage` e funciona sem backend. O lote `DEMO-2025-0001` percorre todas as etapas, com documentos fictícios e prova blockchain simulada; seus hashes são SHA-256 calculados como na API. "Ver passaporte de exemplo" abre `/trace/DEMO-2025-0001` em qualquer aparelho, com ou sem o modo ativo. Lotes criados durante a demo ficam só no navegador em que foram criados. "Sair da demo" apaga esses dados.
 
 ## Seed
 
-O seed cria cooperativa, produtor, propriedade, lote, eventos e usuários dos quatro papéis. Todas as senhas são armazenadas como hash bcrypt.
+O seed cria cooperativa, produtor, propriedade, dois lotes (um encerrado), eventos e usuários dos quatro papéis. Todas as senhas são armazenadas como hash bcrypt. Executá-lo novamente preserva registros, senhas, eventos e provas já existentes. Os códigos de exemplo são `AGP-2026-0001` e `AGP-2026-0002`.
+
+| Papel | E-mail local | Senha local |
+| --- | --- | --- |
+| Administrador | `admin@agropass.local` | `AgroPass@2026` |
+| Produtor | `produtor@agropass.local` | `AgroPass@2026` |
+| Cooperativa | `cooperativa@agropass.local` | `AgroPass@2026` |
+| Operador | `operador@agropass.local` | `AgroPass@2026` |
+
+`DEMO_PASSWORD` substitui a senha na criação. Em produção, o seed exige essa variável e `SEED_DEMO=true`. Use um ambiente dedicado a dados fictícios; o administrador da demo pode modificar registros. As credenciais publicadas acima são locais, não são uma promessa de acesso a uma API hospedada.
 
 ```bash
 cd backend
@@ -198,16 +238,63 @@ npm run seed
 cd backend
 npm ci
 npm run build
+npm run lint:check
 npm test
 
 npm run test:e2e:db:up
 npm run test:e2e
-npm run test:e2e:db:down
 
 cd ../frontend
 npm ci
 npm run build
 npm run lint
+npm test
 ```
 
-O E2E usa PostgreSQL isolado na porta `55432`. O build do backend executa `prisma generate`, e a produção inicia com `node dist/src/main.js`.
+O E2E usa PostgreSQL isolado na porta `55432`. O build do backend executa `prisma generate`, e a produção inicia com `node dist/src/main.js`. No PowerShell com scripts bloqueados, use `npm.cmd` e `npx.cmd`.
+
+Para testar o fluxo completo no navegador, prepare o mesmo banco com migrations e seed (bash):
+
+```bash
+cd backend
+export DATABASE_URL=postgresql://agro_pass_test:agro_pass_test@localhost:55432/agro_pass_test
+npx prisma migrate deploy
+npm run seed
+cd ../frontend
+npx playwright install chromium
+npm run test:e2e
+cd ../backend
+npm run test:e2e:db:down
+```
+
+No PowerShell, use `$env:DATABASE_URL='postgresql://agro_pass_test:agro_pass_test@localhost:55432/agro_pass_test'`. Deixe as portas 3000 e 4173 livres: o Playwright inicia os builds da API e da interface. `TEST_DATABASE_URL` permite outro banco exclusivo, com `test` no nome. A suíte cobre login, criação, etapas, encerramento, PNG decodificado, PDF de 4/8/16 etiquetas e passaporte público em viewport móvel; também bloqueia a API para testar a demo. Não usa Solana real.
+
+O [CI](.github/workflows/ci.yml) instala com `npm ci`, gera o Prisma, executa lint, builds, testes unitários/componentes e E2E com PostgreSQL temporário. Falhas do navegador geram relatório, screenshot e trace. A demo do Pages publica somente após o CI de `main` passar. O badge acima reflete o GitHub; validação local não equivale a uma execução remota verde.
+
+## Segurança e operação
+
+- Helmet, validação de DTOs e CORS configurado por ambiente.
+- Limite padrão de 300 requisições/minuto e 10 tentativas/minuto nas rotas de autenticação, por IP e rota.
+- JWT de produção obrigatório com no mínimo 32 caracteres; logs JSON com `X-Request-Id`, sem corpo, tokens ou mensagens internas de drivers.
+- Documentos de até 5 MB, PDF/PNG/JPEG conferidos pelos bytes; CSV de até 1 MB e 1.000 linhas. Extensão de armazenamento é determinada pelo MIME validado.
+- Download público exige documento e passaporte públicos a cada requisição. Revogar a publicação bloqueia novos downloads; arquivos já baixados não podem ser recolhidos.
+- `/health/live` verifica o processo; `/health` consulta o banco com timeout e retorna 503 quando ele está indisponível.
+
+As [variáveis e instruções de deploy](docs/deploy.md) cobrem HTTPS, PostgreSQL gerenciado, migrations, seed e volume de uploads.
+
+A [revisão técnica da Sprint 8](docs/security-review.md) registra correções e riscos restantes. A auditoria de produção do backend ainda contém nove alertas moderados na cadeia de dependências da Solana; o CI bloqueia níveis alto e crítico.
+
+## Limitações conhecidas e roadmap
+
+- A integridade detecta alterações em relação aos hashes armazenados; sem âncora externa, um administrador do banco pode recalcular a cadeia. Ela não comprova a veracidade dos dados informados.
+- Solana é opcional e vem desligada. O provider local e o modo demo não constituem prova em uma rede pública.
+- O MVP compartilha leituras internas entre usuários autenticados. O isolamento completo de leitura por organização, convites, recuperação de senha e revogação de sessão ficam para uma próxima versão.
+- Arquivos passam por verificação de assinatura, não por antivírus ou análise completa do conteúdo. Antes de uso operacional: adicionar varredura, armazenamento S3 e política de retenção.
+- Rate limiting está em memória por instância. Escala horizontal exige armazenamento compartilhado e estratégia de fila para provas.
+- O Blueprint usa uma instância com disco persistente. Ainda é necessário validar backups/restauração, monitoramento e os endereços definitivos após publicação.
+
+Próximos passos: concluir a publicação e o teste em celular físico; adicionar convites e isolamento por organização; adotar S3 e fila persistente; ampliar acessibilidade e observabilidade.
+
+## Licença
+
+[MIT](LICENSE).

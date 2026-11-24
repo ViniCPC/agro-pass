@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { hash } from 'bcryptjs';
 import { unlink } from 'fs/promises';
@@ -8,6 +9,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { BatchStatus, UserRole } from '../generated/prisma/enums';
 import { AppModule } from '../src/app.module';
+import { configureApp } from '../src/app.setup';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { BLOCKCHAIN_PROOF_PROVIDER } from '../src/blockchain/blockchain-proof.provider';
 import type { LocalProofProvider } from '../src/blockchain/local-proof.provider';
@@ -56,13 +58,9 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
+    // Same HTTP setup as production (helmet, CORS, validation).
+    app = configureApp(
+      moduleFixture.createNestApplication<NestExpressApplication>(),
     );
     await app.init();
 
@@ -281,7 +279,34 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
   });
 
   it('anexa documento com metadados e cria um evento encadeado', async () => {
-    const fileContents = Buffer.from('comprovante auditavel do lote');
+    // A file named .pdf whose bytes are not a PDF is rejected.
+    await request(app.getHttpServer())
+      .post(`/batches/${batchId}/documents`)
+      .set(auth(cooperativeToken))
+      .field('type', 'INVOICE')
+      .attach('file', Buffer.from('MZ disguised executable'), {
+        filename: 'nota.pdf',
+        contentType: 'application/pdf',
+      })
+      .expect(400)
+      .expect(({ body }) =>
+        expect(body.message).toContain('nao corresponde a um PDF'),
+      );
+
+    // Oversized uploads are cut off by multer before reaching the service.
+    await request(app.getHttpServer())
+      .post(`/batches/${batchId}/documents`)
+      .set(auth(cooperativeToken))
+      .field('type', 'INVOICE')
+      .attach('file', Buffer.alloc(5 * 1024 * 1024 + 1, 0x25), {
+        filename: 'grande.pdf',
+        contentType: 'application/pdf',
+      })
+      .expect(413);
+
+    const fileContents = Buffer.from(
+      '%PDF-1.4\n% comprovante auditavel do lote\n%%EOF\n',
+    );
     const { body: document } = await request(app.getHttpServer())
       .post(`/batches/${batchId}/documents`)
       .set(auth(cooperativeToken))
@@ -341,6 +366,14 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
 
     // Documents start restricted: the passport shows the hash, not the file.
     expect(document.isPublic).toBe(false);
+    await request(app.getHttpServer()).get(document.fileUrl).expect(404);
+    await request(app.getHttpServer())
+      .get(`/batches/${batchId}/documents/${document.id}/file`)
+      .expect(401);
+    await request(app.getHttpServer())
+      .get(`/batches/${batchId}/documents/${document.id}/file`)
+      .set(auth(cooperativeToken))
+      .expect(200);
     const findPublicDocument = (body: { documents: Array<{ id: string }> }) =>
       body.documents.find((item) => item.id === document.id);
 
@@ -379,6 +412,27 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
     });
     // Visibility lives outside the hashed event, so the chain stays valid.
     expect(published.integrity.valid).toBe(true);
+    await request(app.getHttpServer())
+      .get(document.fileUrl)
+      .expect(200)
+      .expect('Cache-Control', 'private, no-store');
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/visibility`)
+      .set(auth(adminToken))
+      .send({ isPublic: false })
+      .expect(200);
+    await request(app.getHttpServer()).get(document.fileUrl).expect(404);
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/visibility`)
+      .set(auth(adminToken))
+      .send({ isPublic: true })
+      .expect(200);
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/documents/${document.id}/visibility`)
+      .set(auth(cooperativeToken))
+      .send({ isPublic: false })
+      .expect(200);
+    await request(app.getHttpServer()).get(document.fileUrl).expect(404);
   });
 
   it('registra uma correcao como novo evento sem alterar o original', async () => {
@@ -537,7 +591,9 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
     await request(app.getHttpServer())
       .get(`/public/batches/${publicCode}/integrity`)
       .expect(200)
-      .expect(({ body }) => expect(body).toMatchObject({ valid: true, eventCount: 9 }));
+      .expect(({ body }) =>
+        expect(body).toMatchObject({ valid: true, eventCount: 9 }),
+      );
   });
 
   it('registra a prova uma unica vez, com o mesmo hash exibido no passaporte', async () => {
