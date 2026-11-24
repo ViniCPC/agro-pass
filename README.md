@@ -5,7 +5,7 @@
 
 Plataforma full-stack de passaportes digitais para rastreabilidade agrícola. Cada lote possui um passaporte único, uma linha do tempo auditável, documentos, código público, QR Code e prova opcional na Solana.
 
-**Veja em um minuto:** abra `/demo`, clique em **Entrar na demo**, consulte um lote e abra **Folha PDF** ou **Ver passaporte de exemplo**. A demonstração funciona sem API ou cadastro, com dados fictícios e provas simuladas identificadas na tela.
+**Veja em um minuto:** a raiz `/` abre a landing page do produto, com um lote real da demonstração e o botão **Ver um lote rastreável**. Para usar o sistema, abra `/demo`, clique em **Entrar na demo**, consulte um lote e abra **Folha PDF** ou **Ver passaporte de exemplo**. A demonstração funciona sem API ou cadastro, com dados fictícios e provas simuladas identificadas na tela.
 
 **Publicação pendente:** os workflows e o Blueprint estão preparados, mas os endereços de produção ainda precisam ser provisionados e verificados. O [endereço previsto da demo no Pages](https://vinicpc.github.io/agro-pass/demo) só estará disponível após habilitar Pages e publicar `main` com CI aprovado. Consulte o [guia de deploy](docs/deploy.md).
 
@@ -184,6 +184,8 @@ Usuários produtores informam um `producerId`; cooperativas informam um `coopera
 | `POST` | `/batches/:id/tokenize` | Repetir o registro da prova de um lote encerrado (idempotente, admin) |
 | `GET` | `/public/batches/:publicCode` | Consultar passaporte público sem login |
 | `GET` | `/public/batches/:publicCode/integrity` | Verificar a cadeia de um passaporte público sem login |
+| `POST` | `/public/demo-requests` | Pedido de demonstração da landing page (público, 5 por minuto, exige consentimento) |
+| `GET` | `/demo-requests` | Listar os 100 pedidos mais recentes (admin) |
 
 `GET /health` também é público.
 

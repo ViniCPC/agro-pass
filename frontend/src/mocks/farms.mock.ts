@@ -61,6 +61,21 @@ export const MOCK_FARMS: Farm[] = [
     producerId: 'prod-004',
     createdAt: '2025-03-22T09:45:00Z',
   },
+  {
+    id: 'farm-005',
+    name: 'Fazenda Boa Esperança',
+    city: 'Patrocínio',
+    state: 'MG',
+    latitude: -18.9439,
+    longitude: -46.9925,
+    carNumber: 'MG-3148103-4D2E8A1B6C9F0E3D7A5B2C8E1F4A6D9B',
+    polygonGeoJson: null,
+    totalAreaHa: 312.4,
+    producerName: 'Helena Duarte Campos',
+    cooperativeName: 'Cooperativa Regional do Cerrado',
+    producerId: 'prod-005',
+    createdAt: '2026-10-02T10:00:00Z',
+  },
 ]
 
 export const MOCK_FARMS_RESPONSE: PaginatedResponse<Farm> = {

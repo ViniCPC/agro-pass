@@ -229,6 +229,24 @@ model TraceEvent {
 }
 
 // ============================================
+// PEDIDOS DE DEMONSTRAÇÃO (landing page)
+// ============================================
+
+model DemoRequest {
+  id        String             @id @default(uuid())
+  name      String
+  company   String
+  email     String
+  phone     String?
+  profile   DemoRequestProfile
+  // When the visitor agreed to be contacted (LGPD consent).
+  consentAt DateTime
+  createdAt DateTime           @default(now())
+
+  @@index([createdAt])
+}
+
+// ============================================
 // ENUMS
 // ============================================
 
@@ -279,6 +297,13 @@ enum TraceEventType {
   MINTED_ONCHAIN
   DOCUMENT_ATTACHED
   CORRECTION
+}
+
+enum DemoRequestProfile {
+  PRODUCER
+  COOPERATIVE
+  CARRIER
+  BUYER
 }
 
 enum CooperativePlan {

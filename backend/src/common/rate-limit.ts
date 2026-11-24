@@ -12,6 +12,12 @@ export const DEFAULT_RATE_LIMIT = readLimit(
   300,
 );
 
+// Public contact form: a person sends one request, a bot sends hundreds.
+export const DEMO_REQUEST_RATE_LIMIT = readLimit(
+  process.env.DEMO_REQUEST_RATE_LIMIT_PER_MINUTE,
+  5,
+);
+
 // Login and registration are the brute-force targets.
 export const AUTH_RATE_LIMIT = readLimit(
   process.env.AUTH_RATE_LIMIT_PER_MINUTE,

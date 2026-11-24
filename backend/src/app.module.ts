@@ -11,6 +11,7 @@ import { TraceEventsModule } from './trace-events/trace-events.module';
 import { PublicBatchesModule } from './public-batches/public-batches.module';
 import { CooperativesModule } from './cooperatives/cooperatives.module';
 import { HealthModule } from './health/health.module';
+import { DemoRequestsModule } from './demo-requests/demo-requests.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -32,6 +33,7 @@ import { DEFAULT_RATE_LIMIT, RATE_LIMIT_WINDOW_MS } from './common/rate-limit';
     PublicBatchesModule,
     CooperativesModule,
     HealthModule,
+    DemoRequestsModule,
   ],
   controllers: [AppController],
   providers: [

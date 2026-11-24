@@ -45,6 +45,18 @@
   --color-teal-600: #0D9488;
   --color-teal-700: #0F766E;
 
+  /* Landing page: dark forest, natural green and sand */
+  --color-forest-950: #0D2116;
+  --color-forest-900: #14321F;
+  --color-forest-800: #1B4229;
+  --color-forest-700: #24563A;
+  --color-leaf-600:   #3B7634;
+  --color-leaf-500:   #58964A;
+  --color-leaf-100:   #E2EDD9;
+  --color-sand-50:    #FBF8F1;
+  --color-sand-100:   #F3EDE1;
+  --color-sand-200:   #E6DCC6;
+
   /* Radii */
   --radius-card: 12px;
   --radius-badge: 6px;
@@ -74,6 +86,13 @@ html {
 
 body {
   margin: 0;
+}
+
+/* In-page navigation (landing anchors) glides unless motion is reduced. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 #root {

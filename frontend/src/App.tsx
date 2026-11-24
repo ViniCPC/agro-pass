@@ -4,7 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { DemoModeProvider } from '@/contexts/demo'
 import { AuthProvider } from '@/contexts/auth'
 import { AuthGuard } from '@/features/auth/AuthGuard'
-import { RootRedirect } from '@/features/auth/RootRedirect'
+import { HomeRoute } from '@/features/auth/HomeRoute'
 import { AppShell } from '@/layouts/AppShell'
 import { PublicLayout } from '@/layouts/PublicLayout'
 import { PublicTraceLayout } from '@/layouts/PublicTraceLayout'
@@ -29,6 +29,18 @@ const FarmDetailPage = lazy(() =>
 )
 const FarmsPage = lazy(() =>
   import('@/pages/FarmsPage').then((module) => ({ default: module.FarmsPage })),
+)
+const LandingPage = lazy(() =>
+  import('@/pages/LandingPage').then((module) => ({ default: module.LandingPage })),
+)
+const PrivacyPage = lazy(() =>
+  import('@/pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })),
+)
+const StatusPage = lazy(() =>
+  import('@/pages/StatusPage').then((module) => ({ default: module.StatusPage })),
+)
+const TermsPage = lazy(() =>
+  import('@/pages/TermsPage').then((module) => ({ default: module.TermsPage })),
 )
 const LoginPage = lazy(() =>
   import('@/pages/LoginPage').then((module) => ({ default: module.LoginPage })),
@@ -69,7 +81,10 @@ export default function App() {
                 <Route path="/trace/:publicCode" element={<TracePage />} />
               </Route>
 
-              <Route index element={<RootRedirect />} />
+              <Route index element={<HomeRoute landing={<LandingPage />} />} />
+              <Route path="/privacidade" element={<PrivacyPage />} />
+              <Route path="/termos" element={<TermsPage />} />
+              <Route path="/status" element={<StatusPage />} />
 
               <Route element={<AuthGuard />}>
                 <Route element={<AppShell />}>

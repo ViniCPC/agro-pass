@@ -13,6 +13,8 @@ import { MOCK_FARMS } from './farms.mock'
 // with real passports.
 export const DEMO_CODE_PREFIX = 'DEMO-'
 export const DEMO_SHOWCASE_CODE = 'DEMO-2025-0001'
+// Batch shown on the landing page: in transit, so it shows a live chain.
+export const DEMO_LANDING_CODE = 'DEMO-2026-0001'
 
 // The proof is derived from the chain at runtime, so batches are stored
 // without it.
@@ -235,6 +237,63 @@ const SHOWCASE: DemoBatchRecord = {
 
 const boaVista = farmById('farm-002')
 const recantoVerde = farmById('farm-004')
+const boaEsperanca = farmById('farm-005')
+
+// ── Landing page batch: a coffee lot on its way, chain still growing ──────
+
+const LANDING: DemoBatchRecord = {
+  farm: boaEsperanca,
+  batch: {
+    id: 'demo-batch-landing',
+    code: 'AGP-2026-0001',
+    publicCode: DEMO_LANDING_CODE,
+    productType: 'COFFEE',
+    quantity: 800,
+    unit: 'sacas',
+    harvestDate: '2026-11-08T00:00:00Z',
+    status: 'IN_TRANSIT',
+    isPublic: true,
+    integrityHash: null,
+    tokenAddress: null,
+    tokenizedAt: null,
+    closedAt: null,
+    farm: farmSummary(boaEsperanca),
+    createdAt: '2026-11-10T11:30:00Z',
+    updatedAt: '2026-11-20T10:15:00Z',
+  },
+  events: [
+    {
+      type: 'CREATED',
+      actor: producerActor(boaEsperanca),
+      at: '2026-11-10T11:30:00Z',
+      location: 'Patrocínio, MG',
+      latitude: boaEsperanca.latitude,
+      longitude: boaEsperanca.longitude,
+    },
+    {
+      type: 'HARVESTED',
+      actor: producerActor(boaEsperanca),
+      at: '2026-11-11T13:00:00Z',
+      location: 'Fazenda Boa Esperança',
+      notes: 'Café arábica, colheita seletiva',
+    },
+    {
+      type: 'RECEIVED',
+      actor: cooperativeActor(boaEsperanca),
+      at: '2026-11-14T17:40:00Z',
+      location: 'Patrocínio, MG',
+      notes: 'Recebimento confirmado: 800 sacas',
+    },
+    {
+      type: 'IN_TRANSIT',
+      actor: DEMO_LOGISTICS_ACTOR,
+      at: '2026-11-20T10:15:00Z',
+      location: 'Patrocínio, MG → Varginha, MG',
+      notes: 'Transporte iniciado',
+    },
+  ],
+  documents: [],
+}
 
 function stageEvents(
   farm: Farm,
@@ -289,6 +348,7 @@ function simpleBatch(
 
 export const DEMO_SEED: DemoBatchRecord[] = [
   SHOWCASE,
+  LANDING,
   simpleBatch(
     '0002',
     boaVista,

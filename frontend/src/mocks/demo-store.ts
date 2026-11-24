@@ -24,7 +24,7 @@ import {
 import type { DemoActor } from './demo-chain'
 import { MOCK_FARMS } from './farms.mock'
 
-export { DEMO_SHOWCASE_CODE } from './demo-seed'
+export { DEMO_LANDING_CODE, DEMO_SHOWCASE_CODE } from './demo-seed'
 
 const CREATED_BATCHES_KEY = 'agropass.demo.createdBatches'
 const PROGRESS_KEY = 'agropass.demo.progress'
