@@ -1,11 +1,14 @@
-import { useLocation } from 'react-router-dom'
-import { Menu } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { LogOut, Menu } from 'lucide-react'
+import { DemoModeBadge } from '@/components/DemoModeBadge'
+import { useAuth } from '@/contexts/auth-context'
+import { useDemoMode } from '@/contexts/demo-context'
 
 const PAGE_META: Record<string, { title: string; description: string }> = {
   '/dashboard':   { title: 'Dashboard',  description: 'Visão geral do sistema AgroPass' },
-  '/farms':       { title: 'Fazendas',   description: 'Propriedades com validação EUDR' },
+  '/farms':       { title: 'Fazendas',   description: 'Propriedades de origem dos lotes' },
   '/batches':     { title: 'Lotes',      description: 'Colheitas com passaporte digital' },
-  '/batches/new': { title: 'Novo lote',  description: 'Cadastro de lote para fazenda compliant' },
+  '/batches/new': { title: 'Novo lote',  description: 'Cadastro da origem do lote' },
 }
 
 interface TopbarProps {
@@ -14,6 +17,9 @@ interface TopbarProps {
 
 export function Topbar({ onOpenMenu }: TopbarProps) {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const { isDemoMode } = useDemoMode()
 
   const meta =
     PAGE_META[pathname] ??
@@ -41,6 +47,43 @@ export function Topbar({ onOpenMenu }: TopbarProps) {
           </span>
         )}
       </div>
+      {isDemoMode && (
+        <div className="flex items-center gap-2">
+          <DemoModeBadge />
+          <button
+            type="button"
+            // Demo mode is turned off by /demo itself: switching it off here
+            // would let the auth guard redirect to /login before the
+            // (transition-wrapped) navigation lands.
+            onClick={() => navigate('/demo', { replace: true, state: { leaveDemo: true } })}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 text-xs font-medium text-[var(--color-ink-muted)] hover:border-[var(--color-amber-600)] hover:text-[var(--color-amber-700)]"
+          >
+            <LogOut size={14} />
+            Sair<span className="hidden sm:inline"> da demo</span>
+          </button>
+        </div>
+      )}
+      {user && !isDemoMode && (
+        <div className="flex items-center gap-3">
+          <div className="hidden text-right sm:block">
+            <p className="text-xs font-medium text-[var(--color-ink)]">{user.name}</p>
+            <p className="text-[10px] uppercase tracking-wide text-[var(--color-ink-subtle)]">
+              {user.role}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              logout()
+              navigate('/login', { replace: true })
+            }}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-ink-muted)] hover:text-[var(--color-red-700)]"
+            aria-label="Sair"
+          >
+            <LogOut size={15} />
+          </button>
+        </div>
+      )}
     </header>
   )
 }

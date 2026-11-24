@@ -12,12 +12,19 @@ interface TimelineContainerProps {
   description?: string
   className?: string
   groupByDayFrom?: number
+  showExplorerLinks?: boolean
+}
+
+// Local calendar day, matching the times printed on each event.
+function localDayKey(isoDate: string) {
+  const date = new Date(isoDate)
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 }
 
 function formatDayDividerLabel(isoDate: string) {
-  return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-US', {
-    month: 'short',
+  return new Date(isoDate).toLocaleDateString('pt-BR', {
     day: '2-digit',
+    month: 'short',
     year: 'numeric',
   })
 }
@@ -26,84 +33,66 @@ type TimelineEntry =
   | { kind: 'divider'; id: string; label: string }
   | { kind: 'event'; event: TimelineEventData; isLast: boolean }
 
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+}
+
+// Vertical motion only: a horizontal slide-in would make narrow screens
+// scroll sideways while it plays.
+const entryVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0 },
+}
+
+function sortKey(event: TimelineEventData) {
+  return event.sequence ?? new Date(event.createdAt).getTime()
+}
+
 export function TimelineContainer({
   events,
-  title = 'Supply chain timeline',
+  title = 'Linha do tempo',
   description,
   className,
   groupByDayFrom = 6,
+  showExplorerLinks = true,
 }: TimelineContainerProps) {
-  const listVariants = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: 0.09,
-      },
-    },
-  }
-
-  const entryVariants = {
-    hidden: { opacity: 0, x: -14 },
-    show: { opacity: 1, x: 0 },
-  }
-
   const sortedEvents = useMemo(
-    () =>
-      [...events].sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      ),
+    () => [...events].sort((a, b) => sortKey(a) - sortKey(b)),
     [events],
   )
 
   const entries = useMemo(() => {
     const result: TimelineEntry[] = []
     const shouldGroupByDay = sortedEvents.length >= groupByDayFrom
-
-    if (!shouldGroupByDay) {
-      return sortedEvents.map((event, index) => ({
-        kind: 'event' as const,
-        event,
-        isLast: index === sortedEvents.length - 1,
-      }))
-    }
-
     let currentDayKey: string | null = null
-    for (let index = 0; index < sortedEvents.length; index += 1) {
-      const event = sortedEvents[index]
-      const dayKey = new Date(event.createdAt).toISOString().slice(0, 10)
 
-      if (dayKey !== currentDayKey) {
+    sortedEvents.forEach((event, index) => {
+      const dayKey = localDayKey(event.createdAt)
+      if (shouldGroupByDay && dayKey !== currentDayKey) {
         currentDayKey = dayKey
         result.push({
           kind: 'divider',
           id: `day-${dayKey}`,
-          label: formatDayDividerLabel(dayKey),
+          label: formatDayDividerLabel(event.createdAt),
         })
       }
-
-      result.push({
-        kind: 'event',
-        event,
-        isLast: index === sortedEvents.length - 1,
-      })
-    }
+      result.push({ kind: 'event', event, isLast: index === sortedEvents.length - 1 })
+    })
 
     return result
   }, [groupByDayFrom, sortedEvents])
 
   return (
     <section
-      className={`rounded-[var(--radius-card)] border border-[var(--color-teal-100)] bg-gradient-to-br from-[var(--color-teal-50)] to-[var(--color-surface)] p-5 shadow-[var(--shadow-card-hover)] ${
+      className={`rounded-[var(--radius-card)] border border-[var(--color-teal-100)] bg-gradient-to-br from-[var(--color-teal-50)] to-[var(--color-surface)] p-4 shadow-[var(--shadow-card-hover)] sm:p-5 ${
         className ?? ''
       }`}
     >
-      <div className="mb-4 flex items-center gap-2">
-        <Activity size={16} className="text-[var(--color-teal-700)]" />
+      <div className="mb-4 flex items-start gap-2">
+        <Activity size={16} className="mt-0.5 shrink-0 text-[var(--color-teal-700)]" />
         <div>
-          <h2 className="text-base font-semibold text-[var(--color-ink)]">
-            {title}
-          </h2>
+          <h2 className="text-base font-semibold text-[var(--color-ink)]">{title}</h2>
           {description && (
             <p className="text-sm text-[var(--color-ink-subtle)]">{description}</p>
           )}
@@ -113,27 +102,28 @@ export function TimelineContainer({
       {sortedEvents.length === 0 ? (
         <TimelineEmptyState />
       ) : (
-        <motion.div
-          className="space-y-0"
-          variants={listVariants}
-          initial="hidden"
-          animate="show"
-        >
+        <motion.ol variants={listVariants} initial="hidden" animate="show">
           {entries.map((entry) =>
             entry.kind === 'divider' ? (
-              <motion.div key={entry.id} variants={entryVariants} transition={{ duration: 0.22 }}>
+              <motion.li
+                key={entry.id}
+                variants={entryVariants}
+                transition={{ duration: 0.2 }}
+                aria-hidden
+              >
                 <TimelineDayDivider label={entry.label} />
-              </motion.div>
+              </motion.li>
             ) : (
-              <motion.div key={entry.event.id} variants={entryVariants} transition={{ duration: 0.25 }}>
+              <motion.li key={entry.event.id} variants={entryVariants} transition={{ duration: 0.22 }}>
                 <TimelineItem
                   event={entry.event}
                   isLast={entry.isLast}
+                  showExplorerLinks={showExplorerLinks}
                 />
-              </motion.div>
+              </motion.li>
             ),
           )}
-        </motion.div>
+        </motion.ol>
       )}
     </section>
   )

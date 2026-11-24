@@ -1,5 +1,6 @@
-import { ExternalLink, MapPin } from 'lucide-react'
-import { TRACE_EVENT_LABEL, formatDateTime } from './trace.utils'
+import { ExternalLink, MapPin, UserRound } from 'lucide-react'
+import { ROLE_LABEL, TRACE_EVENT_LABEL, formatDateTime } from './trace.utils'
+import { explorerTxUrl } from './solana'
 import { TimelineEventIcon } from './TimelineEventIcon'
 import { TimelineDocumentBadge } from './TimelineDocumentBadge'
 import { TimelineHashInline } from './TimelineHashInline'
@@ -8,86 +9,96 @@ import type { TimelineEventData } from './timeline.types'
 interface TimelineItemProps {
   event: TimelineEventData
   isLast: boolean
+  showExplorerLinks: boolean
 }
 
 function getLocationLabel(event: TimelineEventData) {
   if (event.location) return event.location
   if (event.latitude != null && event.longitude != null) {
-    return `${event.latitude.toFixed(5)}, ${event.longitude.toFixed(5)}`
+    return `${event.latitude.toFixed(2)}, ${event.longitude.toFixed(2)}`
   }
   return null
 }
 
-function getExplorerTxLink(txHash: string) {
-  return `https://solscan.io/tx/${encodeURIComponent(txHash)}?cluster=devnet`
-}
-
-export function TimelineItem({ event, isLast }: TimelineItemProps) {
+export function TimelineItem({ event, isLast, showExplorerLinks }: TimelineItemProps) {
+  const actor = event.actor ?? event.recordedBy
+  const roleLabel = actor ? ROLE_LABEL[actor.role] : null
   const locationLabel = getLocationLabel(event)
-  const stageName = event.customStageName?.trim() || null
-  const eventLabel = TRACE_EVENT_LABEL[event.type] ?? event.type
+  const note = event.customStageName?.trim() || null
+  const documents = event.documents ?? (event.document ? [event.document] : [])
 
   return (
-    <article className="group relative grid grid-cols-[2.25rem_1fr] gap-3">
+    <div className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-2.5 sm:grid-cols-[2.25rem_minmax(0,1fr)] sm:gap-x-3">
       <div className="relative flex justify-center">
         <TimelineEventIcon type={event.type} />
         {!isLast && (
-          <span className="absolute top-8 bottom-0 w-px bg-[var(--color-border)]" />
+          <span aria-hidden className="absolute top-8 bottom-0 w-px bg-[var(--color-border)]" />
         )}
       </div>
 
-      <div className={`pb-4 ${isLast ? 'pb-0' : ''}`}>
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 shadow-[var(--shadow-card)] transition-all group-hover:border-[var(--color-teal-100)] group-hover:shadow-[var(--shadow-card-hover)]">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
-                  {event.type}
+      <div className={isLast ? '' : 'pb-3 sm:pb-4'}>
+        <article className="min-w-0 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] sm:p-4">
+          <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+            <h3 className="text-sm font-semibold text-[var(--color-ink)]">
+              {event.sequence != null && (
+                <span className="mr-1.5 font-mono text-xs font-medium text-[var(--color-ink-subtle)]">
+                  #{event.sequence}
                 </span>
-                {stageName ? (
-                  <h3 className="text-sm font-semibold text-[var(--color-ink)]">
-                    "{stageName}"
-                  </h3>
-                ) : (
-                  <h3 className="text-sm font-semibold text-[var(--color-ink)]">
-                    {eventLabel}
-                  </h3>
-                )}
-                {event.document && <TimelineDocumentBadge document={event.document} />}
-              </div>
-              <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
-                {event.actorName}
-              </p>
-            </div>
-            <p className="text-xs text-[var(--color-ink-subtle)]">
+              )}
+              {TRACE_EVENT_LABEL[event.type] ?? event.type}
+            </h3>
+            <time dateTime={event.createdAt} className="text-xs text-[var(--color-ink-subtle)]">
               {formatDateTime(event.createdAt)}
-            </p>
-          </div>
+            </time>
+          </header>
 
-          {locationLabel && (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-[var(--color-ink-subtle)]">
-              <MapPin size={12} />
-              {locationLabel}
-            </p>
+          {note && (
+            <p className="mt-1 break-words text-sm text-[var(--color-ink-muted)]">{note}</p>
           )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <TimelineHashInline value={event.eventHash} prefix="Event" />
-            <TimelineHashInline value={event.txHash} prefix="Tx" />
-            {event.txHash && (
+          <dl className="mt-2 space-y-1 text-xs text-[var(--color-ink-muted)]">
+            <div className="flex items-start gap-1.5">
+              <dt className="sr-only">Responsável</dt>
+              <UserRound size={12} className="mt-0.5 shrink-0 text-[var(--color-ink-subtle)]" aria-hidden />
+              <dd className="min-w-0 break-words">
+                <span className="font-medium text-[var(--color-ink)]">{event.actorName}</span>
+                {roleLabel && <span className="text-[var(--color-ink-subtle)]"> · {roleLabel}</span>}
+              </dd>
+            </div>
+            {locationLabel && (
+              <div className="flex items-start gap-1.5">
+                <dt className="sr-only">Local</dt>
+                <MapPin size={12} className="mt-0.5 shrink-0 text-[var(--color-ink-subtle)]" aria-hidden />
+                <dd className="min-w-0 break-words">{locationLabel}</dd>
+              </div>
+            )}
+          </dl>
+
+          {documents.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {documents.map((document) => (
+                <TimelineDocumentBadge key={document.id} document={document} />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-2.5 space-y-1 border-t border-[var(--color-border-soft)] pt-2">
+            <TimelineHashInline label="Hash" value={event.eventHash} />
+            <TimelineHashInline label="Tx" value={event.txHash} />
+            {event.txHash && showExplorerLinks && (
               <a
-                href={getExplorerTxLink(event.txHash)}
+                href={explorerTxUrl(event.txHash)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-teal-700)] hover:underline"
               >
-                Ver no Solana Explorer {'->'}
+                Ver transação no Solana Explorer
                 <ExternalLink size={12} />
               </a>
             )}
           </div>
-        </div>
+        </article>
       </div>
-    </article>
+    </div>
   )
 }

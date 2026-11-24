@@ -37,7 +37,7 @@ export function BatchesTable({ batches }: BatchesTableProps) {
       <EmptyState
         icon={Package}
         title="Nenhum lote encontrado"
-        description="Ajuste os filtros ou crie um lote via Telegram."
+        description="Ajuste os filtros ou registre um novo lote."
       />
     )
   }
@@ -50,7 +50,7 @@ export function BatchesTable({ batches }: BatchesTableProps) {
           className="border-b border-[var(--color-border-soft)] last:border-0 hover:bg-[var(--color-page)] transition-colors"
         >
           <td className={TD}>
-            <BatchQrCell id={batch.id} code={batch.code} />
+            <BatchQrCell id={batch.id} code={batch.code} publicCode={batch.publicCode} />
           </td>
           <td className={TD}>
             <BatchProductCell
@@ -67,9 +67,7 @@ export function BatchesTable({ batches }: BatchesTableProps) {
           </td>
           <td className={TD}>
             <BatchBlockchainCell
-              cnftAddress={batch.cnftAddress}
-              mintTxHash={batch.mintTxHash}
-              status={batch.status}
+              tokenAddress={batch.tokenAddress}
             />
           </td>
           <td className={`${TD} text-xs tabular-nums text-[var(--color-ink-muted)]`}>

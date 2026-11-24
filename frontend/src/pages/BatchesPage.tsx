@@ -4,7 +4,12 @@ import { LoadingState } from '@/components/LoadingState'
 import { ErrorState } from '@/components/ErrorState'
 import { BatchesHeader } from '@/features/batches/BatchesHeader'
 import { BatchCard } from '@/features/batches/BatchCard'
-import { BatchesFilters, DEFAULT_BATCH_FILTERS, applyBatchFilters, type BatchFilters } from '@/features/batches/BatchesFilters'
+import { BatchesFilters } from '@/features/batches/BatchesFilters'
+import {
+  DEFAULT_BATCH_FILTERS,
+  applyBatchFilters,
+  type BatchFilters,
+} from '@/features/batches/batch-filters'
 import { BatchesTable } from '@/features/batches/BatchesTable'
 import { PageContainer } from '@/components/PageContainer'
 
@@ -12,7 +17,7 @@ export function BatchesPage() {
   const [filters, setFilters] = useState<BatchFilters>(DEFAULT_BATCH_FILTERS)
   const { data, isLoading, error, refetch } = useBatches()
 
-  const allBatches = data?.data ?? []
+  const allBatches = useMemo(() => data?.data ?? [], [data?.data])
   const batches = useMemo(() => applyBatchFilters(allBatches, filters), [allBatches, filters])
 
   return (

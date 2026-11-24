@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { farmsApi } from '@/api/farmsApi'
-import { useDemoMode } from '@/contexts/demo'
+import { useDemoMode } from '@/contexts/demo-context'
 import { MOCK_FARMS, MOCK_FARMS_RESPONSE } from '@/mocks/farms.mock'
 import type { PaginationParams } from '@/types/api'
 

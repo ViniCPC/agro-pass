@@ -1,107 +1,122 @@
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { FlaskConical, ScanLine } from 'lucide-react'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
-import { StickyMobileCta } from '@/components/StickyMobileCta'
-import { TouchFriendlyButton } from '@/components/TouchFriendlyButton'
 import { TraceBatchSummary } from '@/features/trace/TraceBatchSummary'
-import { BlockchainProofCard } from '@/features/trace/BlockchainProofCard'
-import { TraceCertificateMeta } from '@/features/trace/TraceCertificateMeta'
-import { TraceComplianceCard } from '@/features/trace/TraceComplianceCard'
+import { TraceBlockchainProofCard } from '@/features/trace/TraceBlockchainProofCard'
 import { TraceDocumentsPanel } from '@/features/trace/TraceDocumentsPanel'
 import { TraceFarmCard } from '@/features/trace/TraceFarmCard'
 import { TraceHero } from '@/features/trace/TraceHero'
+import { TraceIntegrityCard } from '@/features/trace/TraceIntegrityCard'
 import { TraceTimeline } from '@/features/trace/TraceTimeline'
 import { TraceTrustFooter } from '@/features/trace/TraceTrustFooter'
-import { TraceQrSection } from '@/features/qr/TraceQrSection'
-import { resolveAssetUrl } from '@/features/qr/qr.utils'
-import { useTraceByCode } from '@/hooks/useTraceByCode'
-import type { PublicBatch } from '@/types/api'
+import { isPassportNotFound, useTraceByCode } from '@/hooks/useTraceByCode'
+import { DEMO_SHOWCASE_CODE, isDemoPublicCode } from '@/mocks/demo-store'
 
-function getEudrReportUrl(data: PublicBatch) {
-  const report = data.documents.find((document) => document.type === 'ENVIRONMENTAL_REPORT')
-  return resolveAssetUrl(report?.fileUrl ?? null)
+function useDocumentTitle(title: string) {
+  useEffect(() => {
+    const previous = document.title
+    document.title = title
+    return () => {
+      document.title = previous
+    }
+  }, [title])
+}
+
+function ExamplePassportLink() {
+  return (
+    <Link
+      to={`/trace/${DEMO_SHOWCASE_CODE}`}
+      className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-[var(--color-teal-700)] hover:underline"
+    >
+      <ScanLine size={14} />
+      Ver passaporte de exemplo
+    </Link>
+  )
 }
 
 export function TracePage() {
-  const { code } = useParams<{ code: string }>()
-  const decodedCode = code ? decodeURIComponent(code) : null
+  // React Router already decodes the param.
+  const { publicCode: rawCode } = useParams<{ publicCode: string }>()
+  const publicCode = rawCode?.trim() || null
+  const isDemo = publicCode ? isDemoPublicCode(publicCode) : false
+  const { data, isLoading, error, refetch } = useTraceByCode(publicCode)
 
-  const { data, isLoading, error, refetch } = useTraceByCode(decodedCode)
+  useDocumentTitle(data ? `Lote ${data.batch.code} · Passaporte AgroPass` : 'Passaporte AgroPass')
 
-  if (!decodedCode) {
+  if (!publicCode) {
     return (
       <ErrorState
-        title="Invalid trace link"
-        description="This traceability URL is missing a batch code."
+        title="Link de passaporte inválido"
+        description="O endereço não contém o código do lote."
       />
     )
   }
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <LoadingState rows={4} />
+      <div className="mx-auto w-full max-w-5xl space-y-4" aria-busy="true">
         <LoadingState rows={3} />
+        <LoadingState rows={5} />
       </div>
     )
   }
 
   if (error || !data) {
+    const notFound = isPassportNotFound(error)
     return (
-      <div className="space-y-4">
+      <div className="mx-auto w-full max-w-xl space-y-3 text-center">
         <ErrorState
-          title={`Batch "${decodedCode}" not found`}
-          description="We could not find a public traceability record for this code."
-          onRetry={() => refetch()}
+          title={notFound ? 'Passaporte não encontrado' : 'Não foi possível carregar o passaporte'}
+          description={
+            notFound
+              ? isDemo
+                ? `O lote de demonstração ${publicCode} não existe neste navegador. Lotes criados na demo ficam só no aparelho em que foram criados.`
+                : `Não há passaporte público para o código ${publicCode}. Ele pode ter sido digitado errado ou ainda não ter sido publicado.`
+              : 'Verifique sua conexão com a internet e tente novamente.'
+          }
+          onRetry={notFound ? undefined : () => refetch()}
         />
-        <p className="text-center text-sm text-[var(--color-ink-subtle)]">
-          For demo mode, open <Link className="text-[var(--color-teal-700)] hover:underline" to="/trace/AGP-2025-001">/trace/AGP-2025-001</Link>.
-        </p>
+        <ExamplePassportLink />
       </div>
     )
   }
 
-  const eudrReportUrl = getEudrReportUrl(data)
-
   return (
-    <div className="mx-auto w-full max-w-5xl pb-24 sm:pb-0">
-      <div className="space-y-4 rounded-[16px] border-2 border-[var(--color-teal-100)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card-hover)] sm:p-6">
-        <TraceCertificateMeta data={data} />
+    <div className="mx-auto w-full max-w-5xl space-y-4">
+      {isDemo && (
+        <p className="flex items-start gap-2 rounded-[var(--radius-card)] border border-[var(--color-amber-100)] bg-[var(--color-amber-50)] px-3 py-2.5 text-xs leading-5 text-[var(--color-amber-700)]">
+          <FlaskConical size={14} className="mt-0.5 shrink-0" />
+          Passaporte de demonstração: dados fictícios, carregados sem servidor. Os hashes são reais e
+          calculados como no sistema em produção.
+        </p>
+      )}
 
-        <TraceHero data={data} />
+      <TraceHero data={data} />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <TraceBatchSummary data={data} />
-          <TraceFarmCard data={data} />
-        </div>
-
-        <TraceQrSection
-          batchCode={data.batch.code}
-          qrCodeUrl={data.batch.qrCodeUrl}
-        />
-
-        <TraceComplianceCard data={data} />
-
-        <TraceTimeline events={data.traceEvents} />
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <TraceDocumentsPanel data={data} />
-          <BlockchainProofCard data={data} />
-        </div>
-
-        <TraceTrustFooter />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <TraceBatchSummary data={data} />
+        <TraceIntegrityCard integrity={data.integrity} />
       </div>
 
-      {eudrReportUrl && (
-        <StickyMobileCta>
-          <TouchFriendlyButton
-            onClick={() => window.open(eudrReportUrl, '_blank', 'noopener,noreferrer')}
-            className="w-full rounded-lg bg-[var(--color-teal-700)] px-4 text-sm font-semibold text-white"
-          >
-            Download EUDR Report
-          </TouchFriendlyButton>
-        </StickyMobileCta>
-      )}
+      <TraceFarmCard data={data} />
+
+      <TraceTimeline
+        events={data.traceEvents}
+        title="Linha do tempo"
+        description="Cada etapa com o responsável, o local e o hash que a encadeia à anterior."
+        showExplorerLinks={!isDemo}
+        // Each card already shows its date; day dividers only add length on phones.
+        groupByDayFrom={Number.POSITIVE_INFINITY}
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <TraceDocumentsPanel data={data} />
+        <TraceBlockchainProofCard data={data} isDemo={isDemo} />
+      </div>
+
+      <TraceTrustFooter />
     </div>
   )
 }

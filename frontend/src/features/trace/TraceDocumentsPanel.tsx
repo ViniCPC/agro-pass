@@ -1,123 +1,88 @@
-import { FileText, Image, Satellite } from 'lucide-react'
-import type { PublicBatch } from '@/types/api'
-import { DOCUMENT_LABEL, formatDate, shortHash } from './trace.utils'
+import { ExternalLink, FileText, Lock } from 'lucide-react'
+import { resolveAssetUrl } from '@/features/qr/qr.utils'
+import type { PublicBatch, PublicDocument } from '@/types/api'
+import { TimelineHashInline } from './TimelineHashInline'
+import { DOCUMENT_LABEL, formatDate } from './trace.utils'
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3000'
-
-type EvidenceItem = {
-  id: string
-  label: string
-  source: string
-  url: string
-  createdAt: string | null
-  hash: string | null
-}
-
-function toAbsoluteUrl(url: string) {
-  if (/^https?:\/\//i.test(url)) {
-    return url
-  }
-  if (url.startsWith('/')) {
-    return `${API_URL}${url}`
-  }
-  return `${API_URL}/${url}`
-}
-
-function getEvidenceItems(data: PublicBatch): EvidenceItem[] {
-  const stageNameByDocumentId = new Map(
-    data.traceEvents
-      .filter((e) => e.documentId && e.customStageName)
-      .map((e) => [e.documentId!, e.customStageName!]),
-  )
-
-  const documentItems = data.documents.map((document) => {
-    const customLabel =
-      document.type === 'OTHER'
-        ? (stageNameByDocumentId.get(document.id) ?? DOCUMENT_LABEL[document.type])
-        : (DOCUMENT_LABEL[document.type] ?? document.type)
-    return {
-      id: document.id,
-      label: customLabel,
-      source: document.scope === 'FARM' ? 'Documento da fazenda' : 'Documento do lote',
-      url: toAbsoluteUrl(document.fileUrl),
-      createdAt: document.createdAt,
-      hash: document.fileHash,
-    }
-  })
-
-  const validation = data.farm.lastValidation
-  const satelliteItems: EvidenceItem[] = []
-
-  if (validation?.satelliteImageBeforeUrl) {
-    satelliteItems.push({
-      id: `${validation.id}-sat-before`,
-      label: 'Imagem de satélite (antes do corte)',
-      source: 'Validação EUDR',
-      url: validation.satelliteImageBeforeUrl,
-      createdAt: validation.validatedAt,
-      hash: validation.evidenceHash,
-    })
-  }
-
-  if (validation?.satelliteImageAfterUrl) {
-    satelliteItems.push({
-      id: `${validation.id}-sat-after`,
-      label: 'Imagem de satélite (mais recente)',
-      source: 'Validação EUDR',
-      url: validation.satelliteImageAfterUrl,
-      createdAt: validation.validatedAt,
-      hash: validation.evidenceHash,
-    })
-  }
-
-  return [...documentItems, ...satelliteItems]
+function documentLabel(document: PublicDocument, stageNames: Map<string, string>) {
+  if (document.type !== 'OTHER') return DOCUMENT_LABEL[document.type]
+  return stageNames.get(document.id) ?? document.originalName ?? DOCUMENT_LABEL.OTHER
 }
 
 export function TraceDocumentsPanel({ data }: { data: PublicBatch }) {
-  const evidenceItems = getEvidenceItems(data)
+  // Custom stages (e.g. from the Telegram bot) name their "OTHER" evidence.
+  const stageNames = new Map(
+    data.traceEvents
+      .filter((event) => event.documentId && event.customStageName)
+      .map((event) => [event.documentId!, event.customStageName!]),
+  )
+  const hasRestricted = data.documents.some((document) => !document.fileUrl)
 
   return (
-    <section className="rounded-[var(--radius-card)] border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
+    <section className="rounded-[var(--radius-card)] border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5">
       <div className="mb-4 flex items-center gap-2">
         <FileText size={16} className="text-[var(--color-teal-700)]" />
-        <h2 className="text-base font-semibold text-[var(--color-ink)]">Documentos e evidências</h2>
+        <h2 className="text-base font-semibold text-[var(--color-ink)]">Documentos</h2>
       </div>
 
-      {evidenceItems.length === 0 ? (
+      {data.documents.length === 0 ? (
         <p className="text-sm text-[var(--color-ink-subtle)]">
-          Nenhum documento ou evidência ambiental disponível para este lote ainda.
+          Nenhum documento foi vinculado a este lote.
         </p>
       ) : (
-        <div className="space-y-3">
-          {evidenceItems.map((item) => (
-            <article
-              key={item.id}
-              className="flex flex-col gap-2 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-page)] p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[var(--color-ink)]">{item.label}</p>
-                <p className="text-xs text-[var(--color-ink-subtle)]">
-                  {item.source} • {formatDate(item.createdAt)}
-                </p>
-                {item.hash && (
-                  <p className="mt-1 font-mono text-[11px] text-[var(--color-ink-muted)]" title={item.hash}>
-                    Hash {shortHash(item.hash, 18, 14)}
-                  </p>
-                )}
-              </div>
-
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-medium text-[var(--color-teal-700)] hover:border-[var(--color-teal-100)]"
+        <ul className="space-y-2.5">
+          {data.documents.map((document) => {
+            const href = resolveAssetUrl(document.fileUrl)
+            return (
+              <li
+                key={document.id}
+                className="rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-page)] p-3"
               >
-                {item.label.includes('satélite') ? <Satellite size={13} /> : <Image size={13} />}
-                Abrir
-              </a>
-            </article>
-          ))}
-        </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold text-[var(--color-ink)]">
+                      {documentLabel(document, stageNames)}
+                    </p>
+                    <p className="text-xs text-[var(--color-ink-subtle)]">
+                      {document.scope === 'FARM' ? 'Documento da fazenda' : 'Documento do lote'} ·{' '}
+                      {formatDate(document.createdAt)}
+                    </p>
+                  </div>
+                  {href ? (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 text-xs font-medium text-[var(--color-teal-700)] hover:border-[var(--color-teal-100)]"
+                    >
+                      Abrir
+                      <ExternalLink size={12} />
+                    </a>
+                  ) : (
+                    <span
+                      className="inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-[var(--radius-badge)] bg-[var(--color-slate-100)] px-2.5 text-xs font-medium text-[var(--color-slate-600)]"
+                      title="Arquivo restrito: apenas o hash é público"
+                    >
+                      <Lock size={12} />
+                      Restrito
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2">
+                  <TimelineHashInline label="SHA-256" value={document.fileHash} />
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      {data.documents.length > 0 && (
+        <p className="mt-3 text-xs leading-5 text-[var(--color-ink-subtle)]">
+          {hasRestricted &&
+            'Documentos restritos aparecem só pelo hash: ele prova que o arquivo existe e não foi alterado, sem expor dados pessoais. '}
+          Para conferir um arquivo aberto, calcule o SHA-256 dele e compare com o hash exibido.
+        </p>
       )}
     </section>
   )

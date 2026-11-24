@@ -6,20 +6,10 @@ interface TraceTimelineProps {
   title?: string
   description?: string
   className?: string
+  showExplorerLinks?: boolean
+  groupByDayFrom?: number
 }
 
-export function TraceTimeline({
-  events,
-  title,
-  description,
-  className,
-}: TraceTimelineProps) {
-  return (
-    <TimelineContainer
-      events={events}
-      title={title}
-      description={description}
-      className={className}
-    />
-  )
+export function TraceTimeline(props: TraceTimelineProps) {
+  return <TimelineContainer {...props} />
 }

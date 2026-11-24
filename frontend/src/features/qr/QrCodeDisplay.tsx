@@ -1,45 +1,39 @@
-import { resolveAssetUrl } from './qr.utils'
+import { useQrDataUrl } from '@/hooks/useQrDataUrl'
 
 interface QrCodeDisplayProps {
-  qrCodeUrl: string | null | undefined
-  batchCode: string
+  value: string
+  label: string
   size?: number
 }
 
-export function QrCodeDisplay({
-  qrCodeUrl,
-  batchCode,
-  size = 240,
-}: QrCodeDisplayProps) {
-  const src = resolveAssetUrl(qrCodeUrl)
-  const imageSize = Math.max(200, size)
+export function QrCodeDisplay({ value, label, size = 220 }: QrCodeDisplayProps) {
+  // Rendered at 2x so it stays crisp on high-density screens.
+  const { data: src, isError } = useQrDataUrl(value, size * 2)
 
   return (
-    <div className="inline-flex flex-col items-center gap-2.5">
-      <div
-        className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)]"
-        style={{ width: imageSize + 24, minWidth: 224 }}
-      >
+    <div className="inline-flex max-w-full flex-col items-center gap-2.5">
+      <div className="max-w-full rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)]">
         {src ? (
           <img
             src={src}
-            alt={`QR code for ${batchCode}`}
-            width={imageSize}
-            height={imageSize}
-            className="mx-auto block rounded-md bg-white object-contain"
+            alt={`QR Code do passaporte ${label}`}
+            width={size}
+            height={size}
+            className="mx-auto block h-auto max-w-full rounded-md bg-white"
+            style={{ width: size }}
           />
         ) : (
           <div
-            className="mx-auto flex items-center justify-center rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-slate-50)] text-xs text-[var(--color-ink-subtle)]"
-            style={{ width: imageSize, height: imageSize }}
+            className="mx-auto flex max-w-full items-center justify-center rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-slate-50)] text-xs text-[var(--color-ink-subtle)]"
+            style={{ width: size, aspectRatio: '1 / 1' }}
           >
-            QR not generated yet
+            {isError ? 'Não foi possível gerar o QR' : 'Gerando QR...'}
           </div>
         )}
       </div>
 
       <p className="rounded bg-[var(--color-border-soft)] px-2 py-1 font-mono text-xs text-[var(--color-ink-muted)]">
-        {batchCode}
+        {label}
       </p>
     </div>
   )

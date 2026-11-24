@@ -60,7 +60,7 @@ export function BatchPreviewCard({
           Código
         </p>
         <p className="mt-1 font-mono text-sm text-[var(--color-ink)]">
-          CAF-2026-XXXX
+          AGP-2026-XXXX
         </p>
       </div>
 

@@ -15,7 +15,6 @@ import {
   DEFAULT_CREATE_BATCH_FORM,
   type CreateBatchFormValues,
 } from '@/features/batches/create-batch.constants'
-import { useCompliantFarms } from '@/hooks/useCompliantFarms'
 import { useCreateBatch, useMintBatch } from '@/hooks/useCreateBatch'
 import { useFarms } from '@/hooks/useFarms'
 import type { Batch } from '@/types/api'
@@ -59,12 +58,10 @@ export function CreateBatchPage() {
   const [mintResult, setMintResult] = useState<MintBatchResponse | null>(null)
 
   const farmsQuery = useFarms()
-  const compliantFarmsQuery = useCompliantFarms()
   const createBatch = useCreateBatch()
   const mintBatch = useMintBatch()
 
-  const farms = farmsQuery.data?.data ?? []
-  const compliantCount = compliantFarmsQuery.data.length
+  const farms = useMemo(() => farmsQuery.data?.data ?? [], [farmsQuery.data?.data])
   const selectedFarm = useMemo(
     () => farms.find((farm) => farm.id === formValues.farmId) ?? null,
     [farms, formValues.farmId],
@@ -84,8 +81,6 @@ export function CreateBatchPage() {
 
     if (!values.farmId) {
       fieldErrors.farmId = 'A fazenda é obrigatória.'
-    } else if (!selectedFarm || selectedFarm.lastValidationStatus !== 'COMPLIANT') {
-      fieldErrors.farmId = 'Apenas fazendas conformes podem criar lotes.'
     }
 
     if (!values.productType) {
@@ -167,14 +162,9 @@ export function CreateBatchPage() {
     !!formValues.productType &&
     !!formValues.quantity &&
     !!formValues.unit.trim() &&
-    !!formValues.harvestDate &&
-    selectedFarm?.lastValidationStatus === 'COMPLIANT'
+    !!formValues.harvestDate
 
-  const submitHint =
-    submitError ??
-    (selectedFarm && selectedFarm.lastValidationStatus !== 'COMPLIANT'
-      ? 'A fazenda selecionada ainda não está conforme. Execute a validação EUDR primeiro.'
-      : null)
+  const submitHint = submitError
 
   if (farmsQuery.isLoading) {
     return (
@@ -201,7 +191,7 @@ export function CreateBatchPage() {
       <CreateBatchHeader />
 
       <p className="text-sm text-[var(--color-ink-subtle)]">
-        {compliantCount} fazenda{compliantCount !== 1 ? 's' : ''} conforme{compliantCount !== 1 ? 's' : ''} pronta{compliantCount !== 1 ? 's' : ''} para criar lotes.
+        {farms.length} fazenda{farms.length !== 1 ? 's' : ''} disponíve{farms.length !== 1 ? 'is' : 'l'} para vincular ao lote.
       </p>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -229,7 +219,7 @@ export function CreateBatchPage() {
         onGoToBatchDetail={() => {
           if (!createdBatch) return
           setIsSuccessOpen(false)
-          navigate(`/trace/${encodeURIComponent(createdBatch.code)}`)
+          navigate(`/batches/${createdBatch.id}`)
         }}
         onCreateAnother={resetFormForAnother}
         onBackToBatches={() => navigate('/batches')}

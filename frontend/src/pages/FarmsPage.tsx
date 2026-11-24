@@ -3,7 +3,12 @@ import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { PageContainer } from '@/components/PageContainer'
 import { FarmCard } from '@/features/farms/FarmCard'
-import { FarmsFilters, DEFAULT_FILTERS, applyFarmFilters, type FarmFilters } from '@/features/farms/FarmsFilters'
+import { FarmsFilters } from '@/features/farms/FarmsFilters'
+import {
+  DEFAULT_FILTERS,
+  applyFarmFilters,
+  type FarmFilters,
+} from '@/features/farms/farm-filters'
 import { FarmsHeader } from '@/features/farms/FarmsHeader'
 import { FarmsTable } from '@/features/farms/FarmsTable'
 import { useFarms } from '@/hooks/useFarms'
@@ -12,7 +17,7 @@ export function FarmsPage() {
   const [filters, setFilters] = useState<FarmFilters>(DEFAULT_FILTERS)
   const { data, isLoading, error, refetch } = useFarms()
 
-  const allFarms = data?.data ?? []
+  const allFarms = useMemo(() => data?.data ?? [], [data?.data])
   const farms = useMemo(
     () => applyFarmFilters(allFarms, filters),
     [allFarms, filters],

@@ -15,25 +15,25 @@
   --color-ink-muted:   #4B5653;
   --color-ink-subtle:  #8A9E9A;
 
-  /* Status — COMPLIANT */
+  /* Success */
   --color-green-50:  #F0FDF4;
   --color-green-100: #DCFCE7;
   --color-green-600: #16A34A;
   --color-green-700: #15803D;
 
-  /* Status — NEEDS_REVIEW */
+  /* Warning */
   --color-amber-50:  #FFFBEB;
   --color-amber-100: #FEF3C7;
   --color-amber-600: #D97706;
   --color-amber-700: #B45309;
 
-  /* Status — NON_COMPLIANT */
+  /* Error */
   --color-red-50:  #FFF1F2;
   --color-red-100: #FFE4E6;
   --color-red-600: #DC2626;
   --color-red-700: #B91C1C;
 
-  /* Status — PENDING */
+  /* Neutral */
   --color-slate-50:  #F8FAFC;
   --color-slate-100: #F1F5F9;
   --color-slate-400: #94A3B8;

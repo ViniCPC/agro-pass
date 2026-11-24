@@ -1,11 +1,10 @@
-import { DashboardMetricsGrid }   from '@/features/dashboard/DashboardMetricsGrid'
-import { DashboardNarrative }     from '@/features/dashboard/DashboardNarrative'
-import { ComplianceOverview }      from '@/features/dashboard/ComplianceOverview'
-import { BlockchainProofSummary }  from '@/features/dashboard/BlockchainProofSummary'
-import { RecentFarmsCard }         from '@/features/dashboard/RecentFarmsCard'
-import { RecentBatchesCard }       from '@/features/dashboard/RecentBatchesCard'
 import { MotionWrapper } from '@/components/MotionWrapper'
 import { PageContainer } from '@/components/PageContainer'
+import { BlockchainProofSummary } from '@/features/dashboard/BlockchainProofSummary'
+import { DashboardMetricsGrid } from '@/features/dashboard/DashboardMetricsGrid'
+import { DashboardNarrative } from '@/features/dashboard/DashboardNarrative'
+import { RecentBatchesCard } from '@/features/dashboard/RecentBatchesCard'
+import { RecentFarmsCard } from '@/features/dashboard/RecentFarmsCard'
 
 export function DashboardPage() {
   return (
@@ -13,19 +12,9 @@ export function DashboardPage() {
       <MotionWrapper variant="fade">
         <DashboardNarrative />
       </MotionWrapper>
-
       <DashboardMetricsGrid />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <MotionWrapper variant="slide-left">
-          <ComplianceOverview />
-        </MotionWrapper>
-        <MotionWrapper variant="scale">
-          <BlockchainProofSummary />
-        </MotionWrapper>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <BlockchainProofSummary />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <RecentFarmsCard />
         <RecentBatchesCard />
       </div>

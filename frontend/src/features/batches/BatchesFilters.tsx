@@ -1,28 +1,5 @@
-import type { Batch, ProductType, BatchStatus } from '@/types/api'
-
-export interface BatchFilters {
-  product: ProductType | ''
-  status: BatchStatus | ''
-  farmName: string
-  onChainOnly: boolean
-}
-
-export const DEFAULT_BATCH_FILTERS: BatchFilters = {
-  product: '', status: '', farmName: '', onChainOnly: false,
-}
-
-export function applyBatchFilters(batches: Batch[], f: BatchFilters): Batch[] {
-  return batches.filter(b => {
-    if (f.product && b.productType !== f.product) return false
-    if (f.status  && b.status      !== f.status)  return false
-    if (f.farmName && b.farm.name  !== f.farmName) return false
-    if (f.onChainOnly) {
-      const onChain = Boolean(b.cnftAddress) || ['MINTED', 'IN_TRANSIT', 'EXPORTED'].includes(b.status)
-      if (!onChain) return false
-    }
-    return true
-  })
-}
+import type { Batch } from '@/types/api'
+import { DEFAULT_BATCH_FILTERS, type BatchFilters } from './batch-filters'
 
 const SELECT_CLASS = [
   'text-sm bg-[var(--color-surface)] border border-[var(--color-border)]',
@@ -60,10 +37,13 @@ export function BatchesFilters({ filters, onChange, batches }: Props) {
       <select className={SELECT_CLASS} value={filters.status} onChange={e => set('status', e.target.value as BatchFilters['status'])}>
         <option value="">Todos os status</option>
         <option value="CREATED">Criado</option>
-        <option value="VERIFIED">Verificado</option>
-        <option value="MINTED">Mintado</option>
+        <option value="HARVESTED">Colhido</option>
+        <option value="RECEIVED">Recebido</option>
         <option value="IN_TRANSIT">Em trânsito</option>
-        <option value="EXPORTED">Exportado</option>
+        <option value="PROCESSED">Processado</option>
+        <option value="DELIVERED">Entregue</option>
+        <option value="CLOSED">Encerrado</option>
+        <option value="CANCELLED">Cancelado</option>
       </select>
 
       <select className={SELECT_CLASS} value={filters.farmName} onChange={e => set('farmName', e.target.value)}>

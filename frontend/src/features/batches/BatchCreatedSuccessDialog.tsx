@@ -99,7 +99,7 @@ export function BatchCreatedSuccessDialog({
                   Tx hash: {shortHash(mintResult.mintTxHash)}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-teal-700)]">
-                  cNFT: {shortHash(mintResult.cnftAddress ?? '-')}
+                  Token: {shortHash(mintResult.tokenAddress ?? '-')}
                 </p>
               </div>
             )}

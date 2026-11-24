@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Sprout,
   Package,
-  ShieldCheck,
   Link2,
   Zap,
 } from 'lucide-react'
@@ -18,7 +17,6 @@ const mainNav = [
 ] as const
 
 const comingSoonNav = [
-  { icon: ShieldCheck, label: 'Validacoes EUDR' },
   { icon: Link2, label: 'Blockchain' },
 ] as const
 

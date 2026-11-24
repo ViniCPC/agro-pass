@@ -60,7 +60,7 @@ export function BatchCard({ batch }: BatchCardProps) {
           Detalhes do QR
         </Link>
         <Link
-          to={`/trace/${encodeURIComponent(batch.code)}`}
+          to={`/trace/${encodeURIComponent(batch.publicCode)}`}
           className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg bg-[var(--color-teal-700)] px-3 text-sm font-semibold text-white"
         >
           Rastreio público

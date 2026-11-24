@@ -4,7 +4,7 @@ import {
   PRODUCT_OPTIONS,
   type CreateBatchFormValues,
 } from './create-batch.constants'
-import { FarmSelectorWithStatus } from './FarmSelectorWithStatus'
+import { FarmSelector } from './FarmSelector'
 
 type FieldErrorMap = Partial<Record<keyof CreateBatchFormValues, string>>
 
@@ -51,7 +51,7 @@ export function CreateBatchForm({
           onSubmit()
         }}
       >
-        <FarmSelectorWithStatus
+        <FarmSelector
           farms={farms}
           value={values.farmId}
           onChange={(farmId) => onChange('farmId', farmId)}

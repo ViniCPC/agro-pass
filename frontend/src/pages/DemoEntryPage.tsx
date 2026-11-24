@@ -1,12 +1,15 @@
-import { ShieldCheck, GitBranch, Link2, QrCode } from 'lucide-react'
+import { useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { MapPinCheck, GitBranch, Link2, QrCode } from 'lucide-react'
+import { useDemoMode } from '@/contexts/demo-context'
 import { DemoHero } from '@/features/demo/DemoHero'
 import { DemoFeatureCard } from '@/features/demo/DemoFeatureCard'
 
 const features = [
   {
-    icon: ShieldCheck,
-    title: 'Validação EUDR',
-    description: 'Conformidade automática com cruzamento de dados MapBiomas, PRODES e Hansen.',
+    icon: MapPinCheck,
+    title: 'Origem registrada',
+    description: 'Fazenda, produtor e lote vinculados desde o primeiro registro.',
     accent: 'green',
   },
   {
@@ -30,6 +33,19 @@ const features = [
 ] as const
 
 export function DemoEntryPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { disableDemoMode } = useDemoMode()
+  const leaveDemo = (location.state as { leaveDemo?: boolean } | null)?.leaveDemo === true
+
+  // "Sair da demo" lands here first, outside the auth guard, and only then
+  // switches the demo off. The flag is cleared so a reload does not repeat it.
+  useEffect(() => {
+    if (!leaveDemo) return
+    disableDemoMode()
+    navigate(location.pathname, { replace: true, state: null })
+  }, [leaveDemo, disableDemoMode, navigate, location.pathname])
+
   return (
     <div className="flex flex-col items-center gap-10 w-full max-w-2xl py-8">
       <DemoHero />

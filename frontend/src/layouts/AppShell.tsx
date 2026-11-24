@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { MobileDrawer } from '@/components/MobileDrawer'
 import { Sidebar } from './Sidebar'
@@ -7,12 +6,6 @@ import { Topbar } from './Topbar'
 
 export function AppShell() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const { pathname } = useLocation()
-
-  useEffect(() => {
-    setIsDrawerOpen(false)
-  }, [pathname])
-
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-page)]">
       <MobileDrawer

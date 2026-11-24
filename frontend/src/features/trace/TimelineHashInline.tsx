@@ -1,24 +1,17 @@
 import { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
-import { useIsMobile } from '@/hooks/useIsMobile'
-
-function shortenHash(hash: string, take = 8) {
-  if (hash.length <= take) return hash
-  return `${hash.slice(0, take)}...`
-}
+import { shortHash } from './trace.utils'
 
 interface TimelineHashInlineProps {
   value: string | null
-  prefix?: string
+  label: string
 }
 
-export function TimelineHashInline({
-  value,
-  prefix = 'Hash',
-}: TimelineHashInlineProps) {
+// Short by default; tapping the hash shows it in full, wrapped, so long
+// hashes never force horizontal scrolling on small screens.
+export function TimelineHashInline({ value, label }: TimelineHashInlineProps) {
   const [copied, setCopied] = useState(false)
-  const [showFull, setShowFull] = useState(false)
-  const isMobile = useIsMobile()
+  const [expanded, setExpanded] = useState(false)
 
   if (!value) return null
   const hash = value
@@ -34,32 +27,28 @@ export function TimelineHashInline({
   }
 
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-[var(--radius-badge)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[11px] text-[var(--color-ink-muted)]"
-      title={hash}
-    >
-      <span className="font-mono">
-        {prefix} {isMobile && showFull ? hash : shortenHash(hash)}
+    <div className="flex min-w-0 items-start gap-1.5 text-[11px] leading-5">
+      <span className="shrink-0 font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
+        {label}
       </span>
-      {isMobile && !showFull && hash.length > 12 && (
-        <button
-          type="button"
-          onClick={() => setShowFull(true)}
-          className="rounded px-1 text-[10px] font-medium text-[var(--color-teal-700)] hover:bg-[var(--color-teal-50)]"
-          aria-label={`Show full ${prefix}`}
-        >
-          show
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setExpanded((current) => !current)}
+        aria-expanded={expanded}
+        title={expanded ? 'Recolher hash' : 'Ver hash completo'}
+        className="min-w-0 flex-1 break-all text-left font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+      >
+        {expanded ? hash : shortHash(hash, 10, 8)}
+      </button>
       <button
         type="button"
         onClick={handleCopy}
-        className="rounded p-0.5 text-[var(--color-ink-subtle)] hover:bg-[var(--color-border-soft)] hover:text-[var(--color-ink-muted)]"
-        aria-label={`Copy ${prefix}`}
-        title={copied ? 'Copied' : 'Copy hash'}
+        className="-my-0.5 shrink-0 rounded p-1 text-[var(--color-ink-subtle)] hover:bg-[var(--color-border-soft)] hover:text-[var(--color-ink-muted)]"
+        aria-label={copied ? `${label} copiado` : `Copiar ${label}`}
+        title={copied ? 'Copiado' : 'Copiar'}
       >
-        {copied ? <Check size={11} /> : <Copy size={11} />}
+        {copied ? <Check size={12} /> : <Copy size={12} />}
       </button>
-    </span>
+    </div>
   )
 }

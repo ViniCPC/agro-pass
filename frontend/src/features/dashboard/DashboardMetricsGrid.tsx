@@ -1,10 +1,4 @@
-import {
-  AlertTriangle,
-  BadgeCheck,
-  Blocks,
-  CheckCircle2,
-  Sprout,
-} from 'lucide-react'
+import { Blocks, Package, Route, Sprout, Truck } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { MetricCard } from '@/components/MetricCard'
 import { useFarms } from '@/hooks/useFarms'
@@ -14,77 +8,48 @@ import { deriveDashboardMetrics } from './dashboard-metrics'
 export function DashboardMetricsGrid() {
   const { data: farmsData, isLoading: farmsLoading } = useFarms()
   const { data: batchesData, isLoading: batchesLoading } = useBatches()
-
-  const farms   = farmsData?.data   ?? []
-  const batches = batchesData?.data ?? []
-  const metrics = deriveDashboardMetrics(farms, batches)
-
-  const v = (n: number, loading: boolean) => loading ? '…' : n
-
-  const container = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: 0.08,
-      },
-    },
-  }
-
-  const item = {
-    hidden: { opacity: 0, y: 8 },
-    show: { opacity: 1, y: 0 },
-  }
+  const metrics = deriveDashboardMetrics(farmsData?.data ?? [], batchesData?.data ?? [])
+  const value = (count: number, loading: boolean) => loading ? '…' : count
 
   return (
     <motion.div
       className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
-      variants={container}
-      initial="hidden"
-      animate="show"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
     >
-      <motion.div variants={item} transition={{ duration: 0.25 }}>
-        <MetricCard
-          label="Total de fazendas"
-          value={v(metrics.totalFarms, farmsLoading)}
-          icon={Sprout}
-          accent="default"
-        />
-      </motion.div>
-      <motion.div variants={item} transition={{ duration: 0.25 }}>
-        <MetricCard
-          label="Fazendas conformes"
-          value={v(metrics.compliantFarms, farmsLoading)}
-          icon={CheckCircle2}
-          accent="green"
-          emphasis="primary"
-        />
-      </motion.div>
-      <motion.div variants={item} transition={{ duration: 0.25 }}>
-        <MetricCard
-          label="Lotes rastreados"
-          value={v(metrics.tracedBatches, batchesLoading)}
-          icon={BadgeCheck}
-          accent="amber"
-          emphasis="primary"
-        />
-      </motion.div>
-      <motion.div variants={item} transition={{ duration: 0.25 }}>
-        <MetricCard
-          label="Prova blockchain"
-          value={v(metrics.blockchainProofBatches, batchesLoading)}
-          icon={Blocks}
-          accent="teal"
-          emphasis="primary"
-        />
-      </motion.div>
-      <motion.div variants={item} transition={{ duration: 0.25 }}>
-        <MetricCard
-          label="Requerem revisão"
-          value={v(metrics.farmsNeedingReview + metrics.farmsAtRisk, farmsLoading)}
-          icon={AlertTriangle}
-          accent="red"
-        />
-      </motion.div>
+      <MetricCard
+        label="Fazendas de origem"
+        value={value(metrics.totalFarms, farmsLoading)}
+        icon={Sprout}
+        accent="default"
+      />
+      <MetricCard
+        label="Total de lotes"
+        value={value(metrics.totalBatches, batchesLoading)}
+        icon={Package}
+        accent="green"
+      />
+      <MetricCard
+        label="Lotes rastreados"
+        value={value(metrics.tracedBatches, batchesLoading)}
+        icon={Route}
+        accent="amber"
+        emphasis="primary"
+      />
+      <MetricCard
+        label="Prova blockchain"
+        value={value(metrics.blockchainProofBatches, batchesLoading)}
+        icon={Blocks}
+        accent="teal"
+        emphasis="primary"
+      />
+      <MetricCard
+        label="Em trânsito"
+        value={value(metrics.batchesInTransit, batchesLoading)}
+        icon={Truck}
+        accent="red"
+      />
     </motion.div>
   )
 }

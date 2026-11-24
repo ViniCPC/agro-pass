@@ -5,7 +5,7 @@ export function CreateBatchHeader() {
         Registrar lote
       </h1>
       <p className="mt-1 text-sm text-[var(--color-ink-subtle)]">
-        Apenas fazendas com validação EUDR aprovada podem registrar novos lotes.
+        Vincule o lote à fazenda de origem para iniciar sua trilha de rastreabilidade.
       </p>
     </header>
   )
