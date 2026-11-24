@@ -1,297 +1,198 @@
 # AgroPass
 
-AgroPass is a full-stack agricultural traceability platform built for the Solana Coliseum/Frontier Hackathon. It enables Brazilian rural producers to register farms, run EUDR (EU Deforestation Regulation) compliance checks, create certified commodity batches, mint immutable on-chain records as compressed NFTs (cNFTs) on Solana devnet, and share a public, QR-scannable traceability certificate with buyers and regulators.
+Plataforma full-stack de passaportes digitais para rastreabilidade agrícola. Cada lote possui um passaporte único, uma linha do tempo auditável, documentos, código público, QR Code e prova opcional na Solana.
 
----
+## Domínio principal
 
-## Architecture
+- produtores, cooperativas e propriedades de origem;
+- lotes com código `AGP-YYYY-NNNN`;
+- eventos assinados pelo usuário autenticado;
+- documentos vinculados à propriedade, lote ou etapa;
+- passaportes públicos consultáveis sem autenticação;
+- prova digital por cNFT na Solana;
+- PostgreSQL, Prisma e health check.
 
-```
-agro-pass/
-├── backend/        NestJS API (Node.js, TypeScript, Prisma, PostgreSQL)
-├── frontend/       React + Vite dashboard and public trace page
-└── scripts/        Dev-environment helper scripts (PowerShell)
-```
+O ciclo de um lote é:
 
-### Backend (NestJS)
-
-| Module | Responsibility |
-|--------|---------------|
-| `farms` | CRUD for farms, CAR document storage |
-| `eudr` | EUDR compliance orchestration (MapBiomas, PRODES, Hansen, Sentinel Hub) |
-| `batches` | Commodity batch lifecycle, QR code generation, PDF export |
-| `trace-events` | Immutable event log per batch (harvest, transport, processing, etc.) |
-| `solana` | Compressed NFT minting via Bubblegum on Solana devnet |
-| `telegram` | Producer-facing Telegram bot (account linking, harvest registration, stage recording, Gemini AI chat) |
-| `cooperatives` | Cooperative management and producer import |
-| `ai` | Claude Vision-powered CAR document parsing |
-| `reports` | HTML-to-PDF EUDR validation reports |
-| `health` | Liveness check (DB + optional Solana RPC) |
-| `public-batches` | Public read-only trace endpoint (no auth) |
-
-### Frontend (React + Vite)
-
-| Area | Pages / Features |
-|------|-----------------|
-| Dashboard | Compliance overview, blockchain proof summary, recent batches and farms |
-| Farms | Farm list, farm detail with EUDR validation history and satellite before/after comparison |
-| Batches | Batch list, batch detail, batch creation form with farm selector, Solana mint flow |
-| QR | QR code generation, download, printable A4 sheet |
-| Public Trace | `/trace/:code` — publicly accessible certificate page (no login required) |
-| Demo mode | Fully offline demo using local mock data (no backend required) |
-
----
-
-## Features
-
-- **EUDR compliance engine** — Cross-references farm coordinates against MapBiomas Alerta, PRODES, Hansen deforestation datasets, and Sentinel Hub NDVI satellite imagery. Produces a deterministic compliance status (COMPLIANT / NEEDS_REVIEW / NON_COMPLIANT).
-- **Claude Vision CAR parsing** — Producers upload a photo of their CAR (Cadastro Ambiental Rural) document; Claude extracts all structured fields automatically.
-- **Solana compressed NFTs** — Each certified batch is minted as a cNFT using the Metaplex Bubblegum program, with metadata anchored on-chain.
-- **Telegram bot** — Producers interact entirely via Telegram: link their account, register farms, log harvest stages (with optional photo evidence), and chat with a Gemini-powered AI assistant.
-- **Public traceability page** — Every batch gets a unique URL (`/trace/AGP-YYYY-XXXX`) and a QR code. Anyone can scan it to see the full supply-chain timeline, EUDR status, farm data, and Solana proof — no login needed.
-- **PDF EUDR report** — Downloadable compliance report with satellite data, deforestation indices, and legal reserve status.
-- **Demo mode** — The frontend includes a full offline demo using realistic Brazilian farm data. No backend connection required for demos.
-
----
-
-## Tech Stack
-
-| Layer | Stack |
-|-------|-------|
-| Backend runtime | Node.js 20, NestJS 10, TypeScript |
-| Database | PostgreSQL 15, Prisma ORM |
-| Blockchain | Solana devnet, Metaplex Bubblegum (cNFTs), `@metaplex-foundation/umi` |
-| AI — document parsing | Anthropic Claude (`claude-3-5-sonnet`) via `@anthropic-ai/sdk` |
-| AI — bot chat | Google Gemini (`gemini-2.0-flash`) via `@google/genai` |
-| Satellite imagery | Sentinel Hub (optional) — falls back to deterministic mock |
-| Telegram bot | Telegraf 4, WizardScene for multi-step flows |
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS v4, Framer Motion |
-| QR codes | `qrcode` library, PDFKit for printable sheets |
-| Reports | `html-pdf-node` for HTML→PDF |
-
----
-
-## Prerequisites
-
-- Node.js 20+
-- PostgreSQL 15+ (local or cloud, e.g. Supabase)
-- A Telegram bot token from [@BotFather](https://t.me/BotFather)
-- A Google Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
-- An Anthropic API key (for CAR parsing) from [console.anthropic.com](https://console.anthropic.com)
-- (Optional) Sentinel Hub account for real satellite imagery
-- (Optional) Solana CLI and a funded devnet wallet for cNFT minting
-
----
-
-## Getting Started
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/ViniCPC/agro-pass.git
-cd agro-pass
-
-# Backend
-cd backend && npm install
-
-# Frontend
-cd ../frontend && npm install
+```text
+CREATED → HARVESTED → RECEIVED → IN_TRANSIT → PROCESSED → DELIVERED → CLOSED
 ```
 
-### 2. Configure environment
+Um lote ativo também pode ser cancelado. Lotes `CLOSED` ou `CANCELLED` não recebem documentos, transições, tokenização ou etapas comuns; somente um administrador pode acrescentar uma correção auditável sem alterar o evento original.
 
-```bash
-cd backend
-cp .env.example .env
+## Papéis e permissões
+
+| Papel | Operações |
+| --- | --- |
+| `PRODUCER` | Criar lote em propriedade própria e registrar colheita |
+| `COOPERATIVE` | Registrar recebimento, processamento e documentos dos produtores vinculados |
+| `OPERATOR` | Registrar transporte e entrega |
+| `ADMIN` | Gerenciar todos os registros, publicação, cancelamento e fechamento |
+| Público | Consultar somente passaportes marcados como públicos |
+
+O nome e o `userId` de cada evento são obtidos do JWT. O endpoint não aceita `actorName` enviado pelo cliente.
+
+## Cadeia de integridade
+
+Cada evento recebe um número `sequence`, um `previousHash` e um `eventHash` SHA-256. O hash inclui o lote, a sequência, o tipo, o usuário autenticado, a data, a localização, as observações, o hash anterior e os hashes dos documentos anexados.
+
+O `integrityHash` do lote sempre aponta para o último evento. `GET /batches/:id/events/integrity` recalcula toda a cadeia e informa qualquer sequência, evento ou hash final adulterado. Eventos não possuem rotas de edição ou exclusão; uma retificação é registrada como um novo evento `CORRECTION`, referenciando o evento original.
+
+Uploads usam a interface `FileStorage`. Em desenvolvimento, `LocalFileStorage` grava em `backend/uploads`; a interface permite adicionar uma implementação S3 sem alterar o domínio. Cada documento armazena nome original, tamanho, MIME type e SHA-256. O upload cria automaticamente um evento `DOCUMENT_ATTACHED`.
+
+## Estrutura
+
+```text
+backend/
+  prisma/             schema, migrations e seed
+  src/
+    auth/             cadastro, login, JWT, guards e papéis
+    producers/        produtores
+    cooperatives/     cooperativas e importação CSV
+    farms/            propriedades de origem
+    batches/          passaporte, ciclo, documentos e QR Code
+    event-chain/      encadeamento e verificação criptográfica
+    trace-events/     linha do tempo auditável
+    storage/          abstração FileStorage e armazenamento local
+    public-batches/   consulta pública e metadata
+    solana/           tokenização cNFT
+    health/           saúde da aplicação
+frontend/
+  src/
+    pages/             login, dashboard, propriedades, lotes e consulta pública
+    contexts/          sessão JWT e modo demonstração
+    features/          componentes por domínio
 ```
 
-Edit `backend/.env` with your values:
+## Requisitos
+
+- Node.js 22+
+- npm
+- PostgreSQL 16+ ou Docker
+
+## Configuração
+
+Copie `.env.example` na raiz para `.env` e configure o PostgreSQL. Depois copie `backend/.env.example` para `backend/.env`:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/agropass"
+DATABASE_URL="postgresql://agro_pass:troque_a_senha@localhost:5432/agro_pass"
+JWT_SECRET="use-um-segredo-longo-e-aleatorio"
 PORT=3000
-
-TELEGRAM_BOT_TOKEN=your_token_here
-TELEGRAM_ENABLED=true
-
-GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=gemini-2.0-flash
-
-# Leave as MOCK for demo stability; set SENTINEL_HUB for real satellite images
-SATELLITE_PROVIDER=MOCK
-
-SOLANA_RPC_URL="https://api.devnet.solana.com"
-SOLANA_TREASURY_KEYPAIR_PATH="./keys/treasury-devnet.json"
-SOLANA_MERKLE_TREE=   # your Bubblegum tree address
-
-CORS_ORIGINS=http://localhost:5173
+PUBLIC_APP_URL=http://localhost:5173
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-The frontend proxies `/api` to `http://localhost:3000` in development. No `.env` file needed for local frontend dev.
+Para habilitar a Solana devnet:
 
-### 3. Database setup
+```env
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_TREASURY_KEYPAIR_PATH=./keys/treasury-devnet.json
+SOLANA_MERKLE_TREE=
+```
+
+No frontend, copie `frontend/.env.example` para `frontend/.env.local`. `VITE_API_URL` aponta para a API (padrão `http://localhost:3000`) e `VITE_PUBLIC_APP_URL` define o domínio gravado nos QR Codes.
+
+## Instalação e execução
 
 ```bash
-cd backend
+docker compose up -d
 
-# Apply all Prisma migrations
+cd backend
+npm ci
 npx prisma migrate deploy
-
-# Seed demo data (5 farms, 2 producers, cooperative)
-npx ts-node prisma/seed.ts
+npm run seed
+npm run start:dev
 ```
 
-### 4. (Optional) Solana devnet setup
+Em outro terminal:
 
 ```bash
-# Create a treasury wallet
-npx ts-node src/scripts/create-devnet-wallet.ts
-
-# Request 2 SOL airdrop
-npx ts-node src/scripts/request-devnet-airdrop.ts
-
-# Create a Bubblegum compressed NFT tree
-npx ts-node src/scripts/create-merkle-tree.ts
-# Copy the output address into SOLANA_MERKLE_TREE in .env
+cd frontend
+npm ci
+npm run dev
 ```
 
-### 5. Run locally
+Frontend: `http://localhost:5173`. API: `http://localhost:3000`.
 
-```bash
-# Terminal 1 — Backend
-cd backend && npm run start:dev
+## Autenticação
 
-# Terminal 2 — Frontend
-cd frontend && npm run dev
-```
+Rotas internas esperam `Authorization: Bearer <token>`.
 
-Or use the all-in-one PowerShell script from the repo root:
+| Método | Endpoint | Finalidade |
+| --- | --- | --- |
+| `POST` | `/auth/register` | Cadastrar produtor, cooperativa ou operador |
+| `POST` | `/auth/login` | Obter JWT |
+| `GET` | `/auth/me` | Consultar o usuário autenticado |
 
-```powershell
-.\scripts\start-agropass-dev.ps1
-```
+Usuários produtores informam um `producerId`; cooperativas informam um `cooperativeId`. Administradores não podem ser criados pelo cadastro público.
 
-The backend starts on `http://localhost:3000` (Swagger at `/api`).  
-The frontend starts on `http://localhost:5173`.
+## Passaporte digital
 
----
+| Método | Endpoint | Finalidade |
+| --- | --- | --- |
+| `POST` | `/batches` | Criar passaporte associado a uma propriedade |
+| `GET` | `/batches` | Listar lotes |
+| `GET` | `/batches/:id` | Consultar lote |
+| `GET` | `/batches/:id/transitions` | Consultar próximas transições permitidas |
+| `PATCH` | `/batches/:id/status` | Registrar a próxima etapa |
+| `PATCH` | `/batches/:id/cancel` | Cancelar lote |
+| `PATCH` | `/batches/:id/close` | Encerrar lote entregue |
+| `PATCH` | `/batches/:id/visibility` | Tornar passaporte público ou privado |
+| `POST` | `/batches/:id/documents` | Anexar documento (campo opcional `isPublic`, padrão `false`) |
+| `PATCH` | `/batches/:id/documents/:documentId/visibility` | Liberar ou restringir o arquivo no passaporte público |
+| `GET` | `/batches/:id/events` | Consultar a linha do tempo em ordem sequencial |
+| `GET` | `/batches/:id/events/integrity` | Verificar toda a cadeia de hashes |
+| `POST` | `/batches/:id/events` | Registrar uma correção auditável (`CORRECTION`) |
+| `POST` | `/batches/:id/qrcode` | Gerar QR Code do código público (data URL, sem gravar em disco) |
+| `GET` | `/batches/:id/qrcode/print-sheet?copies=4\|8\|16` | Folha PDF de etiquetas |
+| `POST` | `/batches/:id/mint` | Tokenizar o passaporte |
+| `GET` | `/public/batches/:publicCode` | Consultar passaporte público sem login |
+| `GET` | `/public/batches/:publicCode/integrity` | Verificar a cadeia de um passaporte público sem login |
 
-## Telegram Bot Commands
+`GET /health` também é público.
 
-| Command | Description |
-|---------|-------------|
-| `/start` | Welcome message and main menu |
-| `/vincular` | Link your Telegram account to a producer profile |
-| `/colheita` | Register a new harvest (farm → product → weight → optional CAR photo) |
-| `/etapa` | Add a custom supply-chain stage to the latest active batch (freeform name + optional photo) |
-| `/fazendas` | List your registered farms |
-| (free text) | Gemini AI assistant answers questions about EUDR, AgroPass, and traceability |
+### Passaporte público e QR Code
 
----
+A página `/trace/:publicCode` abre sem login e mostra o lote, a propriedade de origem, a linha do tempo com responsável e hash de cada etapa, os documentos, a verificação de integridade e a prova na Solana, quando existir.
 
-## API Overview
+O que **não** é publicado: IDs de usuário, e-mails, telefones, CPF/CNPJ e a localização exata (as coordenadas saem arredondadas para cerca de 1 km). Documentos nascem restritos: o passaporte mostra o tipo, a data e o SHA-256, mas só oferece o arquivo quando ele é marcado como público.
 
-Full interactive docs available at `http://localhost:3000/api` (Swagger).
+No detalhe do lote, o QR, o PNG e a folha PDF (4, 8 ou 16 etiquetas, com pré-visualização) são gerados no navegador a partir do código público, sem depender da API. Para que etiquetas impressas continuem funcionando depois do deploy:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Liveness check |
-| GET | `/farms` | List all farms |
-| POST | `/farms` | Create a farm |
-| GET | `/farms/:id` | Farm detail with latest EUDR validation |
-| POST | `/eudr/validate` | Run EUDR compliance check for a farm |
-| GET | `/batches` | List batches |
-| POST | `/batches` | Create a batch |
-| POST | `/batches/:id/mint` | Mint batch as cNFT on Solana |
-| POST | `/batches/:id/qr` | Generate QR code PNG |
-| GET | `/batches/:id/qr/pdf` | Download printable QR sheet PDF |
-| GET | `/public/batches/:code` | Public trace payload (no auth) |
-| GET | `/eudr/report/:farmId` | Download EUDR PDF report |
-| GET | `/trace-events/:batchId` | Event log for a batch |
-| POST | `/trace-events` | Add a trace event |
+- Defina `VITE_PUBLIC_APP_URL` (frontend) e `PUBLIC_APP_URL` (backend) com o domínio definitivo. Em produção a API recusa gerar QR sem `PUBLIC_APP_URL`.
+- O host estático precisa devolver `index.html` em qualquer rota. `frontend/public/_redirects` (Netlify, Cloudflare Pages) e `frontend/vercel.json` (Vercel) já fazem isso; em outro host, configure o equivalente.
 
----
+Para testar o QR no celular durante o desenvolvimento, rode `npm run dev:lan` no frontend e abra o app pelo IP da máquina. Um QR que aponta para `localhost` só abre no próprio computador, e a tela avisa quando isso acontece.
 
-## Public Trace Page
+### Modo demonstração
 
-Every batch gets a public URL:
+"Entrar na demo" em `/demo` ativa o modo demonstração, que fica salvo no `localStorage` e funciona sem backend. O lote `DEMO-2025-0001` percorre todas as etapas, com documentos e registro on-chain, e seus hashes são SHA-256 reais calculados como na API. "Ver passaporte de exemplo" abre `/trace/DEMO-2025-0001` em qualquer aparelho, com ou sem o modo ativo. Lotes criados durante a demo ficam só no navegador em que foram criados. "Sair da demo" apaga esses dados.
 
-```
-http://localhost:5173/trace/{BATCH_CODE}
-```
+## Seed
 
-Example: `http://localhost:5173/trace/AGP-2025-001`
-
-The page shows:
-- Batch summary (product, quantity, cooperative)
-- Farm card (location, biome, area)
-- EUDR compliance card (status, deforestation area, NDVI, satellite images)
-- Supply-chain timeline with all registered stages and uploaded documents
-- Blockchain proof card (cNFT address, transaction hash, Solscan link)
-- Downloadable documents panel
-
-No login is required. The page is designed to be shared with buyers, auditors, and EU importers.
-
----
-
-## Demo Data
-
-After running the seed, the database contains:
-
-| Farm | Location | EUDR Status |
-|------|----------|-------------|
-| Fazenda Boa Esperança | Rio Verde, GO | Compliant |
-| Sítio Vale Verde | Lavras, MG | Compliant |
-| Fazenda Floresta Viva | Manaus, AM | Compliant |
-| Fazenda Cerradão | Goiânia, GO | Needs Review |
-| Fazenda São Benedito | Marabá, PA | Non-Compliant |
-
-**Demo producer** (use this phone number in the Telegram bot `/vincular` flow):
-- Phone: `64999990001` — Carlos Alberto Mendes
-
----
-
-## Database Reset
-
-To wipe all data and re-seed from scratch:
+O seed cria cooperativa, produtor, propriedade, lote, eventos e usuários dos quatro papéis. Todas as senhas são armazenadas como hash bcrypt.
 
 ```bash
 cd backend
-npx ts-node scripts/clean-db.ts   # truncates all tables
-npx ts-node prisma/seed.ts         # re-seeds demo data
+npm run seed
 ```
 
-Or use the combined PowerShell script:
+## Validação
 
-```powershell
-.\backend\scripts\start-clean.ps1
+```bash
+cd backend
+npm ci
+npm run build
+npm test
+
+npm run test:e2e:db:up
+npm run test:e2e
+npm run test:e2e:db:down
+
+cd ../frontend
+npm ci
+npm run build
+npm run lint
 ```
 
----
-
-## Environment Variables Reference
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `PORT` | No | API port (default: 3000) |
-| `TELEGRAM_BOT_TOKEN` | Yes | Telegram bot token from @BotFather |
-| `TELEGRAM_ENABLED` | No | Set to `false` to disable bot (default: true) |
-| `GEMINI_API_KEY` | Yes | Google Gemini API key |
-| `GEMINI_MODEL` | No | Gemini model ID (default: gemini-2.0-flash) |
-| `ANTHROPIC_API_KEY` | No | Anthropic API key (required for CAR parsing) |
-| `SATELLITE_PROVIDER` | No | `MOCK` or `SENTINEL_HUB` (default: MOCK) |
-| `SENTINEL_HUB_CLIENT_ID` | No | Sentinel Hub OAuth client ID |
-| `SENTINEL_HUB_CLIENT_SECRET` | No | Sentinel Hub OAuth client secret |
-| `SOLANA_RPC_URL` | No | Solana RPC endpoint (default: devnet) |
-| `SOLANA_TREASURY_KEYPAIR_PATH` | No | Path to treasury wallet JSON |
-| `SOLANA_MERKLE_TREE` | No | Bubblegum tree address for cNFT minting |
-| `CORS_ORIGINS` | No | Comma-separated allowed origins |
-| `PUBLIC_BATCHES_URL` | No | Base URL used in generated QR codes |
-| `HEALTHCHECK_SOLANA_ENABLED` | No | Include Solana in health check (default: true) |
-
----
-
-## License
-
-MIT
+O E2E usa PostgreSQL isolado na porta `55432`. O build do backend executa `prisma generate`, e a produção inicia com `node dist/src/main.js`.
