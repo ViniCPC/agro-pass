@@ -4,6 +4,7 @@ import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
 import { PageContainer } from '@/components/PageContainer'
 import { StatusBadge } from '@/components/StatusBadge'
+import { BatchBlockchainProofPanel } from '@/features/batches/BatchBlockchainProofPanel'
 import { BatchQrCard } from '@/features/qr/BatchQrCard'
 import { TraceTimeline } from '@/features/trace/TraceTimeline'
 import { PRODUCT_LABEL, formatDate, formatQuantity } from '@/features/trace/trace.utils'
@@ -73,7 +74,7 @@ export function BatchDetailPage() {
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={batch.status} />
-              {batch.tokenAddress && <StatusBadge status="TOKENIZED" label="On-chain" />}
+              {batch.blockchain.status === 'CONFIRMED' && <StatusBadge status="TOKENIZED" label="On-chain" />}
             </div>
           </div>
         </div>
@@ -122,6 +123,8 @@ export function BatchDetailPage() {
               </OverviewField>
             </div>
           </section>
+
+          <BatchBlockchainProofPanel batch={batch} />
 
           <TraceTimeline
             events={events}

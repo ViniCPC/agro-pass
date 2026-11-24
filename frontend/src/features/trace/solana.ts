@@ -5,6 +5,15 @@ const clusterQuery = CLUSTER === 'mainnet-beta' ? '' : `?cluster=${encodeURIComp
 
 export const SOLANA_NETWORK_LABEL = CLUSTER === 'mainnet-beta' ? 'Solana' : `Solana ${CLUSTER}`
 
+// Label of the network a proof was registered on (from the API).
+export function networkLabel(network: string | null) {
+  if (!network) return 'Solana'
+  if (network === 'local') return 'local (ambiente de testes)'
+  return network === 'mainnet-beta' ? 'Solana' : `Solana ${network}`
+}
+
+// Used for legacy MINTED_ONCHAIN events in the timeline; proofs registered
+// after closing come with explorer links from the API.
 export function explorerTxUrl(txHash: string) {
   return `https://explorer.solana.com/tx/${encodeURIComponent(txHash)}${clusterQuery}`
 }

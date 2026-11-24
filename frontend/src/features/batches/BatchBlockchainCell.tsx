@@ -1,11 +1,23 @@
 import { Link2 } from 'lucide-react'
-import type { Batch } from '@/types/api'
+import type { BatchBlockchainProof } from '@/types/api'
 
-type Props = Pick<Batch, 'tokenAddress'>
+interface Props {
+  proof: BatchBlockchainProof
+}
 
-export function BatchBlockchainCell({ tokenAddress }: Props) {
-  if (!tokenAddress) {
-    return <span className="text-xs text-[var(--color-ink-subtle)]">—</span>
+const PENDING_LABEL: Partial<Record<BatchBlockchainProof['status'], string>> = {
+  PENDING: 'Registrando…',
+  FAILED: 'Falhou',
+}
+
+export function BatchBlockchainCell({ proof }: Props) {
+  if (proof.status !== 'CONFIRMED') {
+    const label = PENDING_LABEL[proof.status]
+    return (
+      <span className={`text-xs ${proof.status === 'FAILED' ? 'text-[var(--color-red-700)]' : 'text-[var(--color-ink-subtle)]'}`}>
+        {label ?? '—'}
+      </span>
+    )
   }
 
   return (
@@ -14,12 +26,14 @@ export function BatchBlockchainCell({ tokenAddress }: Props) {
         <Link2 size={11} strokeWidth={2.5} />
         <span className="text-[10px] font-semibold uppercase tracking-wide">On-chain</span>
       </div>
-      <p
-        className="max-w-[120px] truncate font-mono text-[10px] text-[var(--color-ink-subtle)]"
-        title={tokenAddress}
-      >
-        {tokenAddress.slice(0, 8)}…{tokenAddress.slice(-4)}
-      </p>
+      {proof.txHash && (
+        <p
+          className="max-w-[120px] truncate font-mono text-[10px] text-[var(--color-ink-subtle)]"
+          title={proof.txHash}
+        >
+          {proof.txHash.slice(0, 8)}…{proof.txHash.slice(-4)}
+        </p>
+      )}
     </div>
   )
 }

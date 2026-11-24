@@ -17,7 +17,7 @@ export function deriveDashboardMetrics(
     totalFarms: farms.length,
     totalBatches: batches.length,
     tracedBatches: batches.filter((batch) => batch.status !== 'CREATED').length,
-    blockchainProofBatches: batches.filter((batch) => Boolean(batch.tokenAddress)).length,
+    blockchainProofBatches: batches.filter((batch) => batch.blockchain.status === 'CONFIRMED').length,
     batchesInTransit: batches.filter((batch) => batch.status === 'IN_TRANSIT').length,
     deliveredBatches: batches.filter((batch) =>
       ['DELIVERED', 'CLOSED'].includes(batch.status),

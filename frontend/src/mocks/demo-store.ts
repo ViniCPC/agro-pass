@@ -1,11 +1,16 @@
 import type { CreateBatchInput } from '@/api/batchesApi'
-import type { Batch, PublicBatch, PublicTraceEvent } from '@/types/api'
+import type {
+  Batch,
+  BatchBlockchainProof,
+  PublicBatch,
+  PublicTraceEvent,
+} from '@/types/api'
 import { buildDemoChain, type DemoChain, type DemoEventSpec } from './demo-chain'
 import {
-  DEMO_ADMIN_ACTOR,
   DEMO_CODE_PREFIX,
   DEMO_SEED,
   producerActor,
+  type DemoBatch,
   type DemoBatchRecord,
 } from './demo-seed'
 import { MOCK_FARMS } from './farms.mock'
@@ -14,10 +19,10 @@ export { DEMO_SHOWCASE_CODE } from './demo-seed'
 
 const CREATED_BATCHES_KEY = 'agropass.demo.createdBatches'
 
+// Demo batches are created, not closed, so they never carry a proof.
 interface StoredDemoBatch {
-  batch: Batch
+  batch: DemoBatch
   farmId: string
-  mint?: { tokenAddress: string; txHash: string; at: string }
 }
 
 export function isDemoPublicCode(code: string) {
@@ -66,15 +71,6 @@ function toRecord(stored: StoredDemoBatch): DemoBatchRecord | null {
       longitude: farm.longitude,
     },
   ]
-  if (stored.mint) {
-    events.push({
-      type: 'MINTED_ONCHAIN',
-      actor: DEMO_ADMIN_ACTOR,
-      at: stored.mint.at,
-      notes: 'Prova registrada na Solana (devnet)',
-      txHash: stored.mint.txHash,
-    })
-  }
 
   return { batch: stored.batch, farm, events, documents: [] }
 }
@@ -101,8 +97,28 @@ function allRecords(): DemoBatchRecord[] {
   return [...created, ...DEMO_SEED]
 }
 
+// Like the API: the anchored hash is the final hash of the closed chain.
+// Demo transactions do not exist on-chain, so there are no explorer links.
+function proofOf(record: DemoBatchRecord): BatchBlockchainProof {
+  const { proof } = record
+  return {
+    status: proof ? 'CONFIRMED' : 'NONE',
+    network: proof?.network ?? null,
+    proofHash: proof ? chainOf(record).finalHash : null,
+    txHash: proof?.txHash ?? null,
+    attempts: proof ? 1 : 0,
+    error: null,
+    explorerTxUrl: null,
+    explorerTokenUrl: null,
+  }
+}
+
 function withIntegrity(record: DemoBatchRecord): Batch {
-  return { ...record.batch, integrityHash: chainOf(record).finalHash }
+  return {
+    ...record.batch,
+    integrityHash: chainOf(record).finalHash,
+    blockchain: proofOf(record),
+  }
 }
 
 // ── Queries used by the hooks in demo mode ────────────────────────────────
@@ -131,6 +147,7 @@ export function findDemoPassport(publicCode: string): PublicBatch | null {
 
   const { batch, farm, documents } = record
   const chain = chainOf(record)
+  const proof = proofOf(record)
 
   return {
     batch: {
@@ -149,8 +166,14 @@ export function findDemoPassport(publicCode: string): PublicBatch | null {
       updatedAt: batch.updatedAt,
     },
     blockchain: {
+      status: proof.status,
+      network: proof.network,
+      proofHash: proof.proofHash,
       tokenAddress: batch.tokenAddress,
+      txHash: proof.txHash,
       tokenizedAt: batch.tokenizedAt,
+      explorerTxUrl: null,
+      explorerTokenUrl: null,
     },
     farm: {
       name: farm.name,
@@ -193,7 +216,7 @@ export function createDemoBatch(input: CreateBatchInput): Batch {
       ? crypto.randomUUID()
       : `demo-batch-${Date.now()}`
 
-  const batch: Batch = {
+  const batch: DemoBatch = {
     id,
     code,
     publicCode: code,
@@ -214,40 +237,8 @@ export function createDemoBatch(input: CreateBatchInput): Batch {
     updatedAt: now,
   }
 
-  writeStored([...readStored(), { batch, farmId: farm.id }])
-  return findDemoBatch(id) ?? batch
-}
-
-function demoBase58(seed: string, length: number) {
-  const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-  let output = ''
-  let state = 0
-  for (const char of seed) state = (state * 31 + char.charCodeAt(0)) >>> 0
-  while (output.length < length) {
-    state = (state * 1103515245 + 12345) >>> 0
-    output += alphabet[state % alphabet.length]
-  }
-  return output
-}
-
-export function mintDemoBatch(batchId: string) {
-  const items = readStored()
-  const target = items.find((item) => item.batch.id === batchId)
-  const at = new Date().toISOString()
-  const tokenAddress = `AgPDemo${demoBase58(batchId, 37)}`
-  const txHash = `5DemoTx${demoBase58(`${batchId}:tx`, 81)}`
-
-  if (target && !target.mint) {
-    target.mint = { tokenAddress, txHash, at }
-    target.batch = { ...target.batch, tokenAddress, tokenizedAt: at, updatedAt: at }
-    writeStored(items)
-  }
-
-  const minted = target?.mint ?? { tokenAddress, txHash, at }
-  return {
-    batch: findDemoBatch(batchId),
-    tokenAddress: minted.tokenAddress,
-    txHash: minted.txHash,
-    tokenizedAt: minted.at,
-  }
+  const stored: StoredDemoBatch = { batch, farmId: farm.id }
+  writeStored([...readStored(), stored])
+  // If storage is blocked the batch only lives for this response.
+  return findDemoBatch(id) ?? withIntegrity(toRecord(stored)!)
 }

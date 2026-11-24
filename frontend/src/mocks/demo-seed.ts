@@ -14,11 +14,25 @@ import { MOCK_FARMS } from './farms.mock'
 export const DEMO_CODE_PREFIX = 'DEMO-'
 export const DEMO_SHOWCASE_CODE = 'DEMO-2025-0001'
 
+// The proof is derived from the chain at runtime, so batches are stored
+// without it.
+export type DemoBatch = Omit<Batch, 'blockchain'>
+
+// Registered after closing, like the real flow: the anchored hash is the
+// final chain hash, computed when the passport is built.
+export interface DemoProof {
+  network: string
+  txHash: string
+  tokenAddress: string
+  at: string
+}
+
 export interface DemoBatchRecord {
-  batch: Batch
+  batch: DemoBatch
   farm: Farm
   events: DemoEventSpec[]
   documents: PublicDocument[]
+  proof?: DemoProof
 }
 
 export const DEMO_LOGISTICS_ACTOR: DemoActor = {
@@ -60,7 +74,7 @@ function farmById(id: string): Farm {
   return farm
 }
 
-function farmSummary(farm: Farm): Batch['farm'] {
+function farmSummary(farm: Farm): DemoBatch['farm'] {
   return { name: farm.name, latitude: farm.latitude, longitude: farm.longitude }
 }
 
@@ -124,11 +138,18 @@ const SHOWCASE: DemoBatchRecord = {
     isPublic: true,
     integrityHash: null,
     tokenAddress: 'AgPDemo7mQ3kLp9NzXwR2sYtUeA4BcDfJnKoP8WmVqE',
-    tokenizedAt: '2025-07-03T14:02:00Z',
+    tokenizedAt: '2025-07-04T12:20:00Z',
     closedAt: '2025-07-04T12:00:00Z',
     farm: farmSummary(saoJoao),
     createdAt: '2025-06-12T12:15:00Z',
-    updatedAt: '2025-07-04T12:00:00Z',
+    updatedAt: '2025-07-04T12:20:00Z',
+  },
+  proof: {
+    network: 'devnet',
+    txHash:
+      '5DemoTxkLp9NzXwR2sYtUeA4BcDfJnKoP8WmVqE7mQ3kLp9NzXwR2sYtUeA4BcDfJnKoP8WmVqE7mQ3kLp9NzXw',
+    tokenAddress: 'AgPDemo7mQ3kLp9NzXwR2sYtUeA4BcDfJnKoP8WmVqE',
+    at: '2025-07-04T12:20:00Z',
   },
   events: [
     {
@@ -197,14 +218,6 @@ const SHOWCASE: DemoBatchRecord = {
       notes: 'Entregue no terminal de exportação',
     },
     {
-      type: 'MINTED_ONCHAIN',
-      actor: DEMO_ADMIN_ACTOR,
-      at: '2025-07-03T14:02:00Z',
-      notes: 'Prova registrada na Solana (devnet)',
-      txHash:
-        '5DemoTxkLp9NzXwR2sYtUeA4BcDfJnKoP8WmVqE7mQ3kLp9NzXwR2sYtUeA4BcDfJnKoP8WmVqE7mQ3kLp9NzXw',
-    },
-    {
       type: 'CLOSED',
       actor: DEMO_ADMIN_ACTOR,
       at: '2025-07-04T12:00:00Z',
@@ -249,7 +262,7 @@ function stageEvents(
 function simpleBatch(
   id: string,
   farm: Farm,
-  batch: Pick<Batch, 'productType' | 'quantity' | 'harvestDate' | 'status' | 'isPublic'>,
+  batch: Pick<DemoBatch, 'productType' | 'quantity' | 'harvestDate' | 'status' | 'isPublic'>,
   stages: Array<[DemoEventSpec['type'], string]>,
 ): DemoBatchRecord {
   const code = `${DEMO_CODE_PREFIX}2025-${id}`

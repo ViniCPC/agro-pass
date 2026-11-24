@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { batchesApi, type CreateBatchInput, type MintBatchResponse } from '@/api/batchesApi'
+import { batchesApi, type CreateBatchInput } from '@/api/batchesApi'
 import { useDemoMode } from '@/contexts/demo-context'
-import { createDemoBatch, mintDemoBatch } from '@/mocks/demo-store'
+import { createDemoBatch } from '@/mocks/demo-store'
 
 export function useCreateBatch() {
   const queryClient = useQueryClient()
@@ -20,31 +20,15 @@ export function useCreateBatch() {
   })
 }
 
-export function useMintBatch() {
+// Manual retry of a failed proof (admin). Live API only: demo proofs are
+// part of the bundled data.
+export function useTokenizeBatch() {
   const queryClient = useQueryClient()
-  const { isDemoMode } = useDemoMode()
 
   return useMutation({
-    mutationFn: async (batchId: string): Promise<MintBatchResponse> => {
-      if (isDemoMode) {
-        const minted = mintDemoBatch(batchId)
-        return {
-          message: 'Prova de demonstração registrada',
-          batchId,
-          batchCode: minted.batch?.code ?? '',
-          tokenAddress: minted.tokenAddress,
-          tokenizedAt: minted.tokenizedAt,
-          metadataUri: '',
-          mintTxHash: minted.txHash,
-          merkleTree: '',
-        }
-      }
-
-      return batchesApi.mint(batchId)
-    },
-    onSuccess: () => {
+    mutationFn: (batchId: string) => batchesApi.tokenize(batchId),
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['batches'] })
-      queryClient.invalidateQueries({ queryKey: ['batch-events'] })
       queryClient.invalidateQueries({ queryKey: ['public-passport'] })
     },
   })

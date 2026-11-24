@@ -1,34 +1,20 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { CheckCircle2, Loader2, Link2 } from 'lucide-react'
+import { CheckCircle2, Link2 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
-import type { MintBatchResponse } from '@/api/batchesApi'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Batch } from '@/types/api'
 
 interface BatchCreatedSuccessDialogProps {
   isOpen: boolean
   batch: Batch | null
-  isMinting: boolean
-  mintResult: MintBatchResponse | null
-  mintError: string | null
-  onMintNow: () => void
   onGoToBatchDetail: () => void
   onCreateAnother: () => void
   onBackToBatches: () => void
 }
 
-function shortHash(value: string) {
-  if (value.length < 20) return value
-  return `${value.slice(0, 10)}...${value.slice(-8)}`
-}
-
 export function BatchCreatedSuccessDialog({
   isOpen,
   batch,
-  isMinting,
-  mintResult,
-  mintError,
-  onMintNow,
   onGoToBatchDetail,
   onCreateAnother,
   onBackToBatches,
@@ -49,21 +35,9 @@ export function BatchCreatedSuccessDialog({
           <motion.section
             role="dialog"
             aria-modal="true"
-            initial={
-              isMobile
-                ? { opacity: 0, y: 120 }
-                : { opacity: 0, y: 18, scale: 0.98 }
-            }
-            animate={
-              isMobile
-                ? { opacity: 1, y: 0 }
-                : { opacity: 1, y: 0, scale: 1 }
-            }
-            exit={
-              isMobile
-                ? { opacity: 0, y: 120 }
-                : { opacity: 0, y: 10, scale: 0.99 }
-            }
+            initial={isMobile ? { opacity: 0, y: 120 } : { opacity: 0, y: 18, scale: 0.98 }}
+            animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={isMobile ? { opacity: 0, y: 120 } : { opacity: 0, y: 10, scale: 0.99 }}
             transition={
               isMobile
                 ? { type: 'spring', stiffness: 320, damping: 30 }
@@ -87,44 +61,19 @@ export function BatchCreatedSuccessDialog({
             </div>
 
             <p className="text-sm text-[var(--color-ink-subtle)]">
-              Seu lote está pronto para eventos de rastreabilidade e registro blockchain.
+              O lote já pode receber as etapas de rastreabilidade.
+            </p>
+            <p className="mt-3 flex gap-2 rounded-lg border border-[var(--color-teal-100)] bg-[var(--color-teal-50)] p-3 text-xs leading-5 text-[var(--color-teal-700)]">
+              <Link2 size={14} className="mt-0.5 shrink-0" />
+              A prova na blockchain é registrada automaticamente quando o lote for encerrado,
+              com o hash final de toda a cadeia de eventos.
             </p>
 
-            {mintResult && (
-              <div className="mt-4 rounded-lg border border-[var(--color-teal-100)] bg-[var(--color-teal-50)] p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-teal-700)]">
-                  Prova blockchain gerada
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-teal-700)]">
-                  Tx hash: {shortHash(mintResult.mintTxHash)}
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-teal-700)]">
-                  Token: {shortHash(mintResult.tokenAddress ?? '-')}
-                </p>
-              </div>
-            )}
-
-            {mintError && (
-              <p className="mt-4 rounded-lg bg-[var(--color-red-50)] px-3 py-2 text-xs text-[var(--color-red-700)]">
-                Erro no mint: {mintError}
-              </p>
-            )}
-
-            <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={onMintNow}
-                disabled={isMinting || Boolean(mintResult)}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-[var(--color-teal-700)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--color-teal-600)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isMinting ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
-                {isMinting ? 'Registrando...' : mintResult ? 'Registro concluído' : 'Registrar na Solana agora'}
-              </button>
-
+            <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={onGoToBatchDetail}
-                className="min-h-[44px] rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
+                className="min-h-[44px] rounded-lg bg-[var(--color-teal-700)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--color-teal-600)]"
               >
                 Ver detalhes do lote
               </button>

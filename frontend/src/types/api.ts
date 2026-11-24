@@ -71,14 +71,42 @@ export interface Batch {
   tokenAddress: string | null
   tokenizedAt: string | null
   closedAt: string | null
+  blockchain: BatchBlockchainProof
   farm: {
     name: string
     latitude: number
     longitude: number
   }
-  qrCodeUrl?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export type TokenizationStatus = 'NONE' | 'PENDING' | 'CONFIRMED' | 'FAILED'
+
+// Internal view of the batch proof (attempts and error are not public).
+export interface BatchBlockchainProof {
+  status: TokenizationStatus
+  network: string | null
+  proofHash: string | null
+  txHash: string | null
+  attempts: number
+  error: string | null
+  explorerTxUrl: string | null
+  explorerTokenUrl: string | null
+}
+
+export interface TokenizationResult {
+  batchId: string
+  status: TokenizationStatus
+  network: string | null
+  proofHash: string | null
+  tokenAddress: string | null
+  txHash: string | null
+  tokenizedAt: string | null
+  attempts: number
+  error: string | null
+  explorerTxUrl: string | null
+  explorerTokenUrl: string | null
 }
 
 export interface TraceEventDocument {
@@ -183,9 +211,17 @@ export interface PublicBatch {
     createdAt: string
     updatedAt: string
   }
+  // proofHash is the exact hash anchored on-chain; explorer links come from
+  // the API so they always match the network the proof was registered on.
   blockchain: {
+    status: TokenizationStatus
+    network: string | null
+    proofHash: string | null
     tokenAddress: string | null
+    txHash: string | null
     tokenizedAt: string | null
+    explorerTxUrl: string | null
+    explorerTokenUrl: string | null
   }
   farm: {
     name: string

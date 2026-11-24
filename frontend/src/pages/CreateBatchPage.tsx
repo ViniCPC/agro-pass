@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { MintBatchResponse } from '@/api/batchesApi'
 import { ApiError } from '@/api/client'
 import { ErrorState } from '@/components/ErrorState'
 import { LoadingState } from '@/components/LoadingState'
@@ -15,7 +14,7 @@ import {
   DEFAULT_CREATE_BATCH_FORM,
   type CreateBatchFormValues,
 } from '@/features/batches/create-batch.constants'
-import { useCreateBatch, useMintBatch } from '@/hooks/useCreateBatch'
+import { useCreateBatch } from '@/hooks/useCreateBatch'
 import { useFarms } from '@/hooks/useFarms'
 import type { Batch } from '@/types/api'
 
@@ -54,12 +53,9 @@ export function CreateBatchPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [createdBatch, setCreatedBatch] = useState<Batch | null>(null)
   const [isSuccessOpen, setIsSuccessOpen] = useState(false)
-  const [mintError, setMintError] = useState<string | null>(null)
-  const [mintResult, setMintResult] = useState<MintBatchResponse | null>(null)
 
   const farmsQuery = useFarms()
   const createBatch = useCreateBatch()
-  const mintBatch = useMintBatch()
 
   const farms = useMemo(() => farmsQuery.data?.data ?? [], [farmsQuery.data?.data])
   const selectedFarm = useMemo(
@@ -126,23 +122,9 @@ export function CreateBatchPage() {
       })
 
       setCreatedBatch(batch)
-      setMintError(null)
-      setMintResult(null)
       setIsSuccessOpen(true)
     } catch (error) {
       setSubmitError(parseApiError(error))
-    }
-  }
-
-  async function handleMintNow() {
-    if (!createdBatch) return
-
-    setMintError(null)
-    try {
-      const result = await mintBatch.mutateAsync(createdBatch.id)
-      setMintResult(result)
-    } catch (error) {
-      setMintError(parseApiError(error))
     }
   }
 
@@ -151,8 +133,6 @@ export function CreateBatchPage() {
     setErrors({})
     setSubmitError(null)
     setCreatedBatch(null)
-    setMintResult(null)
-    setMintError(null)
     setIsSuccessOpen(false)
   }
 
@@ -212,10 +192,6 @@ export function CreateBatchPage() {
       <BatchCreatedSuccessDialog
         isOpen={isSuccessOpen}
         batch={createdBatch}
-        isMinting={mintBatch.isPending}
-        mintResult={mintResult}
-        mintError={mintError}
-        onMintNow={handleMintNow}
         onGoToBatchDetail={() => {
           if (!createdBatch) return
           setIsSuccessOpen(false)

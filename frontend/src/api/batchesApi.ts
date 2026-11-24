@@ -3,6 +3,7 @@ import type {
   PaginatedResponse,
   PaginationParams,
   ProductType,
+  TokenizationResult,
   TraceEvent,
 } from '@/types/api'
 import { api } from './client'
@@ -13,17 +14,6 @@ export interface CreateBatchInput {
   quantity: number
   unit: string
   harvestDate?: string
-}
-
-export interface MintBatchResponse {
-  message: string
-  batchId: string
-  batchCode: string
-  tokenAddress: string | null
-  tokenizedAt: string
-  metadataUri: string
-  mintTxHash: string
-  merkleTree: string
 }
 
 // QR codes, PNG labels and print sheets are generated in the browser from
@@ -38,8 +28,10 @@ export const batchesApi = {
   create: (payload: CreateBatchInput) =>
     api.post<Batch>('/batches', payload),
 
-  mint: (id: string) =>
-    api.post<MintBatchResponse>(`/batches/${id}/mint`, {}),
+  // Closing a batch registers its proof automatically; this retries after a
+  // failure (admin only). Idempotent: never mints twice.
+  tokenize: (id: string) =>
+    api.post<TokenizationResult>(`/batches/${id}/tokenize`, {}),
 
   getEvents: (batchId: string) =>
     api.get<TraceEvent[]>(`/batches/${batchId}/events`),

@@ -25,7 +25,7 @@ function IntegrityChip({ integrity }: { integrity: PublicBatch['integrity'] }) {
 export function TraceHero({ data }: { data: PublicBatch }) {
   const [isCopied, setIsCopied] = useState(false)
   const product = PRODUCT_LABEL[data.batch.productType] ?? data.batch.productType
-  const isNotarized = Boolean(data.blockchain.tokenAddress)
+  const isNotarized = data.blockchain.status === 'CONFIRMED'
   const link = getPublicTraceLink(data.batch.publicCode)
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 

@@ -66,9 +66,7 @@ export function BatchesTable({ batches }: BatchesTableProps) {
             <BatchStatusCell status={batch.status} />
           </td>
           <td className={TD}>
-            <BatchBlockchainCell
-              tokenAddress={batch.tokenAddress}
-            />
+            <BatchBlockchainCell proof={batch.blockchain} />
           </td>
           <td className={`${TD} text-xs tabular-nums text-[var(--color-ink-muted)]`}>
             {batch.harvestDate ? formatDate(batch.harvestDate) : '-'}

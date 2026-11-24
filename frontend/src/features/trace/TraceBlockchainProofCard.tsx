@@ -1,23 +1,39 @@
-import { ExternalLink, Link2 } from 'lucide-react'
+import { CheckCircle2, Clock, ExternalLink, Link2, XCircle } from 'lucide-react'
 import type { PublicBatch } from '@/types/api'
 import { TimelineHashInline } from './TimelineHashInline'
-import { SOLANA_NETWORK_LABEL, explorerAddressUrl, explorerTxUrl } from './solana'
+import { networkLabel } from './solana'
 import { formatDateTime } from './trace.utils'
 
 interface TraceBlockchainProofCardProps {
   data: PublicBatch
-  // Demo addresses do not exist on-chain, so explorer links are hidden.
+  // Demo addresses do not exist on-chain, so there is nothing to link to.
   isDemo: boolean
 }
 
 const LINK =
-  'inline-flex items-center gap-1 text-xs font-medium text-[var(--color-teal-700)] hover:underline'
+  'inline-flex min-h-[32px] items-center gap-1 text-xs font-medium text-[var(--color-teal-700)] hover:underline'
+
+function HashComparison({ proofHash, finalHash }: { proofHash: string | null; finalHash: string | null }) {
+  // Proofs from the previous flow did not record the anchored hash.
+  if (!proofHash || !finalHash) return null
+
+  return proofHash === finalHash ? (
+    <p className="inline-flex items-center gap-1.5 rounded-md bg-[var(--color-green-50)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-green-700)]">
+      <CheckCircle2 size={13} className="shrink-0" />
+      Confere com o hash final da cadeia de eventos
+    </p>
+  ) : (
+    <p className="inline-flex items-start gap-1.5 rounded-md bg-[var(--color-red-50)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-red-700)]">
+      <XCircle size={13} className="mt-0.5 shrink-0" />
+      Diferente do hash final atual: a cadeia mudou depois do registro
+    </p>
+  )
+}
 
 export function TraceBlockchainProofCard({ data, isDemo }: TraceBlockchainProofCardProps) {
-  const { tokenAddress, tokenizedAt } = data.blockchain
-  const mintTx = data.traceEvents.find(
-    (event) => event.type === 'MINTED_ONCHAIN' && event.txHash,
-  )?.txHash
+  const proof = data.blockchain
+  const finalHash = data.integrity?.finalHash ?? data.batch.integrityHash
+  const isClosed = data.batch.status === 'CLOSED'
 
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-teal-100)] bg-gradient-to-br from-[var(--color-teal-50)] via-[var(--color-surface)] to-[var(--color-teal-50)] p-4 shadow-[var(--shadow-card-hover)] sm:p-5">
@@ -26,42 +42,64 @@ export function TraceBlockchainProofCard({ data, isDemo }: TraceBlockchainProofC
         <h2 className="text-base font-semibold text-[var(--color-ink)]">Prova na blockchain</h2>
       </div>
 
-      {tokenAddress ? (
+      {proof.status === 'CONFIRMED' ? (
         <div className="space-y-3">
           <p className="text-sm text-[var(--color-ink-muted)]">
-            O passaporte foi registrado como token na rede {SOLANA_NETWORK_LABEL}, um registro público
-            que não pode ser apagado.
+            Ao encerrar o lote, o hash final da cadeia foi registrado como token na rede{' '}
+            {networkLabel(proof.network)}. Esse registro público não pode ser alterado nem apagado.
           </p>
+
           <div className="space-y-1.5 rounded-lg bg-[var(--color-surface)] px-2.5 py-2">
-            <TimelineHashInline label="Token" value={tokenAddress} />
-            <TimelineHashInline label="Tx" value={mintTx ?? null} />
+            <TimelineHashInline label="Hash registrado" value={proof.proofHash} />
+            <TimelineHashInline label="Tx" value={proof.txHash} />
+            <TimelineHashInline label="Token" value={proof.tokenAddress} />
           </div>
+
+          <HashComparison proofHash={proof.proofHash} finalHash={finalHash} />
+
           <p className="text-xs text-[var(--color-ink-subtle)]">
-            Registrado em {tokenizedAt ? formatDateTime(tokenizedAt) : '-'}
+            Registrado em {proof.tokenizedAt ? formatDateTime(proof.tokenizedAt) : '-'}
           </p>
+
           {isDemo ? (
             <p className="rounded-md bg-[var(--color-amber-50)] px-2.5 py-1.5 text-xs text-[var(--color-amber-700)]">
-              Endereço e transação de demonstração: não existem na rede.
+              Transação de demonstração: o hash é real, mas o registro não existe na rede.
             </p>
-          ) : (
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              <a href={explorerAddressUrl(tokenAddress)} target="_blank" rel="noreferrer" className={LINK}>
-                Ver token no Solana Explorer
-                <ExternalLink size={12} />
-              </a>
-              {mintTx && (
-                <a href={explorerTxUrl(mintTx)} target="_blank" rel="noreferrer" className={LINK}>
-                  Ver transação
+          ) : proof.explorerTxUrl ? (
+            <div className="space-y-1">
+              <div className="flex flex-wrap gap-x-4">
+                <a href={proof.explorerTxUrl} target="_blank" rel="noreferrer" className={LINK}>
+                  Verificar transação no Solana Explorer
                   <ExternalLink size={12} />
                 </a>
-              )}
+                {proof.explorerTokenUrl && (
+                  <a href={proof.explorerTokenUrl} target="_blank" rel="noreferrer" className={LINK}>
+                    Ver token
+                    <ExternalLink size={12} />
+                  </a>
+                )}
+              </div>
+              <p className="text-xs text-[var(--color-ink-subtle)]">
+                No explorer, o memo da transação mostra o mesmo hash registrado acima.
+              </p>
             </div>
+          ) : (
+            <p className="text-xs text-[var(--color-ink-subtle)]">
+              Registro sem link público de verificação.
+            </p>
           )}
         </div>
+      ) : proof.status === 'PENDING' || proof.status === 'FAILED' ? (
+        <p className="flex items-start gap-2 text-sm text-[var(--color-ink-subtle)]">
+          <Clock size={15} className="mt-0.5 shrink-0" />
+          O registro na blockchain está em andamento. Enquanto isso, a integridade do histórico já
+          pode ser verificada pela cadeia de hashes.
+        </p>
       ) : (
         <p className="text-sm text-[var(--color-ink-subtle)]">
-          Este passaporte ainda não foi registrado na blockchain. A integridade do histórico continua
-          verificável pela cadeia de hashes.
+          {isClosed
+            ? 'Este passaporte não foi registrado na blockchain. A integridade do histórico continua verificável pela cadeia de hashes.'
+            : 'A prova na blockchain é registrada quando o lote for encerrado, com o hash final de toda a cadeia de eventos.'}
         </p>
       )}
     </section>

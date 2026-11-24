@@ -20,7 +20,7 @@ export function applyBatchFilters(batches: Batch[], filters: BatchFilters): Batc
     if (filters.status && batch.status !== filters.status) return false
     if (filters.farmName && batch.farm.name !== filters.farmName) return false
     if (filters.onChainOnly) {
-      const onChain = Boolean(batch.tokenAddress)
+      const onChain = batch.blockchain.status === 'CONFIRMED'
       if (!onChain) return false
     }
     return true
