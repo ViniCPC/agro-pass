@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { AppLogo } from '@/components/AppLogo'
+import { HomeLogoLink } from '@/components/HomeLogoLink'
 import { useAuth } from '@/contexts/auth-context'
 
 export function LoginPage() {
@@ -32,7 +32,9 @@ export function LoginPage() {
 
   return (
     <section className="w-full max-w-sm rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card-hover)]">
-      <AppLogo className="justify-center" />
+      <div className="flex justify-center">
+        <HomeLogoLink />
+      </div>
       <div className="mt-6 text-center">
         <h1 className="text-xl font-semibold text-[var(--color-ink)]">Entrar no AgroPass</h1>
         <p className="mt-1 text-sm text-[var(--color-ink-subtle)]">

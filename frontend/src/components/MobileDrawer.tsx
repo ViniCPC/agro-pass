@@ -30,7 +30,7 @@ export function MobileDrawer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40"
+            className="fixed inset-0 z-50 bg-black/25 backdrop-blur-[2px]"
             onClick={onClose}
           />
         )}
@@ -43,14 +43,14 @@ export function MobileDrawer({
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: 'spring', stiffness: 280, damping: 30 }}
-            className="fixed inset-y-0 left-0 z-[60] w-72 max-w-[86vw] overflow-y-auto border-r border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl"
+            className="fixed inset-y-2 left-2 z-[60] flex w-72 max-w-[86vw] flex-col overflow-y-auto rounded-2xl border border-white/70 bg-white/75 shadow-2xl backdrop-blur-xl backdrop-saturate-150"
           >
             <div className="flex justify-end px-3 pt-3">
               <button
                 type="button"
                 onClick={onClose}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-ink-muted)]"
-                aria-label="Close menu"
+                aria-label="Fechar menu"
               >
                 <X size={18} />
               </button>

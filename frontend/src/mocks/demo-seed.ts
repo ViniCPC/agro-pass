@@ -13,8 +13,8 @@ import { MOCK_FARMS } from './farms.mock'
 // with real passports.
 export const DEMO_CODE_PREFIX = 'DEMO-'
 export const DEMO_SHOWCASE_CODE = 'DEMO-2025-0001'
-// Batch shown on the landing page: in transit, so it shows a live chain.
-export const DEMO_LANDING_CODE = 'DEMO-2026-0001'
+// Batch shown on the landing page: complete, every stage confirmed.
+export const DEMO_LANDING_CODE = 'DEMO-2026-0002'
 
 // The proof is derived from the chain at runtime, so batches are stored
 // without it.
@@ -239,33 +239,59 @@ const boaVista = farmById('farm-002')
 const recantoVerde = farmById('farm-004')
 const boaEsperanca = farmById('farm-005')
 
-// ── Landing page batch: a coffee lot on its way, chain still growing ──────
+// ── Landing page batch: a complete lot, from harvest to buyer ─────────────
+
+// Hashes are the real SHA-256 of the files in public/demo/.
+const landingInvoice: PublicEventDocument = {
+  id: 'demo-doc-invoice-landing',
+  type: 'INVOICE',
+  isPublic: true,
+  originalName: 'nota-fiscal-agp-2026-0002.pdf',
+  fileUrl: demoFileUrl('nota-fiscal-agp-2026-0002.pdf'),
+  size: 2283,
+  mimeType: 'application/pdf',
+  fileHash: '44045c21cb730137e721abf916452970e530136686d623158cb4fa099aabdcbc',
+  createdAt: '2026-10-14T17:40:00Z',
+}
+
+const landingReceipt: PublicEventDocument = {
+  id: 'demo-doc-receipt-landing',
+  type: 'WAREHOUSE_RECEIPT',
+  isPublic: true,
+  originalName: 'recibo-armazem-agp-2026-0002.pdf',
+  fileUrl: demoFileUrl('recibo-armazem-agp-2026-0002.pdf'),
+  size: 2247,
+  mimeType: 'application/pdf',
+  fileHash: '4825f988e5244b938f2cf3c7eb8e36b057deb02f3180a4db736af0c31251560f',
+  createdAt: '2026-10-20T19:10:00Z',
+}
 
 const LANDING: DemoBatchRecord = {
   farm: boaEsperanca,
   batch: {
     id: 'demo-batch-landing',
-    code: 'AGP-2026-0001',
+    code: 'AGP-2026-0002',
     publicCode: DEMO_LANDING_CODE,
     productType: 'COFFEE',
-    quantity: 800,
-    unit: 'sacas',
-    harvestDate: '2026-11-08T00:00:00Z',
-    status: 'IN_TRANSIT',
+    quantity: 7200,
+    unit: 'kg',
+    harvestDate: '2026-10-08T00:00:00Z',
+    status: 'CLOSED',
     isPublic: true,
     integrityHash: null,
     tokenAddress: null,
     tokenizedAt: null,
-    closedAt: null,
+    closedAt: '2026-11-06T15:00:00Z',
     farm: farmSummary(boaEsperanca),
-    createdAt: '2026-11-10T11:30:00Z',
-    updatedAt: '2026-11-20T10:15:00Z',
+    createdAt: '2026-10-10T11:30:00Z',
+    updatedAt: '2026-11-06T15:00:00Z',
   },
+  // Documents ride on the stage they prove, so 7 stages are 7 events.
   events: [
     {
       type: 'CREATED',
       actor: producerActor(boaEsperanca),
-      at: '2026-11-10T11:30:00Z',
+      at: '2026-10-10T11:30:00Z',
       location: 'Patrocínio, MG',
       latitude: boaEsperanca.latitude,
       longitude: boaEsperanca.longitude,
@@ -273,26 +299,51 @@ const LANDING: DemoBatchRecord = {
     {
       type: 'HARVESTED',
       actor: producerActor(boaEsperanca),
-      at: '2026-11-11T13:00:00Z',
-      location: 'Fazenda Boa Esperança',
-      notes: 'Café arábica, colheita seletiva',
+      at: '2026-10-11T13:00:00Z',
+      location: 'Fazenda Boa Esperança, talhão 4',
+      notes: 'Colheita seletiva de café arábica',
     },
     {
       type: 'RECEIVED',
       actor: cooperativeActor(boaEsperanca),
-      at: '2026-11-14T17:40:00Z',
+      at: '2026-10-14T17:40:00Z',
       location: 'Patrocínio, MG',
-      notes: 'Recebimento confirmado: 800 sacas',
+      notes: 'Recebidas 120 sacas de 60 kg',
+      documents: [landingInvoice],
     },
     {
       type: 'IN_TRANSIT',
       actor: DEMO_LOGISTICS_ACTOR,
-      at: '2026-11-20T10:15:00Z',
+      at: '2026-10-17T09:00:00Z',
       location: 'Patrocínio, MG → Varginha, MG',
-      notes: 'Transporte iniciado',
+      notes: 'Carga lacrada, lacre nº 018734',
+    },
+    {
+      type: 'PROCESSED',
+      actor: cooperativeActor(boaEsperanca),
+      at: '2026-10-20T19:10:00Z',
+      location: 'Varginha, MG',
+      notes: 'Beneficiado e classificado: peneira 17/18',
+      documents: [landingReceipt],
+    },
+    {
+      type: 'DELIVERED',
+      actor: DEMO_LOGISTICS_ACTOR,
+      at: '2026-11-04T13:30:00Z',
+      location: 'Porto de Santos, SP',
+      notes: 'Entregue no terminal de exportação',
+    },
+    {
+      type: 'CLOSED',
+      actor: DEMO_ADMIN_ACTOR,
+      at: '2026-11-06T15:00:00Z',
+      notes: 'Lote encerrado',
     },
   ],
-  documents: [],
+  documents: [
+    { ...landingReceipt, scope: 'BATCH' },
+    { ...landingInvoice, scope: 'BATCH' },
+  ],
 }
 
 function stageEvents(

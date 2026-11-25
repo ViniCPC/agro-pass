@@ -24,12 +24,13 @@ test('landing abre sem API e leva ao passaporte do lote exibido', async ({ page,
   await context.route('http://localhost:3000/**', route => route.abort())
   await page.goto('/')
   await expect(
-    page.getByRole('heading', { level: 1, name: /trajetória completa do seu produto/ }),
+    page.getByRole('heading', { level: 1, name: 'A origem registrada. A trajetória à vista.' }),
   ).toBeVisible()
-  await expect(page.getByText('Registros íntegros').first()).toBeVisible()
+  await expect(page.getByText('Demonstração com dados fictícios').first()).toBeVisible()
+  await expect(page.getByRole('img', { name: 'QR Code do passaporte AGP-2026-0002' }).first()).toBeVisible()
 
-  await page.getByRole('link', { name: 'Ver um lote rastreável' }).click()
-  await expect(page.getByRole('heading', { name: 'Lote AGP-2026-0001' })).toBeVisible()
+  await page.getByRole('link', { name: 'Abrir um passaporte' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Lote AGP-2026-0002' })).toBeVisible()
   await expect(page.getByText('Cadeia íntegra').first()).toBeVisible()
-  await expect(page.locator('ol > li article')).toHaveCount(4)
+  await expect(page.locator('ol > li article')).toHaveCount(7)
 })

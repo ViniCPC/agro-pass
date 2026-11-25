@@ -28,12 +28,12 @@ export function Topbar({ onOpenMenu }: TopbarProps) {
       : { title: 'AgroPass', description: '' })
 
   return (
-    <header className="h-14 shrink-0 flex items-center justify-between px-4 sm:px-6 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+    <header className="h-14 shrink-0 flex items-center justify-between px-4 sm:px-6 bg-transparent">
       <div className="flex items-center gap-2.5">
         <button
           type="button"
           onClick={onOpenMenu}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-ink-muted)] sm:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-ink-muted)] md:hidden"
           aria-label="Abrir menu de navegação"
         >
           <Menu size={18} />

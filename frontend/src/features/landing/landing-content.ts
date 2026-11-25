@@ -1,133 +1,118 @@
 import type { BatchStatus } from '@/types/api'
+import plantationPhoto from '@/assets/landing/coffee-plantation.jpg'
+import warehousePhoto from '@/assets/landing/coffee-warehouse.jpg'
 
-// All landing page copy in one place, so wording changes never touch layout.
+// All landing page copy in one place. The product leads: a real lot, its
+// stages and its proof. Specific facts come from the demo lot the QR opens,
+// so the page can be checked against the passport itself.
 
 export const NAV_ITEMS = [
-  { hash: '#produto', label: 'Produto' },
-  { hash: '#como-funciona', label: 'Como funciona' },
-  { hash: '#para-quem', label: 'Para quem é' },
-  { hash: '#seguranca', label: 'Segurança' },
-  { hash: '#faq', label: 'Perguntas frequentes' },
+  { hash: '#plataforma', label: 'Plataforma' },
+  { hash: '#rastreabilidade', label: 'Rastreabilidade' },
+  { hash: '#demonstracao', label: 'Demonstração' },
 ] as const
 
 export const HERO = {
-  title: 'A trajetória completa do seu produto, do campo ao destino.',
-  subtitle:
-    'Registre a origem, os responsáveis, os documentos e cada movimentação do lote em um passaporte digital que pode ser consultado por QR Code.',
-  trust: ['Sem instalação', 'Acesso pelo navegador', 'Funciona no celular'],
+  badge: 'Demonstração com dados fictícios',
+  title: 'A origem registrada. A trajetória à vista.',
+  titleLead: 'A origem registrada.',
+  titleRest: 'A trajetória à vista.',
+  subtitle: 'Conecte produtores, cooperativas e compradores pelo histórico de cada lote.',
+  note: 'Abra um lote completo sem criar conta.',
 }
 
-export const BENEFITS = {
-  title: 'Todas as informações do lote em um só lugar',
-  items: [
-    {
-      title: 'Origem identificada',
-      text: 'Associe cada lote ao produtor e à propriedade de origem.',
-    },
-    {
-      title: 'Histórico completo',
-      text: 'Registre colheita, recebimento, processamento, transporte e entrega.',
-    },
-    {
-      title: 'Compartilhamento simples',
-      text: 'Gere um QR Code para compradores, parceiros e consumidores consultarem a trajetória.',
-    },
-  ],
-}
-
-// How each lifecycle stage reads on the landing timeline.
-export const STAGE_COPY: Record<BatchStatus, { done: string; pending: string }> = {
-  CREATED: { done: 'Lote criado pelo produtor', pending: 'Criação do lote' },
-  HARVESTED: { done: 'Colheita registrada', pending: 'Colheita' },
-  RECEIVED: {
-    done: 'Recebimento confirmado pela cooperativa',
-    pending: 'Recebimento pela cooperativa',
+// Photos from Wikimedia Commons, credited as their CC BY 2.0 licence asks.
+export const PHOTOS = {
+  warehouse: {
+    src: warehousePhoto,
+    alt: 'Sacas de café empilhadas em um armazém',
+    credit: 'Foto ilustrativa: DFID – UK Department for International Development, CC BY 2.0',
+    title: 'Thousands of bean bags',
+    author: 'DFID – UK Department for International Development',
+    source: 'https://commons.wikimedia.org/wiki/File:Thousands_of_bean_bags.jpg',
   },
-  IN_TRANSIT: { done: 'Transporte iniciado', pending: 'Transporte' },
-  PROCESSED: { done: 'Processamento concluído', pending: 'Processamento' },
-  DELIVERED: { done: 'Entrega confirmada', pending: 'Entrega aguardando confirmação' },
-  CLOSED: { done: 'Lote encerrado com prova final', pending: 'Encerramento e prova final' },
-  CANCELLED: { done: 'Lote cancelado', pending: 'Cancelamento' },
+  plantation: {
+    src: plantationPhoto,
+    alt: 'Vista aérea de uma lavoura de café em fileiras, com estradas de terra vermelha',
+    credit: 'Foto ilustrativa: Lukas from Tokyo, Japan, CC BY 2.0',
+    title: 'Coffee plantation, Kauaʻi 58',
+    author: 'Lukas from Tokyo, Japan',
+    source: 'https://commons.wikimedia.org/wiki/File:Coffee_plantation,_Kau%CA%BBi_58.jpg',
+  },
+  license: 'https://creativecommons.org/licenses/by/2.0/',
 }
 
-export const STEPS = {
-  title: 'Da criação do lote à consulta pelo comprador',
-  items: [
-    { title: 'Cadastre', text: 'Registre produtores, propriedades e participantes.' },
-    { title: 'Crie', text: 'Gere o passaporte digital do lote.' },
-    { title: 'Acompanhe', text: 'Adicione etapas, documentos e responsáveis.' },
-    { title: 'Compartilhe', text: 'Gere um QR Code com o histórico público.' },
-    { title: 'Verifique', text: 'Confirme a integridade dos registros.' },
-  ],
-}
-
-export const AUDIENCES = {
-  title: 'Para quem é',
-  subtitle: 'Cada participante registra a sua parte. Quem compra consulta tudo.',
-  items: [
+// The three tabs of the interactive section.
+export const PLATFORM = {
+  title: 'Três telas, um lote inteiro.',
+  subtitle: 'Escolha uma etapa para ver a parte da plataforma que cuida dela, com os dados do lote AGP-2026-0002.',
+  tabs: [
     {
-      title: 'Produtores',
-      points: [
-        'Comprovam a origem.',
-        'Organizam lotes e documentos.',
-        'Compartilham informações com cooperativas.',
-      ],
+      id: 'registrar',
+      label: 'Registrar origem',
+      text: 'O produtor cria o lote no celular: produto, quantidade, propriedade e local. O código e o QR saem na hora.',
     },
     {
-      title: 'Cooperativas',
-      points: [
-        'Recebem lotes de diferentes produtores.',
-        'Padronizam o histórico.',
-        'Registram processamento e armazenamento.',
-      ],
+      id: 'acompanhar',
+      label: 'Acompanhar etapas',
+      text: 'Cooperativa e transporte confirmam as próprias etapas. Cada registro tem responsável, data, anexo e hash.',
     },
     {
-      title: 'Transportadoras',
-      points: [
-        'Confirmam coleta, movimentação e entrega.',
-        'Associam documentos ao transporte.',
-      ],
-    },
-    {
-      title: 'Compradores e exportadores',
-      points: [
-        'Consultam origem e trajetória.',
-        'Verificam documentos.',
-        'Acompanham o histórico sem precisar de uma conta.',
-      ],
+      id: 'compartilhar',
+      label: 'Compartilhar passaporte',
+      text: 'A etiqueta sai pronta para imprimir. O comprador escaneia o QR e lê o passaporte público, sem criar conta.',
     },
   ],
+} as const
+
+export type PlatformTab = (typeof PLATFORM.tabs)[number]['id']
+
+// Who does what along the chain, and which stages each one records.
+export const CHAIN = {
+  title: 'Do produtor ao comprador.',
+  subtitle: 'Cada participante registra a própria etapa. O histórico se monta sozinho, na ordem em que o lote anda.',
+  actors: [
+    { name: 'Produtor', action: 'Cria o lote e registra a colheita.', stages: ['CREATED', 'HARVESTED'] },
+    { name: 'Cooperativa', action: 'Confirma o recebimento e o processamento.', stages: ['RECEIVED', 'PROCESSED'] },
+    { name: 'Transporte', action: 'Registra a coleta e a entrega.', stages: ['IN_TRANSIT', 'DELIVERED'] },
+    { name: 'Comprador', action: 'Escaneia o QR e verifica a origem.', stages: [] },
+  ] as Array<{ name: string; action: string; stages: BatchStatus[] }>,
+  field: {
+    title: 'O campo continua sendo o ponto de partida.',
+    text: 'A origem é registrada onde o lote nasce, com local e responsável. Daí em diante, cada etapa se soma à anterior e nada é reescrito.',
+  },
 }
 
-export const SECURITY = {
-  title: 'Registros confiáveis, mesmo entre diferentes participantes',
-  // A SHA-256 hash, not a key-based signature: the copy says so plainly.
-  text: 'Cada etapa recebe uma impressão digital criptográfica (hash) vinculada ao registro anterior. Isso permite identificar alterações e verificar a integridade de toda a trajetória do lote.',
-  points: [
-    'Responsável identificado em cada etapa.',
-    'Data e hora registradas.',
-    'Documentos com hash de integridade.',
-    'Histórico de eventos preservado.',
-    'Prova opcional registrada em blockchain.',
-  ],
-  blockchain: 'A versão avançada permite registrar a prova final do lote na rede Solana.',
+export const TRUST = {
+  title: 'Documentos que dá para conferir. Uma cadeia que denuncia alterações.',
+  docsTitle: 'Documentos do lote',
+  docsText: 'A nota fiscal e o recibo ficam na etapa que comprovam. O navegador baixa o PDF e recalcula o hash.',
+  integrityTitle: 'Tente adulterar este lote.',
+  integrityText: 'Cada etapa guarda o hash da anterior. Mude a observação do recebimento e a verificação recalcula a cadeia, do mesmo jeito que a API.',
+  field: 'Observação registrada na etapa #3, recebimento',
+  tamperTo: 'Recebidas 150 sacas de 60 kg',
+  hide: 'Para esconder a mudança seria preciso refazer o hash de todas as etapas seguintes, e o hash final deixaria de bater com o registrado no encerramento.',
+  extraTitle: 'Prova adicional',
+  extra: 'O hash final do lote pode ser ancorado em blockchain quando essa camada estiver habilitada. A rastreabilidade funciona sem ela.',
 }
 
-export const FIELD = {
-  title: 'Feito para funcionar onde o trabalho acontece',
-  points: [
-    'Interface responsiva.',
-    'Uso pelo celular.',
-    'Botões grandes.',
-    'Fluxo de registro rápido.',
-    'Upload de fotos e documentos.',
-    'QR Code pronto para impressão.',
-  ],
+export const DEMO = {
+  title: 'Abra a demonstração.',
+  text: 'Crie um lote, registre as etapas, encerre e escaneie o QR. Os dados são fictícios e tudo roda no seu navegador.',
+  formTitle: 'Prefere uma conversa?',
+  formText: 'Deixe seu contato e combinamos uma apresentação com a sua cadeia.',
 }
 
-export const CONTACT = {
-  title: 'Veja como o AgroPass pode transformar a rastreabilidade da sua operação.',
-  text: 'Conheça o fluxo completo, desde a criação do lote até a consulta pelo comprador.',
+// How each lifecycle stage reads on the landing page.
+export const STAGE_COPY: Record<BatchStatus, { done: string; pending: string; short: string }> = {
+  CREATED: { done: 'Lote criado pelo produtor', pending: 'Criação do lote', short: 'Criação' },
+  HARVESTED: { done: 'Colheita registrada', pending: 'Colheita', short: 'Colheita' },
+  RECEIVED: { done: 'Recebimento confirmado', pending: 'Recebimento pela cooperativa', short: 'Recebimento' },
+  IN_TRANSIT: { done: 'Transporte iniciado', pending: 'Transporte', short: 'Transporte' },
+  PROCESSED: { done: 'Processamento concluído', pending: 'Processamento', short: 'Processamento' },
+  DELIVERED: { done: 'Entrega confirmada', pending: 'Entrega aguardando confirmação', short: 'Entrega' },
+  CLOSED: { done: 'Lote encerrado', pending: 'Encerramento', short: 'Encerramento' },
+  CANCELLED: { done: 'Lote cancelado', pending: 'Cancelamento', short: 'Cancelamento' },
 }
 
 export const PROFILE_OPTIONS = [
@@ -146,25 +131,19 @@ export const FAQ = [
   },
   {
     question: 'O comprador precisa criar uma conta?',
-    answer: 'Não. Passaportes públicos podem ser consultados diretamente pelo QR Code.',
-  },
-  {
-    question: 'É possível adicionar documentos?',
-    answer:
-      'Sim. Notas, comprovantes, fotografias e outros documentos podem ser associados às etapas.',
+    answer: 'Não. O passaporte público abre direto pelo QR Code.',
   },
   {
     question: 'Os registros podem ser alterados?',
-    answer: 'Correções são adicionadas ao histórico sem apagar os registros anteriores.',
+    answer: 'Correções entram como novos registros. O registro original continua no histórico.',
   },
   {
     question: 'Preciso utilizar blockchain?',
-    answer:
-      'Não. A rastreabilidade funciona normalmente sem blockchain. Ela é uma camada adicional de comprovação.',
+    answer: 'Não. A rastreabilidade e a verificação de integridade funcionam sem blockchain.',
   },
 ]
 
-export const FOOTER_TAGLINE = 'AgroPass — Rastreabilidade digital para cadeias agrícolas.'
+export const FOOTER_TAGLINE = 'AgroPass — o passaporte público de um lote agrícola.'
 
 // Optional profile links, shown only when configured.
 export const LINKEDIN_URL = (import.meta.env.VITE_LINKEDIN_URL as string | undefined)?.trim() || null

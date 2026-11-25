@@ -7,7 +7,8 @@ import { Topbar } from './Topbar'
 export function AppShell() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-page)]">
+    // The soft tint behind everything is what the translucent sidebar shows through.
+    <div className="flex h-screen overflow-hidden bg-[var(--color-page)] bg-[radial-gradient(48rem_32rem_at_0%_0%,rgba(13,148,136,0.13),transparent_65%),radial-gradient(40rem_28rem_at_100%_100%,rgba(176,140,80,0.10),transparent_65%)]">
       <MobileDrawer
         open={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}

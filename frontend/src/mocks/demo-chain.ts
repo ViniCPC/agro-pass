@@ -65,6 +65,39 @@ function hashEvent(
   )
 }
 
+export interface DemoChainCheck {
+  sequence: number
+  // The stored previousHash points at the event before it.
+  linked: boolean
+  // Recomputing the hash from the (possibly edited) data gives the stored one.
+  hashMatches: boolean
+  recalculatedHash: string
+  storedHash: string
+}
+
+// Mirror of the API's EventChainService.verify: recompute each event's hash
+// from its data and compare it with the stored hash and the next link. The
+// landing page uses it to show what happens when a record is edited.
+export function verifyDemoChain(
+  batchId: string,
+  specs: DemoEventSpec[],
+  stored: Pick<PublicTraceEvent, 'previousHash' | 'eventHash'>[],
+): DemoChainCheck[] {
+  let expectedPrevious: string | null = null
+  return stored.map((event, index) => {
+    const recalculatedHash = hashEvent(batchId, index + 1, specs[index], event.previousHash)
+    const check = {
+      sequence: index + 1,
+      linked: event.previousHash === expectedPrevious,
+      hashMatches: recalculatedHash === event.eventHash,
+      recalculatedHash,
+      storedHash: event.eventHash,
+    }
+    expectedPrevious = event.eventHash
+    return check
+  })
+}
+
 export function buildDemoChain(batchId: string, specs: DemoEventSpec[]): DemoChain {
   const events: PublicTraceEvent[] = []
   let previousHash: string | null = null

@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import { ScanLine } from 'lucide-react'
-import { AppLogo } from '@/components/AppLogo'
+import { HomeLogoLink } from '@/components/HomeLogoLink'
 import { DEMO_SHOWCASE_CODE } from '@/mocks/demo-store'
 import { EnterDemoButton } from './EnterDemoButton'
 
 export function DemoHero() {
   return (
     <div className="flex flex-col items-center gap-6 text-center">
-      <AppLogo className="justify-center" />
+      <HomeLogoLink />
 
       <div className="space-y-3 max-w-lg">
         <h1 className="text-3xl font-semibold text-[var(--color-ink)] tracking-tight leading-tight">

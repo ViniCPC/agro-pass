@@ -3,52 +3,43 @@ import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 export function Container({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8', className)}>{children}</div>
+  return <div className={cn('mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8', className)}>{children}</div>
 }
 
-interface SectionHeadingProps {
-  id: string
-  eyebrow?: string
-  title: string
-  subtitle?: string
-  tone?: 'light' | 'dark'
-  align?: 'left' | 'center'
-}
-
-export function SectionHeading({
+// A section heading: a small mono label over a large, tight title.
+export function SectionTitle({
   id,
-  eyebrow,
+  label,
   title,
   subtitle,
   tone = 'light',
-  align = 'left',
-}: SectionHeadingProps) {
+  className,
+}: {
+  id: string
+  label: string
+  title: string
+  subtitle?: string
+  tone?: 'light' | 'dark'
+  className?: string
+}) {
   const dark = tone === 'dark'
   return (
-    <div className={cn('max-w-2xl', align === 'center' && 'mx-auto text-center')}>
-      {eyebrow && (
-        <p
-          className={cn(
-            'mb-3 text-xs font-semibold uppercase tracking-[0.14em]',
-            dark ? 'text-[var(--color-leaf-100)]' : 'text-[var(--color-leaf-600)]',
-          )}
-        >
-          {eyebrow}
-        </p>
-      )}
+    <div className={className}>
+      <p className={cn('flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em]', dark ? 'text-white/60' : 'text-carbon-500')}>
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-lime" />
+        {label}
+      </p>
       <h2
         id={id}
         className={cn(
-          'text-2xl font-semibold leading-tight tracking-tight sm:text-3xl',
-          dark ? 'text-white' : 'text-[var(--color-forest-900)]',
+          'mt-4 max-w-3xl text-[2.2rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[3.25rem]',
+          dark ? 'text-white' : 'text-carbon',
         )}
       >
         {title}
       </h2>
       {subtitle && (
-        <p className={cn('mt-3 text-base', dark ? 'text-white/75' : 'text-[var(--color-ink-muted)]')}>
-          {subtitle}
-        </p>
+        <p className={cn('mt-5 max-w-xl text-base leading-relaxed sm:text-lg', dark ? 'text-white/70' : 'text-carbon-700')}>{subtitle}</p>
       )}
     </div>
   )
@@ -83,8 +74,17 @@ export function SectionLink({
   )
 }
 
-export const PRIMARY_BUTTON =
-  'inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-[var(--color-forest-800)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-forest-700)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-leaf-600)]'
+const BUTTON =
+  'inline-flex min-h-[48px] items-center justify-center gap-2 whitespace-nowrap rounded-[10px] px-5 text-[15px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2'
 
-export const SECONDARY_BUTTON =
-  'inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg border border-[var(--color-sand-200)] bg-white px-5 text-sm font-semibold text-[var(--color-forest-900)] transition-colors hover:border-[var(--color-leaf-600)] hover:text-[var(--color-leaf-600)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-leaf-600)]'
+// Lime marks the main action; everything else stays quiet.
+export const PRIMARY_BUTTON = `${BUTTON} bg-lime text-carbon hover:bg-lime-300 focus-visible:outline-carbon`
+
+export const DARK_BUTTON = `${BUTTON} bg-carbon text-white hover:bg-carbon-700 focus-visible:outline-carbon`
+
+export const SECONDARY_BUTTON = `${BUTTON} border border-line bg-white text-carbon hover:border-carbon focus-visible:outline-carbon`
+
+export const SECONDARY_BUTTON_DARK = `${BUTTON} border border-white/25 text-white hover:border-white focus-visible:outline-white`
+
+export const TEXT_LINK =
+  'inline-flex min-h-[44px] items-center gap-1.5 text-[15px] font-semibold text-carbon underline decoration-carbon/25 underline-offset-[6px] hover:decoration-carbon'

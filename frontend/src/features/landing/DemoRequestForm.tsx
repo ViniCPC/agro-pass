@@ -12,10 +12,10 @@ import {
   type DemoRequestErrors as Errors,
   type DemoRequestValues as Values,
 } from './demo-request-validation'
-import { PRIMARY_BUTTON } from './landing-ui'
+import { DARK_BUTTON } from './landing-ui'
 
 const INPUT =
-  'w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-leaf-600)] focus:ring-2 focus:ring-[var(--color-leaf-100)]'
+  'w-full rounded-[3px] border bg-white px-3 py-2.5 text-sm text-carbon outline-none transition-colors focus:border-carbon focus:ring-2 focus:ring-carbon/10'
 
 function Field({
   id,
@@ -32,9 +32,9 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium text-[var(--color-forest-900)]">
+      <label htmlFor={id} className="block font-mono text-[11px] uppercase tracking-[0.12em] text-carbon-700">
         {label}
-        {hint && <span className="ml-1 font-normal text-[var(--color-ink-subtle)]">{hint}</span>}
+        {hint && <span className="ml-1 font-normal text-carbon-500">{hint}</span>}
       </label>
       {children}
       {error && (
@@ -101,16 +101,16 @@ export function DemoRequestForm() {
 
   if (status === 'sent') {
     return (
-      <div role="status" className="rounded-3xl border border-[var(--color-sand-200)] bg-white p-6 sm:p-8">
-        <CheckCircle2 size={28} className="text-[var(--color-leaf-600)]" aria-hidden />
-        <p className="mt-3 text-lg font-semibold text-[var(--color-forest-900)]">Pedido recebido.</p>
-        <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+      <div role="status" className="rounded-[6px] bg-white p-6 sm:p-8">
+        <CheckCircle2 size={28} className="text-deep" aria-hidden />
+        <p className="mt-3 font-display text-xl text-carbon">Pedido recebido.</p>
+        <p className="mt-1 text-sm text-carbon-700">
           Vamos entrar em contato pelo e-mail {sentTo} para combinar a demonstração.
         </p>
         <button
           type="button"
           onClick={() => setStatus('idle')}
-          className="mt-5 text-sm font-semibold text-[var(--color-leaf-600)] hover:underline"
+          className="mt-5 text-sm font-semibold text-carbon underline underline-offset-[3px]"
         >
           Enviar outro pedido
         </button>
@@ -125,25 +125,25 @@ export function DemoRequestForm() {
       noValidate
       onSubmit={handleSubmit}
       aria-label="Solicitar demonstração"
-      className="relative scroll-mt-24 space-y-4 rounded-3xl border border-[var(--color-sand-200)] bg-white p-6 sm:p-8"
+      className="relative scroll-mt-24 space-y-4 rounded-[6px] bg-white p-5 sm:p-7"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="demo-name" label="Nome" error={errors.name}>
-          <input id="demo-name" autoComplete="name" value={values.name} onChange={(e) => set('name', e.target.value)} className={`${INPUT} ${errors.name ? 'border-[var(--color-red-600)]' : 'border-[var(--color-sand-200)]'}`} {...invalid('name')} />
+          <input id="demo-name" autoComplete="name" value={values.name} onChange={(e) => set('name', e.target.value)} className={`${INPUT} ${errors.name ? 'border-[var(--color-red-600)]' : 'border-carbon/30'}`} {...invalid('name')} />
         </Field>
         <Field id="demo-company" label="Empresa ou propriedade" error={errors.company}>
-          <input id="demo-company" autoComplete="organization" value={values.company} onChange={(e) => set('company', e.target.value)} className={`${INPUT} ${errors.company ? 'border-[var(--color-red-600)]' : 'border-[var(--color-sand-200)]'}`} {...invalid('company')} />
+          <input id="demo-company" autoComplete="organization" value={values.company} onChange={(e) => set('company', e.target.value)} className={`${INPUT} ${errors.company ? 'border-[var(--color-red-600)]' : 'border-carbon/30'}`} {...invalid('company')} />
         </Field>
         <Field id="demo-email" label="E-mail" error={errors.email}>
-          <input id="demo-email" type="email" autoComplete="email" value={values.email} onChange={(e) => set('email', e.target.value)} className={`${INPUT} ${errors.email ? 'border-[var(--color-red-600)]' : 'border-[var(--color-sand-200)]'}`} {...invalid('email')} />
+          <input id="demo-email" type="email" autoComplete="email" value={values.email} onChange={(e) => set('email', e.target.value)} className={`${INPUT} ${errors.email ? 'border-[var(--color-red-600)]' : 'border-carbon/30'}`} {...invalid('email')} />
         </Field>
         <Field id="demo-phone" label="Telefone" hint="(opcional)" error={errors.phone}>
-          <input id="demo-phone" type="tel" autoComplete="tel" value={values.phone} onChange={(e) => set('phone', e.target.value)} className={`${INPUT} ${errors.phone ? 'border-[var(--color-red-600)]' : 'border-[var(--color-sand-200)]'}`} {...invalid('phone')} />
+          <input id="demo-phone" type="tel" autoComplete="tel" value={values.phone} onChange={(e) => set('phone', e.target.value)} className={`${INPUT} ${errors.phone ? 'border-[var(--color-red-600)]' : 'border-carbon/30'}`} {...invalid('phone')} />
         </Field>
       </div>
 
       <Field id="demo-profile" label="Perfil" error={errors.profile}>
-        <select id="demo-profile" value={values.profile} onChange={(e) => set('profile', e.target.value as Values['profile'])} className={`${INPUT} ${errors.profile ? 'border-[var(--color-red-600)]' : 'border-[var(--color-sand-200)]'}`} {...invalid('profile')}>
+        <select id="demo-profile" value={values.profile} onChange={(e) => set('profile', e.target.value as Values['profile'])} className={`${INPUT} ${errors.profile ? 'border-[var(--color-red-600)]' : 'border-carbon/30'}`} {...invalid('profile')}>
           <option value="">Selecione</option>
           {PROFILE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -160,18 +160,18 @@ export function DemoRequestForm() {
       </div>
 
       <div>
-        <label className="flex items-start gap-3 text-sm text-[var(--color-ink-muted)]">
+        <label className="flex items-start gap-3 text-sm text-carbon-700">
           <input
             id="demo-consent"
             type="checkbox"
             checked={values.consent}
             onChange={(e) => set('consent', e.target.checked)}
-            className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-forest-800)]"
+            className="mt-0.5 h-5 w-5 shrink-0 accent-carbon"
             {...invalid('consent')}
           />
           <span>
             Autorizo o contato da equipe AgroPass sobre esta demonstração, conforme a{' '}
-            <Link to="/privacidade" className="font-medium text-[var(--color-leaf-600)] underline">
+            <Link to="/privacidade" className="font-medium text-carbon underline">
               Política de Privacidade
             </Link>
             .
@@ -192,7 +192,7 @@ export function DemoRequestForm() {
         )}
       </div>
 
-      <button type="submit" disabled={status === 'sending'} className={`${PRIMARY_BUTTON} w-full disabled:opacity-60`}>
+      <button type="submit" disabled={status === 'sending'} className={`${DARK_BUTTON} w-full disabled:opacity-60`}>
         {status === 'sending' && <Loader2 size={16} className="animate-spin" aria-hidden />}
         {status === 'sending' ? 'Enviando…' : 'Enviar pedido de demonstração'}
       </button>

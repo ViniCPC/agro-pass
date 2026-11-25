@@ -212,6 +212,14 @@ export function findDemoBatchEvents(batchId: string): PublicTraceEvent[] {
   return record ? chainOf(record).events : []
 }
 
+// The recorded data behind a demo passport's hashes. The landing page edits a
+// copy of it to show the chain check catching the change.
+export function findDemoEventSpecs(publicCode: string): { batchId: string; specs: DemoEventSpec[] } | null {
+  const normalized = publicCode.toUpperCase()
+  const record = allRecords().find((item) => item.batch.publicCode.toUpperCase() === normalized)
+  return record ? { batchId: record.batch.id, specs: record.events } : null
+}
+
 // Private demo batches behave like the API: no public passport.
 export function findDemoPassport(publicCode: string): PublicBatch | null {
   const normalized = publicCode.toUpperCase()

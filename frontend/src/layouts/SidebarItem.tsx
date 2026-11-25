@@ -49,8 +49,8 @@ export function SidebarItem(props: SidebarItemProps) {
         cn(
           'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
           isActive
-            ? 'bg-[var(--color-teal-50)] text-[var(--color-teal-700)]'
-            : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-border-soft)] hover:text-[var(--color-ink)]'
+            ? 'bg-white/85 text-[var(--color-teal-700)] shadow-[0_1px_2px_rgba(15,40,30,0.08)]'
+            : 'text-[var(--color-ink-muted)] hover:bg-white/60 hover:text-[var(--color-ink)]'
         )
       }
     >

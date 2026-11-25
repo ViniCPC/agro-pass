@@ -3,6 +3,8 @@
 @theme {
   /* Typography */
   --font-sans: 'Sora', system-ui, sans-serif;
+  --font-display: 'Inter Tight', 'Sora', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Brand palette */
   --color-page:        #F6F9F6;
@@ -56,6 +58,20 @@
   --color-sand-50:    #FBF8F1;
   --color-sand-100:   #F3EDE1;
   --color-sand-200:   #E6DCC6;
+
+  /* Landing page: cold white ground, near-black type, lime for the main
+     action and the current state, deep green for contrast sections. */
+  --color-frost:      #F5F7F5;
+  --color-line:       #DFE5E1;
+  --color-carbon:     #101B16;
+  --color-carbon-700: #3F4B45;
+  --color-carbon-500: #6D7A73;
+  --color-lime:       #C4F542;
+  --color-lime-300:   #D9FA85;
+  --color-deep:       #12382B;
+  --color-deep-700:   #1D4A3A;
+  --color-alert:      #C2412D;
+  --color-alert-300:  #FF9C86;
 
   /* Radii */
   --radius-card: 12px;

@@ -18,7 +18,11 @@ function rotr(value: number, bits: number) {
 }
 
 export function sha256Hex(message: string): string {
-  const bytes = new TextEncoder().encode(message)
+  return sha256HexBytes(new TextEncoder().encode(message))
+}
+
+// Same digest over raw bytes, e.g. a downloaded file.
+export function sha256HexBytes(bytes: Uint8Array): string {
   const paddedLength = Math.ceil((bytes.length + 9) / 64) * 64
   const data = new Uint8Array(paddedLength)
   data.set(bytes)

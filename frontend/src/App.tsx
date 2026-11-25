@@ -82,6 +82,8 @@ export default function App() {
               </Route>
 
               <Route index element={<HomeRoute landing={<LandingPage />} />} />
+              {/* The landing page for signed-in users and the demo (the logo links here). */}
+              <Route path="/inicio" element={<LandingPage />} />
               <Route path="/privacidade" element={<PrivacyPage />} />
               <Route path="/termos" element={<TermsPage />} />
               <Route path="/status" element={<StatusPage />} />
