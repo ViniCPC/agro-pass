@@ -36,6 +36,31 @@ describe('LocalFileStorage', () => {
     ).resolves.toEqual(buffer);
   });
 
+  it('le de volta o arquivo gravado', async () => {
+    const storage = new LocalFileStorage();
+    const buffer = Buffer.from('%PDF-1.4 leitura');
+    const stored = await storage.upload({
+      buffer,
+      originalName: 'nota.pdf',
+      mimeType: 'application/pdf',
+      size: buffer.length,
+    });
+
+    await expect(storage.download(stored.key)).resolves.toEqual(buffer);
+  });
+
+  it('recusa ler fora da pasta de uploads', async () => {
+    await expect(
+      new LocalFileStorage().download('../../segredo.txt'),
+    ).rejects.toThrow('Chave de armazenamento invalida.');
+  });
+
+  it('ler arquivo inexistente e erro', async () => {
+    await expect(
+      new LocalFileStorage().download('documents/nao-existe.pdf'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
   it('recusa apagar fora da pasta de uploads', async () => {
     await expect(
       new LocalFileStorage().delete('../../segredo.txt'),

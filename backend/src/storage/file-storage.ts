@@ -18,5 +18,6 @@ export interface StoredFile {
 
 export interface FileStorage {
   upload(file: UploadedFile): Promise<StoredFile>;
+  download(key: string): Promise<Buffer>;
   delete(key: string): Promise<void>;
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
-import { mkdir, unlink, writeFile } from 'fs/promises';
+import { mkdir, unlink, writeFile, readFile } from 'fs/promises';
 import { resolve, sep } from 'path';
 import type { FileStorage, StoredFile, UploadedFile } from './file-storage';
 
@@ -14,11 +14,18 @@ export class LocalFileStorage implements FileStorage {
       'image/png': '.png',
       'image/jpeg': '.jpg',
     }[file.mimeType];
-    if (!extension) throw new Error('Tipo de arquivo nao suportado.');
+
+    if (!extension) {
+      throw new Error('Tipo de arquivo nao suportado.');
+    }
+
     const key = `documents/${randomUUID()}${extension}`;
     const target = this.resolveKey(key);
 
-    await mkdir(resolve(this.uploadsRoot, 'documents'), { recursive: true });
+    await mkdir(resolve(this.uploadsRoot, 'documents'), {
+      recursive: true,
+    });
+
     await writeFile(target, file.buffer);
 
     return {
@@ -29,6 +36,10 @@ export class LocalFileStorage implements FileStorage {
       mimeType: file.mimeType,
       hash: createHash('sha256').update(file.buffer).digest('hex'),
     };
+  }
+
+  async download(key: string): Promise<Buffer> {
+    return readFile(this.resolveKey(key));
   }
 
   async delete(key: string): Promise<void> {

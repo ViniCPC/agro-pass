@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -16,7 +17,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { NotFoundException } from '@nestjs/common';
-import { resolve, sep } from 'path';
+import { FILE_STORAGE } from '../storage/file-storage';
+import type { FileStorage } from '../storage/file-storage';
 import { UserRole } from '../../generated/prisma/enums';
 import type { AuthUser } from '../auth/auth-user.type';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -47,6 +49,8 @@ export class BatchesController {
     private readonly batchDocumentsService: BatchDocumentsService,
     private readonly batchQrCodeService: BatchQrCodeService,
     private readonly tokenization: BatchTokenizationService,
+    @Inject(FILE_STORAGE)
+    private readonly fileStorage: FileStorage,
   ) {}
 
   @Post()
@@ -110,19 +114,21 @@ export class BatchesController {
       documentId,
       user,
     );
-    const root = resolve(process.cwd(), 'uploads');
-    const file = resolve(root, document.storageKey);
-    if (!file.startsWith(`${root}${sep}`)) throw new NotFoundException();
+
+    let buffer: Buffer;
+
+    try {
+      // The local provider still refuses keys outside the uploads folder.
+      buffer = await this.fileStorage.download(document.storageKey);
+    } catch {
+      throw new NotFoundException('Arquivo indisponivel.');
+    }
+
     response.setHeader('Content-Type', document.mimeType);
     response.setHeader('Cache-Control', 'private, no-store');
     response.setHeader('Content-Disposition', 'attachment');
-    return new Promise<void>((accept, reject) => {
-      response.sendFile(file, (error) =>
-        error
-          ? reject(new NotFoundException('Arquivo indisponivel.'))
-          : accept(),
-      );
-    });
+
+    return response.send(buffer);
   }
 
   @Patch(':id/documents/:documentId/visibility')
