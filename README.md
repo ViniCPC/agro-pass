@@ -169,8 +169,8 @@ Usuários produtores informam um `producerId`; cooperativas informam um `coopera
 | `GET` | `/batches` | Listar lotes |
 | `GET` | `/batches/:id` | Consultar lote |
 | `GET` | `/batches/:id/transitions` | Consultar próximas transições permitidas |
-| `PATCH` | `/batches/:id/status` | Registrar a próxima etapa |
-| `PATCH` | `/batches/:id/cancel` | Cancelar lote |
+| `PATCH` | `/batches/:id/status` | Registrar a próxima etapa, com `location` e `notes` opcionais (entram no hash do evento) |
+| `PATCH` | `/batches/:id/cancel` | Cancelar lote, com o motivo em `notes` |
 | `PATCH` | `/batches/:id/close` | Encerrar lote entregue |
 | `PATCH` | `/batches/:id/visibility` | Tornar passaporte público ou privado |
 | `POST` | `/batches/:id/documents` | Anexar documento (campo opcional `isPublic`, padrão `false`) |

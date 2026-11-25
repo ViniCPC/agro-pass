@@ -15,10 +15,12 @@ class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAccessToken()
+  // A FormData body sets its own multipart Content-Type with the boundary.
+  const isForm = typeof FormData !== 'undefined' && init?.body instanceof FormData
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isForm ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
@@ -46,6 +48,16 @@ export const api = {
   put:  <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT',   body: JSON.stringify(body) }),
   patch:<T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   del:  <T>(path: string)                => request<T>(path, { method: 'DELETE' }),
+  upload: <T>(path: string, body: FormData) => request<T>(path, { method: 'POST', body }),
+  // Raw response, for files that need the session (private documents).
+  blob: async (path: string) => {
+    const token = getAccessToken()
+    const res = await fetch(`${BASE_URL}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!res.ok) throw new ApiError(res.status, await res.text().catch(() => res.statusText))
+    return res.blob()
+  },
   query: buildQuery,
 }
 

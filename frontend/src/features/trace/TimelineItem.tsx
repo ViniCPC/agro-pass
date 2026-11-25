@@ -8,6 +8,8 @@ import type { TimelineEventData } from './timeline.types'
 
 interface TimelineItemProps {
   event: TimelineEventData
+  // The sequence of the event a correction points at.
+  correctedSequence?: number
   isLast: boolean
   showExplorerLinks: boolean
 }
@@ -20,7 +22,7 @@ function getLocationLabel(event: TimelineEventData) {
   return null
 }
 
-export function TimelineItem({ event, isLast, showExplorerLinks }: TimelineItemProps) {
+export function TimelineItem({ event, correctedSequence, isLast, showExplorerLinks }: TimelineItemProps) {
   const actor = event.actor ?? event.recordedBy
   const roleLabel = actor ? ROLE_LABEL[actor.role] : null
   const locationLabel = getLocationLabel(event)
@@ -51,6 +53,12 @@ export function TimelineItem({ event, isLast, showExplorerLinks }: TimelineItemP
               {formatDateTime(event.createdAt)}
             </time>
           </header>
+
+          {event.correctedEventId && (
+            <p className="mt-1 text-xs font-semibold text-[var(--color-amber-700)]">
+              Corrige o evento {correctedSequence != null ? `#${correctedSequence}` : 'anterior'}, que continua registrado.
+            </p>
+          )}
 
           {note && (
             <p className="mt-1 break-words text-sm text-[var(--color-ink-muted)]">{note}</p>

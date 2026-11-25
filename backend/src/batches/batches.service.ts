@@ -14,6 +14,7 @@ import { BatchLifecycleService } from './batch-lifecycle.service';
 import { BatchDto } from './dto/batch.dto';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { ListBatchesResponseDto } from './dto/list-batches-response.dto';
+import { StageDetailsDto } from './dto/stage-details.dto';
 import { UpdateBatchStatusDto } from './dto/update-batch-status.dto';
 import { UpdateBatchVisibilityDto } from './dto/update-batch-visibility.dto';
 
@@ -131,11 +132,16 @@ export class BatchesService {
     dto: UpdateBatchStatusDto,
     user: AuthUser,
   ): Promise<BatchDto> {
-    return this.transitionTo(id, dto.status, user);
+    const { status, ...details } = dto;
+    return this.transitionTo(id, status, user, details);
   }
 
-  async cancel(id: string, user: AuthUser): Promise<BatchDto> {
-    return this.transitionTo(id, BatchStatus.CANCELLED, user);
+  async cancel(
+    id: string,
+    user: AuthUser,
+    details: StageDetailsDto = {},
+  ): Promise<BatchDto> {
+    return this.transitionTo(id, BatchStatus.CANCELLED, user, details);
   }
 
   async close(id: string, user: AuthUser): Promise<BatchDto> {
@@ -170,6 +176,7 @@ export class BatchesService {
     id: string,
     nextStatus: BatchStatus,
     user: AuthUser,
+    details: StageDetailsDto = {},
   ): Promise<BatchDto> {
     const updated = await this.prisma.$transaction(async (transaction) => {
       await this.eventChain.lockBatch(transaction, id);
@@ -204,6 +211,10 @@ export class BatchesService {
         type: nextStatus,
         recordedById: user.sub,
         recordedAt: changedAt,
+        location: details.location?.trim() || null,
+        latitude: details.latitude ?? null,
+        longitude: details.longitude ?? null,
+        notes: details.notes,
       });
 
       return transaction.batch.findUniqueOrThrow({

@@ -5,11 +5,11 @@ import { createDemoBatch } from '@/mocks/demo-store'
 
 export function useCreateBatch() {
   const queryClient = useQueryClient()
-  const { isDemoMode } = useDemoMode()
+  const { isDemoMode, demoRole } = useDemoMode()
 
   return useMutation({
     mutationFn: async (payload: CreateBatchInput) =>
-      isDemoMode ? createDemoBatch(payload) : batchesApi.create(payload),
+      isDemoMode ? createDemoBatch(payload, demoRole) : batchesApi.create(payload),
     onSuccess: (createdBatch) => {
       queryClient.setQueryData(
         ['batches', isDemoMode ? 'demo' : 'live', createdBatch.id],

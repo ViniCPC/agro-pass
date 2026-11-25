@@ -117,6 +117,11 @@ export function TimelineContainer({
               <motion.li key={entry.event.id} variants={entryVariants} transition={{ duration: 0.22 }}>
                 <TimelineItem
                   event={entry.event}
+                  correctedSequence={
+                    entry.event.correctedEventId
+                      ? sortedEvents.find((event) => event.id === entry.event.correctedEventId)?.sequence
+                      : undefined
+                  }
                   isLast={entry.isLast}
                   showExplorerLinks={showExplorerLinks}
                 />

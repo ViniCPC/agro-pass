@@ -29,6 +29,7 @@ import { BatchDocumentsService } from './batch-documents.service';
 import { BatchQrCodeService } from './batch-qrcode.service';
 import { BatchesService } from './batches.service';
 import { BatchDto } from './dto/batch.dto';
+import { CancelBatchDto } from './dto/cancel-batch.dto';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { DocumentDto } from './dto/document.dto';
 import { ListBatchesResponseDto } from './dto/list-batches-response.dto';
@@ -184,9 +185,10 @@ export class BatchesController {
   @Roles(UserRole.ADMIN)
   cancel(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CancelBatchDto,
     @CurrentUser() user: AuthUser,
   ): Promise<BatchDto> {
-    return this.batchesService.cancel(id, user);
+    return this.batchesService.cancel(id, user, dto);
   }
 
   @Patch(':id/close')

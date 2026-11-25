@@ -25,6 +25,13 @@ export interface DemoEventSpec {
   notes?: string
   txHash?: string
   documents?: PublicEventDocument[]
+  // A CORRECTION points at the event it corrects; the original is kept.
+  correctedEventId?: string
+}
+
+// Demo event ids follow the sequence, so a correction can point at one.
+export function demoEventId(batchId: string, sequence: number) {
+  return `${batchId}-event-${sequence}`
 }
 
 export interface DemoChain {
@@ -60,7 +67,7 @@ function hashEvent(
       previousHash,
       documentHashes: (spec.documents ?? []).map((doc) => doc.fileHash).sort(),
       txHash: spec.txHash ?? null,
-      correctedEventId: null,
+      correctedEventId: spec.correctedEventId ?? null,
     }),
   )
 }
@@ -109,7 +116,7 @@ export function buildDemoChain(batchId: string, specs: DemoEventSpec[]): DemoCha
     const notes = spec.notes ?? null
 
     events.push({
-      id: `${batchId}-event-${sequence}`,
+      id: demoEventId(batchId, sequence),
       type: spec.type,
       sequence,
       location: spec.location ?? null,
@@ -120,7 +127,7 @@ export function buildDemoChain(batchId: string, specs: DemoEventSpec[]): DemoCha
       eventHash,
       txHash: spec.txHash ?? null,
       recordedAt: spec.at,
-      correctedEventId: null,
+      correctedEventId: spec.correctedEventId ?? null,
       actor: { name: spec.actor.name, role: spec.actor.role },
       documents,
       actorName: spec.actor.name,

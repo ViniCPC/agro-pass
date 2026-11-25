@@ -299,6 +299,38 @@ describe('BatchesService', () => {
       );
     });
 
+    it('grava local e observacoes da etapa no evento encadeado', async () => {
+      batchUpdate.mockResolvedValue(
+        makeBatch({ status: BatchStatus.HARVESTED }),
+      );
+      batchFindUniqueOrThrow
+        .mockResolvedValueOnce({
+          id: 'batch-uuid',
+          status: BatchStatus.CREATED,
+          farm: makeFarm(),
+        })
+        .mockResolvedValueOnce(makeBatch({ status: BatchStatus.HARVESTED }));
+
+      await service.updateStatus(
+        'batch-uuid',
+        {
+          status: BatchStatus.HARVESTED,
+          location: '  Talhão 4, Rio Verde  ',
+          notes: 'Colheita manual, 120 sacas',
+        },
+        AUTH_USER,
+      );
+
+      expect(appendEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          type: 'HARVESTED',
+          location: 'Talhão 4, Rio Verde',
+          notes: 'Colheita manual, 120 sacas',
+        }),
+      );
+    });
+
     it('rejeita salto de CREATED para DELIVERED', async () => {
       batchFindUnique.mockResolvedValue({
         id: 'batch-uuid',

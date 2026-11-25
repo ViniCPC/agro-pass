@@ -27,6 +27,9 @@ const DemoEntryPage = lazy(() =>
 const FarmDetailPage = lazy(() =>
   import('@/pages/FarmDetailPage').then((module) => ({ default: module.FarmDetailPage })),
 )
+const CreateFarmPage = lazy(() =>
+  import('@/pages/CreateFarmPage').then((module) => ({ default: module.CreateFarmPage })),
+)
 const FarmsPage = lazy(() =>
   import('@/pages/FarmsPage').then((module) => ({ default: module.FarmsPage })),
 )
@@ -92,6 +95,7 @@ export default function App() {
                 <Route element={<AppShell />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/farms" element={<FarmsPage />} />
+                  <Route path="/farms/new" element={<CreateFarmPage />} />
                   <Route path="/farms/:id" element={<FarmDetailPage />} />
                   <Route path="/batches" element={<BatchesPage />} />
                   <Route path="/batches/new" element={<CreateBatchPage />} />

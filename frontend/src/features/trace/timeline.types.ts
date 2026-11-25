@@ -27,5 +27,7 @@ export interface TimelineEventData {
   customStageName?: string | null
   documents?: TimelineDocument[]
   document?: TimelineDocument | null
+  // Set on a CORRECTION: the event it points at.
+  correctedEventId?: string | null
   createdAt: string
 }

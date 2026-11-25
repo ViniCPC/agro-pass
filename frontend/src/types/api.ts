@@ -238,3 +238,28 @@ export interface PublicBatch {
   // Optional so a frontend deployed ahead of the API still renders.
   integrity?: PassportIntegrity
 }
+
+// Internal view of a document attached to a batch (GET /batches/:id/documents).
+export interface BatchDocument {
+  id: string
+  type: DocumentType
+  // Null only for bundled demo documents that are restricted.
+  originalName: string | null
+  // Public files are served from this URL; private ones only through the API.
+  fileUrl: string | null
+  size: number
+  mimeType: string
+  fileHash: string
+  isPublic: boolean
+  batchId: string | null
+  traceEventId: string | null
+  createdAt: string
+}
+
+export interface Producer {
+  id: string
+  name: string
+  phone: string
+  document: string | null
+  createdAt: string
+}

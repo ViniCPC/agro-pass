@@ -41,7 +41,7 @@ export function CreateBatchForm({
         Dados do lote
       </h2>
       <p className="mt-0.5 text-sm text-[var(--color-ink-subtle)]">
-        Preencha todos os campos obrigatórios para registrar um novo lote.
+        Fazenda, produto e quantidade são obrigatórios. A colheita pode ser informada agora ou registrada depois como etapa.
       </p>
 
       <form
@@ -126,6 +126,7 @@ export function CreateBatchForm({
         <div className="space-y-1.5">
           <label htmlFor="batch-harvest-date" className="block text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
             Data da colheita
+            <span className="ml-1 font-normal normal-case tracking-normal">(opcional)</span>
           </label>
           <input
             id="batch-harvest-date"
