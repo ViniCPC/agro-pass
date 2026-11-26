@@ -1,3 +1,4 @@
+import { useDemoMode } from '@/contexts/demo-context'
 import { Blocks, Package, Route, Sprout, Truck } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { MetricCard } from '@/components/MetricCard'
@@ -6,6 +7,7 @@ import { useBatches } from '@/hooks/useBatches'
 import { deriveDashboardMetrics } from './dashboard-metrics'
 
 export function DashboardMetricsGrid() {
+  const { isDemoMode } = useDemoMode()
   const { data: farmsData, isLoading: farmsLoading } = useFarms()
   const { data: batchesData, isLoading: batchesLoading } = useBatches()
   const metrics = deriveDashboardMetrics(farmsData?.data ?? [], batchesData?.data ?? [])
@@ -38,7 +40,7 @@ export function DashboardMetricsGrid() {
         emphasis="primary"
       />
       <MetricCard
-        label="Prova blockchain"
+        label={isDemoMode ? 'Provas simuladas' : 'Prova blockchain'}
         value={value(metrics.blockchainProofBatches, batchesLoading)}
         icon={Blocks}
         accent="teal"

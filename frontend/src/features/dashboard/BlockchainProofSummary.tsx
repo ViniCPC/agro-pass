@@ -1,3 +1,5 @@
+import { useDemoMode } from '@/contexts/demo-context'
+import { isSimulatedProof } from '@/features/trace/solana'
 import { Coins, ExternalLink, Link2 } from 'lucide-react'
 import type { ElementType } from 'react'
 import { SectionHeader } from '@/components/SectionHeader'
@@ -26,8 +28,11 @@ function ProofMetric({
 
 export function BlockchainProofSummary() {
   const { data, isLoading } = useBatches()
+  const { isDemoMode } = useDemoMode()
   const batches = data?.data ?? []
   const metrics = deriveDashboardMetrics([], batches)
+  const realProofs = batches.filter(batch => batch.blockchain.status === 'CONFIRMED' && !isSimulatedProof(batch.blockchain, isDemoMode))
+  const latest = [...realProofs].sort((a, b) => (b.tokenizedAt ?? '').localeCompare(a.tokenizedAt ?? ''))[0]?.blockchain
 
   const v = (value: number) => (isLoading ? '...' : value)
 
@@ -35,7 +40,7 @@ export function BlockchainProofSummary() {
     <div className="rounded-[var(--radius-card)] border border-[var(--color-teal-100)] bg-gradient-to-br from-[var(--color-teal-50)] via-[var(--color-surface)] to-[var(--color-teal-50)] p-5 shadow-[var(--shadow-card-hover)]">
       <SectionHeader
         title="Camada de prova blockchain"
-        description="Notarização cNFT na Solana"
+        description={isDemoMode ? 'Demonstração local, sem transações na Solana' : 'Registros cNFT na Solana'}
         action={
           <span className="inline-flex items-center gap-1 rounded-[var(--radius-badge)] bg-[var(--color-surface)] px-2.5 py-1 text-xs font-semibold text-[var(--color-teal-700)]">
             <Link2 size={12} />
@@ -45,7 +50,7 @@ export function BlockchainProofSummary() {
       />
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <ProofMetric label="Lotes notarizados" value={v(metrics.blockchainProofBatches)} icon={Coins} />
+        <ProofMetric label={isDemoMode ? 'Provas simuladas' : 'Lotes notarizados'} value={v(isDemoMode ? metrics.blockchainProofBatches : realProofs.length)} icon={Coins} />
         <ProofMetric label="Lotes rastreados" value={v(metrics.tracedBatches)} icon={Link2} />
       </div>
 
@@ -54,16 +59,16 @@ export function BlockchainProofSummary() {
           Último hash on-chain
         </p>
         <p className="truncate rounded-[var(--radius-badge)] border border-[var(--color-teal-100)] bg-[var(--color-surface)] px-2 py-1.5 font-mono text-[11px] text-[var(--color-ink-muted)]">
-          5KJFp8mWnR2sYtUeA4BcDfJnKoP8WmVqE5iTGHv7m...
+          {latest?.txHash ?? 'Nenhuma transação real registrada'}
         </p>
-        <a
-          href="https://explorer.solana.com"
+        {latest?.explorerTxUrl && <a
+          href={latest.explorerTxUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-[var(--color-teal-700)] hover:underline"
         >
           Ver no Solana Explorer <ExternalLink size={11} />
-        </a>
+        </a>}
       </div>
     </div>
   )

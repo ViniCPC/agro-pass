@@ -24,7 +24,7 @@ const keypair = Keypair.generate();
 writeFileSync(
   resolvedKeypairPath,
   JSON.stringify(Array.from(keypair.secretKey)),
-  'utf-8',
+  { encoding: 'utf-8', mode: 0o600, flag: 'wx' },
 );
 
 console.log('Carteira devnet criada.');

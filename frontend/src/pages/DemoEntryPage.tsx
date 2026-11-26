@@ -21,7 +21,7 @@ const features = [
   {
     icon: Link2,
     title: 'Prova blockchain',
-    description: 'cNFT Solana com hash de evidências para auditoria imutável e pública.',
+    description: 'Simulação de prova Solana com hashes reais, sem enviar transações à rede.',
     accent: 'teal',
   },
   {

@@ -1,3 +1,5 @@
+import { useDemoMode } from '@/contexts/demo-context'
+import { isSimulatedProof } from '@/features/trace/solana'
 import { Link2 } from 'lucide-react'
 import type { BatchBlockchainProof } from '@/types/api'
 
@@ -11,6 +13,8 @@ const PENDING_LABEL: Partial<Record<BatchBlockchainProof['status'], string>> = {
 }
 
 export function BatchBlockchainCell({ proof }: Props) {
+  const { isDemoMode } = useDemoMode()
+  const simulated = isSimulatedProof(proof, isDemoMode)
   if (proof.status !== 'CONFIRMED') {
     const label = PENDING_LABEL[proof.status]
     return (
@@ -24,7 +28,7 @@ export function BatchBlockchainCell({ proof }: Props) {
     <div className="space-y-0.5">
       <div className="flex items-center gap-1 text-[var(--color-teal-600)]">
         <Link2 size={11} strokeWidth={2.5} />
-        <span className="text-[10px] font-semibold uppercase tracking-wide">On-chain</span>
+        <span className="text-[10px] font-semibold uppercase tracking-wide">{simulated ? 'Simulada' : 'On-chain'}</span>
       </div>
       {proof.txHash && (
         <p

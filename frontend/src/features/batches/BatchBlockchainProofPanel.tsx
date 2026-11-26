@@ -2,20 +2,20 @@ import { AlertTriangle, CheckCircle2, Clock, ExternalLink, Link2, Loader2, Rotat
 import { useAuth } from '@/contexts/auth-context'
 import { useDemoMode } from '@/contexts/demo-context'
 import { TimelineHashInline } from '@/features/trace/TimelineHashInline'
-import { networkLabel } from '@/features/trace/solana'
+import { isSimulatedProof, networkLabel } from '@/features/trace/solana'
 import { formatDateTime } from '@/features/trace/trace.utils'
 import { useTokenizeBatch } from '@/hooks/useCreateBatch'
 import { apiErrorMessage } from '@/lib/api-error'
 import type { Batch } from '@/types/api'
 
-function StatusLine({ batch }: { batch: Batch }) {
+function StatusLine({ batch, simulated }: { batch: Batch; simulated: boolean }) {
   const { status, attempts, error } = batch.blockchain
 
   if (status === 'CONFIRMED') {
     return (
       <p className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-green-700)]">
         <CheckCircle2 size={15} />
-        Prova registrada na rede {networkLabel(batch.blockchain.network)}
+        {simulated ? 'Prova simulada — nenhuma transação enviada à Solana' : `Prova registrada na rede ${networkLabel(batch.blockchain.network)}`}
       </p>
     )
   }
@@ -54,6 +54,7 @@ export function BatchBlockchainProofPanel({ batch }: { batch: Batch }) {
   const { isDemoMode } = useDemoMode()
   const tokenize = useTokenizeBatch()
   const proof = batch.blockchain
+  const simulated = isSimulatedProof(proof, isDemoMode)
 
   const canRetry =
     !isDemoMode &&
@@ -68,7 +69,7 @@ export function BatchBlockchainProofPanel({ batch }: { batch: Batch }) {
         <h2 className="text-base font-semibold text-[var(--color-ink)]">Prova na blockchain</h2>
       </div>
 
-      <StatusLine batch={batch} />
+      <StatusLine batch={batch} simulated={simulated} />
 
       {proof.status === 'CONFIRMED' && (
         <div className="mt-3 space-y-2">
@@ -79,7 +80,7 @@ export function BatchBlockchainProofPanel({ batch }: { batch: Batch }) {
           <p className="text-xs text-[var(--color-ink-subtle)]">
             Registrado em {batch.tokenizedAt ? formatDateTime(batch.tokenizedAt) : '-'}
           </p>
-          {proof.explorerTxUrl && (
+          {!simulated && proof.explorerTxUrl && (
             <a
               href={proof.explorerTxUrl}
               target="_blank"

@@ -19,6 +19,13 @@ async function main() {
   const keypair = Keypair.fromSecretKey(Uint8Array.from(secretKey));
   const connection = new Connection(rpcUrl, 'confirmed');
 
+  if (
+    (await connection.getGenesisHash()) !==
+    'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG'
+  ) {
+    throw new Error('Este script solicita SOL somente na Devnet.');
+  }
+  console.log('Public key:', keypair.publicKey.toBase58());
   const signature = await connection.requestAirdrop(
     keypair.publicKey,
     amountSol * LAMPORTS_PER_SOL,
@@ -34,6 +41,10 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Erro ao solicitar airdrop:', error);
+  const message = error instanceof Error ? error.message : 'Falha de RPC';
+  console.error('Erro ao solicitar airdrop:', message);
+  console.error(
+    'Alternativa: https://faucet.solana.com (selecione Devnet e use a public key acima).',
+  );
   process.exit(1);
 });

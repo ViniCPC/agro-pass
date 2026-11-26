@@ -14,3 +14,6 @@ generated/
 coverage/
 .tmp/
 .temp/
+
+# Render places secret files at the build-context root; never COPY the wallet.
+treasury-devnet.json

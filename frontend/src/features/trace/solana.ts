@@ -21,3 +21,8 @@ export function explorerTxUrl(txHash: string) {
 export function explorerAddressUrl(address: string) {
   return `https://explorer.solana.com/address/${encodeURIComponent(address)}${clusterQuery}`
 }
+
+// Offline/demo receipts must never be presented as real Solana transactions.
+export function isSimulatedProof(proof: { network: string | null; txHash: string | null }, isDemo = false) {
+  return isDemo || proof.network === 'local' || proof.txHash?.startsWith('local-tx-') === true
+}

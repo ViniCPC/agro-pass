@@ -26,7 +26,8 @@
     "solana:create-wallet": "tsx src/scripts/create-devnet-wallet.ts",
     "solana:airdrop": "tsx src/scripts/request-devnet-airdrop.ts",
     "solana:create-tree": "tsx src/scripts/create-merkle-tree.ts",
-    "smoke:test": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1"
+    "smoke:test": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1",
+    "solana:status": "tsx src/scripts/solana-status.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config prisma/seed.ts"

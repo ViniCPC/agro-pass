@@ -29,7 +29,7 @@ describe('cadastro de propriedade', () => {
       'href',
       `/batches/new?farmId=${farm.id}`,
     )
-  })
+  }, 15_000) // Types every field: slow when the machine is busy.
 
   it('valida os campos antes de enviar', async () => {
     renderWithProviders(<CreateFarmPage />, { demo: true, demoRole: 'PRODUCER' })

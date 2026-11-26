@@ -72,15 +72,25 @@ describe('TraceBlockchainProofCard', () => {
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
     expect(screen.getByText(/Transação de demonstração/)).toBeInTheDocument()
+    expect(screen.getByText(/nenhuma transação foi enviada/)).toBeInTheDocument()
+    expect(screen.queryByText(/registrado como token na rede/)).not.toBeInTheDocument()
   })
 
-  it('mostra falha publicamente apenas como registro em andamento', () => {
+  it('provider local nao oferece links nem afirma registro na Solana', () => {
+    const local = confirmed(FINAL_HASH)
+    local.blockchain.network = 'local'
+    render(<TraceBlockchainProofCard data={local} isDemo={false} />)
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.getByText(/nenhuma transação foi enviada/)).toBeInTheDocument()
+  })
+
+  it('diferencia falha de registro em andamento', () => {
     const failed = makePublicBatch()
     failed.blockchain.status = 'FAILED'
     render(<TraceBlockchainProofCard data={failed} isDemo={false} />)
 
-    expect(screen.getByText(/está em andamento/)).toBeInTheDocument()
-    expect(screen.queryByText(/falh/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/registro na blockchain falhou/)).toBeInTheDocument()
+    expect(screen.queryByText(/está em andamento/)).not.toBeInTheDocument()
   })
 
   it('explica que a prova vem no encerramento para lotes abertos', () => {

@@ -1,7 +1,7 @@
 import { CheckCircle2, Clock, ExternalLink, Link2, XCircle } from 'lucide-react'
 import type { PublicBatch } from '@/types/api'
 import { TimelineHashInline } from './TimelineHashInline'
-import { networkLabel } from './solana'
+import { isSimulatedProof, networkLabel } from './solana'
 import { formatDateTime } from './trace.utils'
 
 interface TraceBlockchainProofCardProps {
@@ -32,6 +32,7 @@ function HashComparison({ proofHash, finalHash }: { proofHash: string | null; fi
 
 export function TraceBlockchainProofCard({ data, isDemo }: TraceBlockchainProofCardProps) {
   const proof = data.blockchain
+  const simulated = isSimulatedProof(proof, isDemo)
   const finalHash = data.integrity?.finalHash ?? data.batch.integrityHash
   const isClosed = data.batch.status === 'CLOSED'
 
@@ -45,8 +46,9 @@ export function TraceBlockchainProofCard({ data, isDemo }: TraceBlockchainProofC
       {proof.status === 'CONFIRMED' ? (
         <div className="space-y-3">
           <p className="text-sm text-[var(--color-ink-muted)]">
-            Ao encerrar o lote, o hash final da cadeia foi registrado como token na rede{' '}
-            {networkLabel(proof.network)}. Esse registro público não pode ser alterado nem apagado.
+            {simulated
+              ? 'Prova simulada: o hash foi calculado localmente; nenhuma transação foi enviada à Solana.'
+              : `Ao encerrar o lote, o hash final da cadeia foi registrado como token na rede ${networkLabel(proof.network)}. Confira a transação no Explorer.`}
           </p>
 
           <div className="space-y-1.5 rounded-lg bg-[var(--color-surface)] px-2.5 py-2">
@@ -61,7 +63,7 @@ export function TraceBlockchainProofCard({ data, isDemo }: TraceBlockchainProofC
             Registrado em {proof.tokenizedAt ? formatDateTime(proof.tokenizedAt) : '-'}
           </p>
 
-          {isDemo ? (
+          {simulated ? (
             <p className="rounded-md bg-[var(--color-amber-50)] px-2.5 py-1.5 text-xs text-[var(--color-amber-700)]">
               Transação de demonstração: o hash é real, mas o registro não existe na rede.
             </p>
@@ -89,7 +91,9 @@ export function TraceBlockchainProofCard({ data, isDemo }: TraceBlockchainProofC
             </p>
           )}
         </div>
-      ) : proof.status === 'PENDING' || proof.status === 'FAILED' ? (
+      ) : proof.status === 'FAILED' ? (
+        <p className="text-sm text-[var(--color-ink-subtle)]">O registro na blockchain falhou. A cadeia de hashes continua disponível para verificação.</p>
+      ) : proof.status === 'PENDING' ? (
         <p className="flex items-start gap-2 text-sm text-[var(--color-ink-subtle)]">
           <Clock size={15} className="mt-0.5 shrink-0" />
           O registro na blockchain está em andamento. Enquanto isso, a integridade do histórico já

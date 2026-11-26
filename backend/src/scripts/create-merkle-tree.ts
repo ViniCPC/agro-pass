@@ -1,6 +1,8 @@
 import 'dotenv/config';
-import { createTree } from '@metaplex-foundation/mpl-bubblegum';
+import { createTreeV2 } from '@metaplex-foundation/mpl-bubblegum';
 import { generateSigner } from '@metaplex-foundation/umi';
+import { Connection } from '@solana/web3.js';
+import bs58 from 'bs58';
 import { createUmiClient } from '../solana/umi.client';
 
 async function main() {
@@ -15,6 +17,19 @@ async function main() {
     throw new Error('SOLANA_TREASURY_KEYPAIR_PATH was not defined in .env');
   }
 
+  if (process.env.SOLANA_MERKLE_TREE?.trim()) {
+    throw new Error(
+      'SOLANA_MERKLE_TREE ja configurada. Reutilize a arvore existente.',
+    );
+  }
+  const connection = new Connection(rpcUrl, 'confirmed');
+  if (
+    (await connection.getGenesisHash()) !==
+    'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG'
+  ) {
+    throw new Error('Este script cria arvores somente na Devnet.');
+  }
+
   const umi = createUmiClient({
     rpcUrl,
     keypairPath,
@@ -22,15 +37,19 @@ async function main() {
 
   const merkleTree = generateSigner(umi);
 
-  const createTreeBuilder = await createTree(umi, {
+  const createTreeBuilder = await createTreeV2(umi, {
     merkleTree,
     maxDepth: 14,
     maxBufferSize: 64,
-    canopyDepth: 10,
+    canopyDepth: 0,
     public: false,
   });
 
-  await createTreeBuilder.sendAndConfirm(umi);
+  const { signature } = await createTreeBuilder.sendAndConfirm(umi);
+  console.log(
+    'Explorer:',
+    `https://explorer.solana.com/tx/${bs58.encode(signature)}?cluster=devnet`,
+  );
 
   console.log('Merkle Tree created successfully.');
   console.log('Address:', merkleTree.publicKey);

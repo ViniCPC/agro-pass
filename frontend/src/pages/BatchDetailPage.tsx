@@ -1,3 +1,4 @@
+import { isSimulatedProof } from '@/features/trace/solana'
 import { AlertTriangle, ArrowLeft, CalendarDays, ExternalLink, Globe, Lock } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ErrorState } from '@/components/ErrorState'
@@ -82,7 +83,7 @@ export function BatchDetailPage() {
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusBadge status={batch.status} />
-              {batch.blockchain.status === 'CONFIRMED' && <StatusBadge status="TOKENIZED" label="On-chain" />}
+              {batch.blockchain.status === 'CONFIRMED' && <StatusBadge status="TOKENIZED" label={isSimulatedProof(batch.blockchain, isDemoMode) ? 'Simulada' : 'On-chain'} />}
             </div>
           </div>
         </div>
