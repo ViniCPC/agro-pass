@@ -1,7 +1,7 @@
 import { Link2, Route } from 'lucide-react'
 import { useBatches } from '@/hooks/useBatches'
 import { useFarms } from '@/hooks/useFarms'
-import { deriveDashboardMetrics } from './dashboard-metrics'
+import { deriveDashboardMetrics, describeTraceability } from './dashboard-metrics'
 
 function NarrativeValue({ label, value }: { label: string; value: string | number }) {
   return (
@@ -20,9 +20,7 @@ export function DashboardNarrative() {
 
   const narrative = isLoading
     ? 'Carregando dados de rastreabilidade...'
-    : metrics.tracedBatches + ' de ' + metrics.totalBatches +
-      ' lotes já possuem eventos de cadeia, e ' + metrics.blockchainProofBatches +
-      ' contam com prova blockchain.'
+    : describeTraceability(metrics)
 
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-gradient-to-r from-[var(--color-surface)] via-[var(--color-teal-50)] to-[var(--color-surface)] p-5 shadow-[var(--shadow-card-hover)]">

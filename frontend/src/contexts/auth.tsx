@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { authApi, type AuthUser } from '@/api/authApi'
+import { authApi, type AuthResponse, type AuthUser, type SignupInput } from '@/api/authApi'
 import {
   clearAuthStorage,
   getAccessToken,
@@ -33,12 +33,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // A real session replaces the demo, otherwise the hooks keep serving mocks.
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await authApi.login(email, password)
+  const startSession = useCallback((result: AuthResponse) => {
     setAuthStorage(result.accessToken, result.user)
     if (isDemoMode) disableDemoMode()
     setUser(result.user)
   }, [isDemoMode, disableDemoMode])
+
+  const login = useCallback(async (email: string, password: string) => {
+    startSession(await authApi.login(email, password))
+  }, [startSession])
+
+  const signup = useCallback(async (input: SignupInput) => {
+    startSession(await authApi.signup(input))
+  }, [startSession])
 
   const logout = useCallback(() => {
     clearAuthStorage()
@@ -46,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext value={{ user, isLoading, login, logout }}>
+    <AuthContext value={{ user, isLoading, login, signup, logout }}>
       {children}
     </AuthContext>
   )

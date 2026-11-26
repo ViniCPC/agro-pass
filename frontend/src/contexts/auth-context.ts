@@ -1,10 +1,11 @@
 import { createContext, useContext } from 'react'
-import type { AuthUser } from '@/api/authApi'
+import type { AuthUser, SignupInput } from '@/api/authApi'
 
 export interface AuthContextValue {
   user: AuthUser | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
+  signup: (input: SignupInput) => Promise<void>
   logout: () => void
 }
 

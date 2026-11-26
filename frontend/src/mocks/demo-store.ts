@@ -450,6 +450,17 @@ function nextDemoCode(year: number) {
   return codeFor(sequence)
 }
 
+// Year in the batch code: the harvest's, or the current one (as the API does).
+export function batchCodeYear(harvestDate?: string) {
+  const year = harvestDate ? new Date(harvestDate).getUTCFullYear() : NaN
+  return Number.isNaN(year) ? new Date().getUTCFullYear() : year
+}
+
+// The code the next demo batch will get, for the creation preview.
+export function previewDemoBatchCode(harvestDate?: string) {
+  return nextDemoCode(batchCodeYear(harvestDate))
+}
+
 function assertRole(role: UserRole | undefined, allowed: UserRole[], message: string) {
   if (role !== undefined && !allowed.includes(role)) throw new Error(message)
 }
@@ -466,10 +477,7 @@ export function createDemoBatch(input: CreateBatchInput, role: UserRole = 'PRODU
   if (!farm) throw new Error('Fazenda não encontrada na demonstração.')
 
   const now = new Date().toISOString()
-  const year = input.harvestDate
-    ? new Date(input.harvestDate).getUTCFullYear()
-    : new Date().getUTCFullYear()
-  const code = nextDemoCode(year)
+  const code = nextDemoCode(batchCodeYear(input.harvestDate))
   const id = newId('demo-batch')
 
   const batch: DemoBatch = {

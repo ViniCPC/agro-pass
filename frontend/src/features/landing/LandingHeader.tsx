@@ -27,6 +27,7 @@ export function LandingHeader({ onLanding = true }: { onLanding?: boolean }) {
   const { isDemoMode } = useDemoMode()
   // Already inside the app (signed in or in the demo): offer the way back.
   const account = user || isDemoMode ? { to: '/dashboard', label: 'Ir para o painel' } : { to: '/login', label: 'Entrar' }
+  const canSignUp = !user && !isDemoMode
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-frost/90 backdrop-blur">
@@ -55,6 +56,11 @@ export function LandingHeader({ onLanding = true }: { onLanding?: boolean }) {
           <Link to={account.to} className="inline-flex min-h-[44px] items-center whitespace-nowrap px-3 text-sm font-semibold text-carbon hover:underline">
             {account.label}
           </Link>
+          {canSignUp && (
+            <Link to="/cadastro" className="inline-flex min-h-[44px] items-center whitespace-nowrap px-3 text-sm font-semibold text-carbon hover:underline">
+              Criar conta
+            </Link>
+          )}
           <Link to={EXAMPLE_PATH} className="inline-flex min-h-[40px] items-center rounded-[10px] bg-carbon px-4 text-sm font-semibold text-white hover:bg-carbon-700">
             Abrir um passaporte
           </Link>
@@ -98,6 +104,11 @@ export function LandingHeader({ onLanding = true }: { onLanding?: boolean }) {
               <Link to={account.to} onClick={close} className={SECONDARY_BUTTON}>
                 {account.label}
               </Link>
+              {canSignUp && (
+                <Link to="/cadastro" onClick={close} className={SECONDARY_BUTTON}>
+                  Criar conta
+                </Link>
+              )}
             </div>
           </Container>
         </div>

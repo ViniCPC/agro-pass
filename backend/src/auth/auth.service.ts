@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { AuthUser } from './auth-user.type';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { SignupDto } from './dto/signup.dto';
 
 const SAFE_USER_SELECT = {
   id: true,
@@ -65,6 +66,85 @@ export class AuthService {
       if (this.isUniqueConstraintError(error)) {
         throw new ConflictException(
           'Email ou vinculo de usuario ja cadastrado.',
+        );
+      }
+      throw error;
+    }
+  }
+
+  // Open in every environment: it can only create a producer account, linked
+  // to a new producer record, never another role or someone else's record.
+  async signup(dto: SignupDto) {
+    const email = dto.email.trim().toLowerCase();
+    const name = dto.name.trim();
+
+    let cooperativeId: string | undefined;
+    if (dto.inviteCode) {
+      const cooperative = await this.prisma.cooperative.findUnique({
+        where: { inviteCode: dto.inviteCode },
+        select: { id: true },
+      });
+      if (!cooperative) {
+        throw new BadRequestException(
+          'Código de convite não encontrado. Confira com a sua cooperativa.',
+        );
+      }
+      cooperativeId = cooperative.id;
+    }
+
+    const [emailTaken, documentTaken, phoneTaken] = await Promise.all([
+      this.prisma.user.findUnique({ where: { email }, select: { id: true } }),
+      this.prisma.producer.findUnique({
+        where: { document: dto.document },
+        select: { id: true },
+      }),
+      this.prisma.producer.findUnique({
+        where: { phone: dto.phone },
+        select: { id: true },
+      }),
+    ]);
+    if (emailTaken) {
+      throw new ConflictException(
+        'Este email já tem uma conta. Entre com ele.',
+      );
+    }
+    if (documentTaken) {
+      throw new ConflictException(
+        'Já existe um produtor com este CPF/CNPJ. Fale com o suporte.',
+      );
+    }
+    if (phoneTaken) {
+      throw new ConflictException('Este telefone já está em outro cadastro.');
+    }
+
+    const passwordHash = await hash(dto.password, 10);
+
+    try {
+      // One write: the user and its producer record exist together or not at all.
+      const user = await this.prisma.user.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+          role: UserRole.PRODUCER,
+          producer: {
+            create: {
+              name,
+              phone: dto.phone,
+              document: dto.document,
+              cooperativeId,
+            },
+          },
+        },
+        select: SAFE_USER_SELECT,
+      });
+
+      return this.buildAuthResponse(user);
+    } catch (error) {
+      // A concurrent sign-up with the same data.
+      if (this.isUniqueConstraintError(error)) {
+        throw new ConflictException(
+          'Email, CPF/CNPJ ou telefone já cadastrado.',
         );
       }
       throw error;

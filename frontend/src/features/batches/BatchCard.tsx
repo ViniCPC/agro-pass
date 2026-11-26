@@ -1,17 +1,7 @@
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '@/components/StatusBadge'
 import type { Batch } from '@/types/api'
-import { formatHarvestDate } from '@/features/trace/trace.utils'
-
-const PRODUCT_LABEL: Record<string, string> = {
-  COFFEE: 'Cafe',
-  SOY: 'Soja',
-  CATTLE: 'Bovino',
-  COCOA: 'Cacau',
-  PALM_OIL: 'Palma',
-  RUBBER: 'Borracha',
-  WOOD: 'Madeira',
-}
+import { PRODUCT_LABEL, formatHarvestDate } from '@/features/trace/trace.utils'
 
 interface BatchCardProps {
   batch: Batch

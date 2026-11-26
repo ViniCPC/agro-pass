@@ -5,17 +5,8 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { LoadingState } from '@/components/LoadingState'
 import { EmptyState } from '@/components/EmptyState'
 import { useBatches } from '@/hooks/useBatches'
+import { PRODUCT_LABEL } from '@/features/trace/trace.utils'
 import type { Batch } from '@/types/api'
-
-const PRODUCT_LABEL: Record<string, string> = {
-  COFFEE:   'Café',
-  SOY:      'Soja',
-  CATTLE:   'Bovino',
-  COCOA:    'Cacau',
-  PALM_OIL: 'Palma',
-  RUBBER:   'Borracha',
-  WOOD:     'Madeira',
-}
 
 function BatchRow({ batch }: { batch: Batch }) {
   const qty = new Intl.NumberFormat('pt-BR').format(batch.quantity)

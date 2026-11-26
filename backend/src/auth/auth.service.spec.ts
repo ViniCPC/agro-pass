@@ -137,3 +137,106 @@ describe('AuthService', () => {
     ).rejects.toThrow(UnauthorizedException);
   });
 });
+
+describe('AuthService.signup', () => {
+  let service: AuthService;
+  const prisma = {
+    user: { create: jest.fn(), findUnique: jest.fn() },
+    producer: { findUnique: jest.fn() },
+    cooperative: { findUnique: jest.fn() },
+  };
+  const originalEnv = process.env;
+  const input = {
+    name: ' Ana Souza ',
+    email: 'Ana@Example.com',
+    password: 'senha-segura',
+    phone: '64999990000',
+    document: '12345678901',
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    // Sign-up stays open in production, unlike the provisioning register.
+    process.env = { ...originalEnv, NODE_ENV: 'production' };
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.producer.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue(
+      safeUser({ name: 'Ana Souza', email: 'ana@example.com' }),
+    );
+    const module = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        { provide: PrismaService, useValue: prisma },
+        {
+          provide: JwtService,
+          useValue: { signAsync: jest.fn().mockResolvedValue('signed-jwt') },
+        },
+      ],
+    }).compile();
+    service = module.get(AuthService);
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+
+  it('cria conta de produtor junto com o registro do produtor, mesmo em producao', async () => {
+    const result = await service.signup(input);
+
+    expect(result.accessToken).toBe('signed-jwt');
+    expect(result.user).not.toHaveProperty('passwordHash');
+    const { data } = prisma.user.create.mock.calls[0][0];
+    expect(data).toMatchObject({
+      name: 'Ana Souza',
+      email: 'ana@example.com',
+      role: UserRole.PRODUCER,
+      producer: {
+        create: {
+          name: 'Ana Souza',
+          phone: '64999990000',
+          document: '12345678901',
+          cooperativeId: undefined,
+        },
+      },
+    });
+    expect(data.passwordHash).not.toBe('senha-segura');
+  });
+
+  it('vincula a cooperativa do codigo de convite', async () => {
+    prisma.cooperative.findUnique.mockResolvedValue({ id: 'coop-uuid' });
+    await service.signup({
+      ...input,
+      inviteCode: '7f1c2a9e-3b4d-4c5e-8f60-1a2b3c4d5e6f',
+    });
+    expect(
+      prisma.user.create.mock.calls[0][0].data.producer.create.cooperativeId,
+    ).toBe('coop-uuid');
+  });
+
+  it('recusa codigo de convite inexistente sem criar nada', async () => {
+    prisma.cooperative.findUnique.mockResolvedValue(null);
+    await expect(
+      service.signup({
+        ...input,
+        inviteCode: '7f1c2a9e-3b4d-4c5e-8f60-1a2b3c4d5e6f',
+      }),
+    ).rejects.toThrow('Código de convite não encontrado');
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('diz qual dado ja esta cadastrado', async () => {
+    prisma.user.findUnique.mockResolvedValueOnce({ id: 'outro' });
+    await expect(service.signup(input)).rejects.toThrow(
+      'Este email já tem uma conta',
+    );
+
+    prisma.producer.findUnique.mockResolvedValueOnce({ id: 'outro' });
+    await expect(service.signup(input)).rejects.toThrow('CPF/CNPJ');
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('cadastro concorrente com os mesmos dados vira conflito', async () => {
+    prisma.user.create.mockRejectedValue({ code: 'P2002' });
+    await expect(service.signup(input)).rejects.toThrow(ConflictException);
+  });
+});

@@ -1,13 +1,14 @@
+import { PRODUCT_LABEL } from '@/features/trace/trace.utils'
 import type { ProductType } from '@/types/api'
 
-const PRODUCT_CONFIG: Record<ProductType, { label: string; emoji: string }> = {
-  COFFEE:   { label: 'Café',     emoji: '☕' },
-  SOY:      { label: 'Soja',     emoji: '🌱' },
-  CATTLE:   { label: 'Bovino',   emoji: '🐄' },
-  COCOA:    { label: 'Cacau',    emoji: '🍫' },
-  PALM_OIL: { label: 'Palma',   emoji: '🌴' },
-  RUBBER:   { label: 'Borracha', emoji: '🌿' },
-  WOOD:     { label: 'Madeira',  emoji: '🪵' },
+const PRODUCT_EMOJI: Record<ProductType, string> = {
+  COFFEE: '☕',
+  SOY: '🌱',
+  CATTLE: '🐄',
+  COCOA: '🍫',
+  PALM_OIL: '🌴',
+  RUBBER: '🌿',
+  WOOD: '🪵',
 }
 
 interface BatchProductCellProps {
@@ -17,13 +18,12 @@ interface BatchProductCellProps {
 }
 
 export function BatchProductCell({ productType, quantity, unit }: BatchProductCellProps) {
-  const config = PRODUCT_CONFIG[productType]
   const qty = new Intl.NumberFormat('pt-BR').format(quantity)
 
   return (
     <div>
       <p className="text-sm text-[var(--color-ink)]">
-        {config.emoji} {config.label}
+        {PRODUCT_EMOJI[productType]} {PRODUCT_LABEL[productType] ?? productType}
       </p>
       <p className="text-xs text-[var(--color-ink-subtle)] tabular-nums">
         {qty} {unit}

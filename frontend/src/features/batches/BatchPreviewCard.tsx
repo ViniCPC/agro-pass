@@ -1,7 +1,9 @@
 import { Package } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 import type { Farm } from '@/types/api'
+import { useDemoMode } from '@/contexts/demo-context'
 import { formatHarvestDate } from '@/features/trace/trace.utils'
+import { batchCodeYear, previewDemoBatchCode } from '@/mocks/demo-store'
 import {
   PRODUCT_OPTIONS,
   type CreateBatchFormValues,
@@ -37,6 +39,12 @@ export function BatchPreviewCard({
     ? `${selectedFarm.name} - ${selectedFarm.state}`
     : '-'
   const harvestLabel = formatHarvestDate(values.harvestDate)
+  const { isDemoMode } = useDemoMode()
+  const harvestDate = values.harvestDate || undefined
+  // The demo knows the exact next code; the API assigns the sequence on save.
+  const code = isDemoMode
+    ? previewDemoBatchCode(harvestDate)
+    : `AGP-${batchCodeYear(harvestDate)}-····`
 
   return (
     <aside className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-page)] p-5 shadow-[var(--shadow-card)]">
@@ -58,9 +66,12 @@ export function BatchPreviewCard({
         <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-subtle)]">
           Código
         </p>
-        <p className="mt-1 font-mono text-sm text-[var(--color-ink)]">
-          AGP-2026-XXXX
-        </p>
+        <p className="mt-1 font-mono text-sm text-[var(--color-ink)]">{code}</p>
+        {!isDemoMode && (
+          <p className="mt-1 text-xs text-[var(--color-ink-subtle)]">
+            O número é atribuído quando o lote é criado.
+          </p>
+        )}
       </div>
 
       <div className="mt-3 rounded-lg border border-[var(--color-border-soft)] bg-[var(--color-surface)] p-3">

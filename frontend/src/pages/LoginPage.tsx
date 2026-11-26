@@ -149,7 +149,14 @@ export function LoginPage() {
         </div>
       )}
 
-      <p className="mt-5 text-center text-xs text-[var(--color-ink-subtle)]">
+      <p className="mt-5 text-center text-sm text-[var(--color-ink-subtle)]">
+        É produtor e ainda não tem conta?{' '}
+        <Link to="/cadastro" className="font-semibold text-[var(--color-teal-700)] hover:underline">
+          Criar conta
+        </Link>
+      </p>
+
+      <p className="mt-3 text-center text-xs text-[var(--color-ink-subtle)]">
         Quer explorar sem conta?{' '}
         <Link to="/demo" className="font-medium text-[var(--color-teal-700)] hover:underline">
           Abrir demonstração

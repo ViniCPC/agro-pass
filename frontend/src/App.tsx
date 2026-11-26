@@ -48,6 +48,9 @@ const TermsPage = lazy(() =>
 const LoginPage = lazy(() =>
   import('@/pages/LoginPage').then((module) => ({ default: module.LoginPage })),
 )
+const SignupPage = lazy(() =>
+  import('@/pages/SignupPage').then((module) => ({ default: module.SignupPage })),
+)
 const TracePage = lazy(() =>
   import('@/pages/TracePage').then((module) => ({ default: module.TracePage })),
 )
@@ -78,6 +81,7 @@ export default function App() {
               <Route element={<PublicLayout />}>
                 <Route path="/demo" element={<DemoEntryPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/cadastro" element={<SignupPage />} />
               </Route>
 
               <Route element={<PublicTraceLayout />}>

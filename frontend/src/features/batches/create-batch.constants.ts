@@ -1,3 +1,4 @@
+import { PRODUCT_LABEL } from '@/features/trace/trace.utils'
 import type { ProductType } from '@/types/api'
 
 export interface CreateBatchFormValues {
@@ -12,16 +13,26 @@ export const DEFAULT_CREATE_BATCH_FORM: CreateBatchFormValues = {
   farmId: '',
   productType: '',
   quantity: '',
-  unit: 'sacas',
+  // Empty on purpose: a prefilled value looked like a placeholder, and typing
+  // over it produced "sacassacas".
+  unit: '',
   harvestDate: '',
 }
 
-export const PRODUCT_OPTIONS: Array<{ value: ProductType; label: string }> = [
-  { value: 'COFFEE', label: 'Cafe' },
-  { value: 'SOY', label: 'Soja' },
-  { value: 'CATTLE', label: 'Bovino' },
-  { value: 'COCOA', label: 'Cacau' },
-  { value: 'PALM_OIL', label: 'Palma' },
-  { value: 'RUBBER', label: 'Borracha' },
-  { value: 'WOOD', label: 'Madeira' },
-]
+export const PRODUCT_OPTIONS = (Object.keys(PRODUCT_LABEL) as ProductType[]).map((value) => ({
+  value,
+  label: PRODUCT_LABEL[value],
+}))
+
+// Usual units per product: the unit field's example and suggestions.
+export const UNIT_EXAMPLE: Record<ProductType, string> = {
+  COFFEE: 'sacas de 60 kg',
+  SOY: 'toneladas',
+  CATTLE: 'cabeças',
+  COCOA: 'kg',
+  PALM_OIL: 'toneladas',
+  RUBBER: 'kg',
+  WOOD: 'm³',
+}
+
+export const UNIT_SUGGESTIONS = ['sacas de 60 kg', 'sacas', 'kg', 'toneladas', 'arrobas', 'cabeças', 'litros', 'm³']

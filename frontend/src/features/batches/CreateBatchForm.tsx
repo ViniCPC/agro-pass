@@ -2,6 +2,8 @@ import { Loader2 } from 'lucide-react'
 import type { Farm } from '@/types/api'
 import {
   PRODUCT_OPTIONS,
+  UNIT_EXAMPLE,
+  UNIT_SUGGESTIONS,
   type CreateBatchFormValues,
 } from './create-batch.constants'
 import { FarmSelector } from './FarmSelector'
@@ -111,12 +113,20 @@ export function CreateBatchForm({
             <input
               id="batch-unit"
               type="text"
+              list="batch-unit-suggestions"
+              autoComplete="off"
+              maxLength={30}
               value={values.unit}
               disabled={isSubmitting}
               onChange={(event) => onChange('unit', event.target.value)}
-              placeholder="sacas"
+              placeholder={`Ex.: ${values.productType ? UNIT_EXAMPLE[values.productType] : 'sacas de 60 kg'}`}
               className={INPUT_CLASS}
             />
+            <datalist id="batch-unit-suggestions">
+              {UNIT_SUGGESTIONS.map((unit) => (
+                <option key={unit} value={unit} />
+              ))}
+            </datalist>
             {errors.unit && (
               <p className="text-xs text-[var(--color-red-700)]">{errors.unit}</p>
             )}
