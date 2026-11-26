@@ -3,6 +3,7 @@ import { ScanLine } from 'lucide-react'
 import { HomeLogoLink } from '@/components/HomeLogoLink'
 import { DEMO_SHOWCASE_CODE } from '@/mocks/demo-store'
 import { EnterDemoButton } from './EnterDemoButton'
+import { SERVER_DEMO } from './useEnterDemo'
 
 export function DemoHero() {
   return (
@@ -32,8 +33,9 @@ export function DemoHero() {
       </div>
 
       <p className="max-w-md text-xs text-[var(--color-ink-subtle)]">
-        A demonstração funciona sem servidor: os dados são fictícios e ficam
-        no seu navegador.
+        {SERVER_DEMO
+          ? 'Sem cadastro: você entra numa demonstração só sua, com uma fazenda pronta e um perfil para cada papel. Os dados são fictícios e apagados em 24 horas.'
+          : 'A demonstração funciona sem servidor: os dados são fictícios e ficam no seu navegador.'}
       </p>
     </div>
   )

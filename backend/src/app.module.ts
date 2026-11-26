@@ -12,6 +12,8 @@ import { PublicBatchesModule } from './public-batches/public-batches.module';
 import { CooperativesModule } from './cooperatives/cooperatives.module';
 import { HealthModule } from './health/health.module';
 import { DemoRequestsModule } from './demo-requests/demo-requests.module';
+import { AccessModule } from './access/access.module';
+import { DemoSessionsModule } from './demo-sessions/demo-sessions.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -25,6 +27,7 @@ import { DEFAULT_RATE_LIMIT, RATE_LIMIT_WINDOW_MS } from './common/rate-limit';
       { name: 'default', ttl: RATE_LIMIT_WINDOW_MS, limit: DEFAULT_RATE_LIMIT },
     ]),
     PrismaModule,
+    AccessModule,
     AuthModule,
     ProducersModule,
     FarmsModule,
@@ -34,6 +37,7 @@ import { DEFAULT_RATE_LIMIT, RATE_LIMIT_WINDOW_MS } from './common/rate-limit';
     CooperativesModule,
     HealthModule,
     DemoRequestsModule,
+    DemoSessionsModule,
   ],
   controllers: [AppController],
   providers: [

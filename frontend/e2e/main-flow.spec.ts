@@ -104,7 +104,8 @@ test('do zero: propriedade → lote → etapas com informações → documento �
   await expect(review.getByText('1 documento anexado.')).toBeVisible()
   await review.getByRole('button', { name: 'Confirmar encerramento' }).click()
   await expect(page.getByText('Etapa 7 de 7: Encerrado')).toBeVisible()
-  await expect(page.getByText('Prova registrada na rede local (ambiente de testes)')).toBeVisible()
+  // The E2E API uses the in-memory provider: shown as a simulated proof.
+  await expect(page.getByText('Prova simulada — nenhuma transação enviada à Solana')).toBeVisible()
 
   // 4. Publish: the next steps start with it
   await expect(page.getByText('Próximos passos')).toBeVisible()

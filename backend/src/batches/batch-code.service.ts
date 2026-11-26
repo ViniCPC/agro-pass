@@ -5,9 +5,10 @@ import { PrismaService } from '../prisma/prisma.service';
 export class BatchCodeService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async generate(harvestDate?: Date): Promise<string> {
+  // Demo batches use their own DEMO- sequence, so they never take real codes.
+  async generate(harvestDate?: Date, prefix = 'AGP'): Promise<string> {
     const year = (harvestDate ?? new Date()).getUTCFullYear();
-    const codePrefix = `AGP-${year}-`;
+    const codePrefix = `${prefix}-${year}-`;
 
     const existingCodes = await this.prisma.batch.findMany({
       where: { code: { startsWith: codePrefix } },

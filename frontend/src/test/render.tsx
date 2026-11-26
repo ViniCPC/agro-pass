@@ -14,13 +14,28 @@ interface Options {
   route?: string
   login?: (email: string, password: string) => Promise<void>
   signup?: (input: SignupInput) => Promise<void>
+  demoSession?: { expiresAt: string } | null
+  startDemoSession?: () => Promise<void>
+  switchDemoRole?: (role: UserRole) => void
+  enableDemoMode?: () => void
+  disableDemoMode?: () => void
+  logout?: () => void
 }
 
 // Renders a component with the app providers, controlling who is logged in
 // and whether demo mode is on.
 export function renderWithProviders(
   ui: ReactNode,
-  { user = null, demo = false, demoRole = 'PRODUCER', route = '/', login = async () => undefined, signup = async () => undefined }: Options = {},
+  { user = null, demo = false, demoRole = 'PRODUCER', route = '/',
+    login = async () => undefined,
+    signup = async () => undefined,
+    demoSession = null,
+    startDemoSession = async () => undefined,
+    switchDemoRole = () => undefined,
+    enableDemoMode = () => undefined,
+    disableDemoMode = () => undefined,
+    logout = () => undefined,
+  }: Options = {},
 ) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -31,8 +46,8 @@ export function renderWithProviders(
       <DemoModeContext
         value={{
           isDemoMode: demo,
-          enableDemoMode: () => undefined,
-          disableDemoMode: () => undefined,
+          enableDemoMode,
+          disableDemoMode,
           demoRole,
           setDemoRole: () => undefined,
         }}
@@ -43,7 +58,10 @@ export function renderWithProviders(
             isLoading: false,
             login,
             signup,
-            logout: () => undefined,
+            logout,
+            demoSession,
+            startDemoSession,
+            switchDemoRole,
           }}
         >
           <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>

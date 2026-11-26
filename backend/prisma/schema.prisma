@@ -32,6 +32,12 @@ model User {
   cooperative   Cooperative? @relation(fields: [cooperativeId], references: [id])
 
   recordedEvents TraceEvent[] @relation("RecordedEvents")
+
+  // Set on the accounts of a demo visit: they only see records of that visit.
+  demoSessionId String?
+  demoSession   DemoSession? @relation(fields: [demoSessionId], references: [id], onDelete: Restrict)
+
+  @@index([demoSessionId])
 }
 
 model Producer {
@@ -51,7 +57,13 @@ model Producer {
   farms Farm[]
   user  User?
 
+  // Records of a demo visit, deleted with it. Farms, batches, events and
+  // documents belong to the visit through their producer.
+  demoSessionId String?
+  demoSession   DemoSession? @relation(fields: [demoSessionId], references: [id], onDelete: Restrict)
+
   @@index([cooperativeId])
+  @@index([demoSessionId])
   @@index([document])
 }
 
@@ -72,6 +84,11 @@ model Cooperative {
 
   producers Producer[]
   user      User?
+
+  demoSessionId String?
+  demoSession   DemoSession? @relation(fields: [demoSessionId], references: [id], onDelete: Restrict)
+
+  @@index([demoSessionId])
 }
 
 model Exporter {
@@ -226,6 +243,24 @@ model TraceEvent {
   @@index([type])
   @@index([recordedById])
   @@index([correctedEventId])
+}
+
+// ============================================
+// DEMO SEM CADASTRO
+// ============================================
+
+// One per "Entrar na demo": its own cooperative, producer, farm and an
+// account per role, isolated from real data and deleted after expiresAt.
+model DemoSession {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  users        User[]
+  producers    Producer[]
+  cooperatives Cooperative[]
+
+  @@index([expiresAt])
 }
 
 // ============================================

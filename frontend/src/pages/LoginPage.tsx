@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError } from '@/api/client'
 import { HomeLogoLink } from '@/components/HomeLogoLink'
 import { useAuth } from '@/contexts/auth-context'
+import { useDemoMode } from '@/contexts/demo-context'
 import { ROLE_DUTIES, ROLE_TITLE } from '@/features/auth/roles'
 import type { UserRole } from '@/types/api'
 
@@ -34,7 +35,15 @@ function loginErrorMessage(error: unknown) {
 }
 
 export function LoginPage() {
-  const { user, login } = useAuth()
+  const { user, login, logout } = useAuth()
+  const { isDemoMode, disableDemoMode } = useDemoMode()
+  // Coming to /login means signing in for real: end any demo first, or its
+  // state keeps the app on the demo (and a demo visit's user skips the form).
+  const inDemoVisit = Boolean(user?.demoSessionId)
+  useEffect(() => {
+    if (isDemoMode) disableDemoMode()
+    if (inDemoVisit) logout()
+  }, [isDemoMode, disableDemoMode, inDemoVisit, logout])
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
@@ -42,7 +51,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user && !inDemoVisit) return <Navigate to="/dashboard" replace />
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()

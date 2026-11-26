@@ -53,8 +53,11 @@ services:
       # Public API URL, written into cNFT metadata. e.g. https://agropass-api.onrender.com
       - key: PUBLIC_BACKEND_URL
         sync: false
+      # Set in the dashboard, so a Blueprint sync never turns the proof off.
+      # true only after the wallet and tree are set up (docs/blockchain-devnet.md);
+      # unset means disabled.
       - key: BLOCKCHAIN_ENABLED
-        value: "false"
+        sync: false
 
   - type: web
     name: agropass-web

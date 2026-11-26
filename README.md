@@ -62,6 +62,8 @@ Um lote ativo também pode ser cancelado. Lotes `CLOSED` ou `CANCELLED` não rec
 
 O nome e o `userId` de cada evento são obtidos do JWT. O endpoint não aceita `actorName` enviado pelo cliente.
 
+Cada papel só enxerga os próprios registros: o produtor, as fazendas e lotes dele; a cooperativa, os produtores vinculados a ela; o operador, lotes a partir do recebimento pela cooperativa; o administrador, todos. Um id fora desse alcance responde 404, nas listas, nos detalhes, nos eventos e nos documentos.
+
 ## Cadeia de integridade
 
 Cada evento recebe um número `sequence`, um `previousHash` e um `eventHash` SHA-256. O hash inclui o lote, a sequência, o tipo, o usuário autenticado, a data, a localização, as observações, o hash anterior e os hashes dos documentos anexados.
@@ -155,7 +157,9 @@ Rotas internas esperam `Authorization: Bearer <token>`.
 
 | Método | Endpoint | Finalidade |
 | --- | --- | --- |
-| `POST` | `/auth/register` | Cadastrar produtor, cooperativa ou operador |
+| `POST` | `/auth/register` | Cadastrar produtor, cooperativa ou operador (desligado em produção) |
+| `POST` | `/auth/signup` | Criar conta de produtor pelo site, com o registro do produtor |
+| `POST` | `/auth/demo` | Abrir uma demonstração isolada: uma conta por papel, apagada em 24h |
 | `POST` | `/auth/login` | Obter JWT |
 | `GET` | `/auth/me` | Consultar o usuário autenticado |
 
@@ -214,7 +218,9 @@ Cada lote tem um único cNFT, que funciona como seu passaporte on-chain. Os even
 
 ### Modo demonstração
 
-"Entrar na demo" em `/demo` ativa o modo demonstração, que fica salvo no `localStorage` e funciona sem backend. O lote `DEMO-2025-0001` percorre todas as etapas, com documentos fictícios e prova blockchain simulada; seus hashes são SHA-256 calculados como na API. "Ver passaporte de exemplo" abre `/trace/DEMO-2025-0001` em qualquer aparelho, com ou sem o modo ativo. Lotes criados durante a demo ficam só no navegador em que foram criados. "Sair da demo" apaga esses dados.
+Com a API disponível, "Entrar na demo" chama `POST /auth/demo`: o servidor cria uma visita só daquele visitante, com cooperativa, produtor, uma fazenda pronta e uma conta por papel, e o painel abre já logado como administrador. O seletor "Atuando como" troca entre as contas. Os dados da visita ficam isolados (contas reais nunca os veem, e a visita não vê dados reais nem pedidos de demonstração), usam a série de códigos `DEMO-` e são apagados com os arquivos depois de 24h. Ao encerrar um lote, a prova segue a configuração da blockchain do servidor: com a devnet habilitada, o passaporte mostra a assinatura real no Explorer. Há limite por IP e um teto de visitas abertas.
+
+Sem API (ou com `VITE_DEMO_MODE=local`), "Entrar na demo" ativa o modo demonstração offline, que fica salvo no `localStorage` e funciona sem backend. O lote `DEMO-2025-0001` percorre todas as etapas, com documentos fictícios e prova blockchain simulada; seus hashes são SHA-256 calculados como na API. "Ver passaporte de exemplo" abre `/trace/DEMO-2025-0001` em qualquer aparelho, com ou sem o modo ativo. Lotes criados durante a demo ficam só no navegador em que foram criados. "Sair da demo" apaga esses dados.
 
 ## Seed
 

@@ -3,6 +3,7 @@ import {
   Param,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
   BadRequestException,
   ForbiddenException,
@@ -14,8 +15,11 @@ import { UserRole } from '../../generated/prisma/enums';
 import type { AuthUser } from '../auth/auth-user.type';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { RealAccountGuard } from '../access/real-account.guard';
 
 @Roles(UserRole.COOPERATIVE, UserRole.ADMIN)
+// Imported producers would not belong to any demo visit.
+@UseGuards(RealAccountGuard)
 @Controller('cooperatives')
 export class CooperativesController {
   constructor(private readonly cooperativesService: CooperativesService) {}

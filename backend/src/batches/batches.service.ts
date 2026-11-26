@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client';
 import { BatchStatus, TraceEventType } from '../../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthUser } from '../auth/auth-user.type';
@@ -37,7 +38,10 @@ export class BatchesService {
     const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : undefined;
 
     for (let attempt = 1; attempt <= MAX_CODE_GENERATION_ATTEMPTS; attempt++) {
-      const code = await this.batchCodeService.generate(harvestDate);
+      const code = await this.batchCodeService.generate(
+        harvestDate,
+        user.demoSessionId ? 'DEMO' : 'AGP',
+      );
       const createdAt = new Date();
 
       try {
@@ -90,17 +94,22 @@ export class BatchesService {
     );
   }
 
-  async findAll(page: number, limit: number): Promise<ListBatchesResponseDto> {
+  async findAll(
+    page: number,
+    limit: number,
+    where: Prisma.BatchWhereInput = {},
+  ): Promise<ListBatchesResponseDto> {
     const skip = (page - 1) * limit;
 
     const [batches, totalItems] = await this.prisma.$transaction([
       this.prisma.batch.findMany({
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: { farm: true },
       }),
-      this.prisma.batch.count(),
+      this.prisma.batch.count({ where }),
     ]);
 
     return {

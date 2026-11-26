@@ -56,6 +56,7 @@ test('demo do zero, trocando de papel a cada etapa, sem API', async ({ page, con
 
   await page.getByLabel('Produto').selectOption('COFFEE')
   await page.getByLabel('Quantidade').fill('40')
+  await page.getByLabel('Unidade').fill('sacas')
   await page.getByRole('button', { name: 'Criar lote' }).first().click()
   const dialog = page.getByRole('dialog')
   const batchCode = (await dialog.getByRole('heading').textContent())?.trim() ?? ''

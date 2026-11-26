@@ -41,16 +41,21 @@ export class FarmsService {
     return FarmDto.fromModel(farm);
   }
 
-  async findAll(page: number, limit: number): Promise<ListFarmsResponseDto> {
+  async findAll(
+    page: number,
+    limit: number,
+    where: Prisma.FarmWhereInput = {},
+  ): Promise<ListFarmsResponseDto> {
     const skip = (page - 1) * limit;
 
     const [farms, totalItems] = await this.prisma.$transaction([
       this.prisma.farm.findMany({
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.farm.count(),
+      this.prisma.farm.count({ where }),
     ]);
 
     return {

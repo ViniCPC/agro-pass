@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { TraceEventsService } from './trace-events.service';
 import { CreateTraceEventDto } from './dto/create-trace-event.dto';
@@ -13,8 +14,10 @@ import { UserRole } from '../../generated/prisma/enums';
 import type { AuthUser } from '../auth/auth-user.type';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { BatchAccessGuard } from '../access/batch-access.guard';
 
 @Controller('batches/:id/events')
+@UseGuards(BatchAccessGuard)
 export class TraceEventsController {
   constructor(private readonly traceEventsService: TraceEventsService) {}
 

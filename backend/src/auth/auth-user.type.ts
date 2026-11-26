@@ -7,4 +7,6 @@ export interface AuthUser {
   role: UserRole;
   producerId: string | null;
   cooperativeId: string | null;
+  // Demo visit the account belongs to; absent or null for real accounts.
+  demoSessionId?: string | null;
 }

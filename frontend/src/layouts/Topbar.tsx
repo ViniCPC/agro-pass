@@ -21,8 +21,10 @@ interface TopbarProps {
 export function Topbar({ onOpenMenu }: TopbarProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, demoSession } = useAuth()
   const { isDemoMode } = useDemoMode()
+  // Offline demo or a server demo visit: both offer the role switcher.
+  const inDemo = isDemoMode || Boolean(demoSession)
 
   const meta =
     PAGE_META[pathname] ??
@@ -50,9 +52,12 @@ export function Topbar({ onOpenMenu }: TopbarProps) {
           </span>
         )}
       </div>
-      {isDemoMode && (
+      {inDemo && (
         <div className="flex shrink-0 items-center gap-2">
-          <DemoModeBadge className="hidden sm:inline-flex" />
+          <DemoModeBadge
+            className="hidden sm:inline-flex"
+            title={demoSession ? `Seus dados de demonstração são apagados em ${new Date(demoSession.expiresAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.` : undefined}
+          />
           <DemoRoleSwitcher />
           <button
             type="button"
@@ -68,7 +73,7 @@ export function Topbar({ onOpenMenu }: TopbarProps) {
           </button>
         </div>
       )}
-      {user && !isDemoMode && (
+      {user && !inDemo && (
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block">
             <p className="text-xs font-medium text-[var(--color-ink)]">{user.name}</p>

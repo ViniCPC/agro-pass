@@ -7,12 +7,13 @@ import type { UserRole } from '@/types/api'
 export function useActingRole(): {
   role: UserRole | undefined
   isDemoMode: boolean
-  // Only in the demo: play another role.
+  // Only in a demo (offline or server visit): play another role.
   switchRole?: (role: UserRole) => void
 } {
-  const { user } = useAuth()
+  const { user, demoSession, switchDemoRole } = useAuth()
   const { isDemoMode, demoRole, setDemoRole } = useDemoMode()
-  return isDemoMode
-    ? { role: demoRole, isDemoMode, switchRole: setDemoRole }
-    : { role: user?.role, isDemoMode }
+  if (isDemoMode) return { role: demoRole, isDemoMode, switchRole: setDemoRole }
+  // Server demo: a real account per role; switching swaps the signed-in one.
+  if (demoSession) return { role: user?.role, isDemoMode, switchRole: switchDemoRole }
+  return { role: user?.role, isDemoMode }
 }

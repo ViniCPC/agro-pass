@@ -1,11 +1,14 @@
 import { UserRound } from 'lucide-react'
-import { useDemoMode } from '@/contexts/demo-context'
 import { ROLE_DUTIES, ROLE_TITLE, ROLES } from '@/features/auth/roles'
+import { useActingRole } from '@/hooks/useActingRole'
 import type { UserRole } from '@/types/api'
 
-// Demo only. Real accounts get their role from the JWT.
+// Demo only (offline or server visit). Real accounts get their role from the JWT.
 export function DemoRoleSwitcher() {
-  const { demoRole, setDemoRole } = useDemoMode()
+  const { role, switchRole } = useActingRole()
+  if (!role || !switchRole) return null
+  const demoRole = role
+  const setDemoRole = switchRole
 
   return (
     // Not a wrapping <label>: its text would include every option name.

@@ -9,6 +9,8 @@ export interface AuthUser {
   role: UserRole
   producerId: string | null
   cooperativeId: string | null
+  // Set on the accounts of a server demo visit.
+  demoSessionId?: string | null
 }
 
 export interface AuthResponse {
@@ -26,7 +28,14 @@ export interface SignupInput {
   inviteCode?: string
 }
 
+// "Entrar na demo": an isolated visit with one signed-in account per role.
+export interface DemoSessionResponse {
+  expiresAt: string
+  accounts: Record<UserRole, AuthResponse>
+}
+
 export const authApi = {
+  demo: () => api.post<DemoSessionResponse>('/auth/demo', {}),
   signup: (input: SignupInput) => api.post<AuthResponse>('/auth/signup', input),
   login: (email: string, password: string) =>
     api.post<AuthResponse>('/auth/login', { email, password }),

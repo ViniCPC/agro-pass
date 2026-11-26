@@ -235,7 +235,8 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
         quantity: 50,
         unit: 'sacas',
       })
-      .expect(403);
+      // Another producer's farm is not visible: it answers as missing.
+      .expect(404);
 
     const { body } = await request(app.getHttpServer())
       .post('/batches')
@@ -479,15 +480,23 @@ describe('Digital passport authentication and lifecycle (e2e)', () => {
   it('rejeita transicao invalida e papel incorreto', async () => {
     await request(app.getHttpServer())
       .patch(`/batches/${batchId}/status`)
-      .set(auth(operatorToken))
+      .set(auth(producerToken))
       .send({ status: BatchStatus.DELIVERED })
       .expect(400);
 
+    // The cooperative sees the batch, but the harvest is the producer's.
+    await request(app.getHttpServer())
+      .patch(`/batches/${batchId}/status`)
+      .set(auth(cooperativeToken))
+      .send({ status: BatchStatus.HARVESTED })
+      .expect(403);
+
+    // Operators only see a batch once a cooperative has received it.
     await request(app.getHttpServer())
       .patch(`/batches/${batchId}/status`)
       .set(auth(operatorToken))
       .send({ status: BatchStatus.HARVESTED })
-      .expect(403);
+      .expect(404);
   });
 
   it('registra cada etapa com o usuario do JWT e fecha o passaporte', async () => {

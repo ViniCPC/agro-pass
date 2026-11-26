@@ -121,6 +121,10 @@ jobs:
         run: |
           npm ci
           npm run build
+        env:
+          # "Entrar na demo" opens a server visit; with the API blocked, the
+          # offline demo tests check the fallback to the browser demo.
+          VITE_DEMO_MODE: server
       - name: Navegador do Playwright
         working-directory: frontend
         run: npx playwright install --with-deps chromium

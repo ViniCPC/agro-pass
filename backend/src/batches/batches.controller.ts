@@ -12,6 +12,7 @@ import {
   Query,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -41,8 +42,12 @@ import { UpdateBatchStatusDto } from './dto/update-batch-status.dto';
 import { UpdateBatchVisibilityDto } from './dto/update-batch-visibility.dto';
 import { UpdateDocumentVisibilityDto } from './dto/update-document-visibility.dto';
 import { UPLOAD_LIMITS } from './document-upload.constants';
+import { AccessService } from '../access/access.service';
+import { BatchAccessGuard } from '../access/batch-access.guard';
 
 @Controller('batches')
+// Every route with :id first checks the user may see that batch.
+@UseGuards(BatchAccessGuard)
 export class BatchesController {
   constructor(
     private readonly batchesService: BatchesService,
@@ -51,20 +56,29 @@ export class BatchesController {
     private readonly tokenization: BatchTokenizationService,
     @Inject(FILE_STORAGE)
     private readonly fileStorage: FileStorage,
+    private readonly access: AccessService,
   ) {}
 
   @Post()
   @Roles(UserRole.PRODUCER, UserRole.ADMIN)
-  create(
+  async create(
     @Body() createBatchDto: CreateBatchDto,
     @CurrentUser() user: AuthUser,
   ): Promise<BatchDto> {
+    await this.access.assertFarm(createBatchDto.farmId, user);
     return this.batchesService.create(createBatchDto, user);
   }
 
   @Get()
-  findAll(@Query() query: PaginationQueryDto): Promise<ListBatchesResponseDto> {
-    return this.batchesService.findAll(query.page, query.limit);
+  findAll(
+    @Query() query: PaginationQueryDto,
+    @CurrentUser() user: AuthUser,
+  ): Promise<ListBatchesResponseDto> {
+    return this.batchesService.findAll(
+      query.page,
+      query.limit,
+      this.access.batchWhere(user),
+    );
   }
 
   @Get(':id/transitions')

@@ -6,7 +6,7 @@ import { ROLE_TITLE } from './roles'
 // Shown when the next action belongs to someone else. In the demo the
 // visitor can take that role; with a real account the API decides.
 export function RoleHandoff({ role, children }: { role: UserRole; children: React.ReactNode }) {
-  const { isDemoMode, switchRole } = useActingRole()
+  const { switchRole } = useActingRole()
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-page)] p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -14,7 +14,7 @@ export function RoleHandoff({ role, children }: { role: UserRole; children: Reac
         <UserRound size={15} className="mt-0.5 shrink-0" aria-hidden />
         <span>{children}</span>
       </p>
-      {isDemoMode && switchRole ? (
+      {switchRole ? (
         <button
           type="button"
           onClick={() => switchRole(role)}

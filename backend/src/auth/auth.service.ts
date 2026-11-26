@@ -21,6 +21,7 @@ const SAFE_USER_SELECT = {
   role: true,
   producerId: true,
   cooperativeId: true,
+  demoSessionId: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -176,13 +177,14 @@ export class AuthService {
     return user;
   }
 
-  private async buildAuthResponse(user: {
+  async buildAuthResponse(user: {
     id: string;
     name: string;
     email: string;
     role: UserRole;
     producerId: string | null;
     cooperativeId: string | null;
+    demoSessionId?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
   }) {
@@ -193,6 +195,7 @@ export class AuthService {
       role: user.role,
       producerId: user.producerId,
       cooperativeId: user.cooperativeId,
+      demoSessionId: user.demoSessionId ?? null,
     };
 
     return {
@@ -204,6 +207,7 @@ export class AuthService {
         role: user.role,
         producerId: user.producerId,
         cooperativeId: user.cooperativeId,
+        demoSessionId: user.demoSessionId ?? null,
         ...(user.createdAt ? { createdAt: user.createdAt } : {}),
         ...(user.updatedAt ? { updatedAt: user.updatedAt } : {}),
       },

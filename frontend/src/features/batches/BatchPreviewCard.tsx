@@ -1,6 +1,7 @@
 import { Package } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 import type { Farm } from '@/types/api'
+import { useAuth } from '@/contexts/auth-context'
 import { useDemoMode } from '@/contexts/demo-context'
 import { formatHarvestDate } from '@/features/trace/trace.utils'
 import { batchCodeYear, previewDemoBatchCode } from '@/mocks/demo-store'
@@ -40,11 +41,13 @@ export function BatchPreviewCard({
     : '-'
   const harvestLabel = formatHarvestDate(values.harvestDate)
   const { isDemoMode } = useDemoMode()
+  const { demoSession } = useAuth()
   const harvestDate = values.harvestDate || undefined
-  // The demo knows the exact next code; the API assigns the sequence on save.
+  // The offline demo knows the exact next code; the API assigns the sequence
+  // on save, with its own DEMO- series for server demo visits.
   const code = isDemoMode
     ? previewDemoBatchCode(harvestDate)
-    : `AGP-${batchCodeYear(harvestDate)}-····`
+    : `${demoSession ? 'DEMO' : 'AGP'}-${batchCodeYear(harvestDate)}-····`
 
   return (
     <aside className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-page)] p-5 shadow-[var(--shadow-card)]">
